@@ -64,7 +64,7 @@ body {
   /* Text color */
   border: 2px solid #ffffffbe;
   /* Border color */
-  border-radius: 22px;
+  border-radius: 55px;
   /* Rounded corners */
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -102,7 +102,7 @@ body {
   /* Text color */
   border: 2px solid #ffffffbe;
   /* Border color */
-  border-radius: 22px;
+  border-radius: 55px;
   /* Rounded corners */
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -188,7 +188,7 @@ body {
 .player-cube:hover {
   background-color: #2564b6;
   /* Hover background color */
-  color: rgb(0, 0, 0);
+  color: rgb(252, 252, 252);
   /* Hover text color */
 }
 
@@ -213,7 +213,7 @@ body {
   /* Text color */
   padding: 2px;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 15px;
   transition: background-color 0.3s, color 0.3s;
   /* Smooth transition effect */
 }

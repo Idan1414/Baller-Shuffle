@@ -75,11 +75,19 @@ const TeamsPage = () => {
       <div className="teams-distribution-style">
         {teams.map((team, index) => (
           <div key={team.team_id} className="team-container">
-            <h2>Team {index + 1}</h2>
+            <h2 style={{ textAlign: 'center' }}>Team {index + 1}</h2>
             <p> Overall: {team.team_overall}</p>
             <p> Height: {team.team_height}</p>
             <p> 3PtShot: {team.team_threePtShot}</p>
             <p> Defence: {team.team_defence}</p>
+            <p> Scoring: {team.team_scoring}</p>
+            <p> Passing: {team.team_passing}</p>
+            <p> Speed: {team.team_speed}</p>
+            <p> Physical: {team.team_physical}</p>
+            <p> Rebound: {team.team_rebound}</p>
+            <p> Ball Handling: {team.team_ballHandling}</p>
+            <p> Post Up: {team.team_postUp}</p>
+
             <div className="team-players">
               <h3>Players:</h3>
               {team.players.map((player) => (
@@ -91,12 +99,18 @@ const TeamsPage = () => {
           </div>
         ))}
       </div>
-      <button onClick={handleReRandomize} className="re-randomize-button">
-        Re-Randomize
-      </button>
-      <Link to="/" className="NGP-back-home-button">
-        Back to Home
-      </Link>
+      <div style={{ textAlign: 'center' }}>
+        <p>
+          <button onClick={handleReRandomize} className="re-randomize-button">
+            Re-Randomize
+          </button>
+        </p >
+        <p>
+          <Link to="/" className="NGP-back-home-button">
+            Back to Home
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

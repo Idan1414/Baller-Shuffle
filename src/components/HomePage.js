@@ -51,16 +51,16 @@ const HomePage = () => {
               {player.name}
               <p>{player.overall}</p>
               <div className="tooltips">
-                <p>height: {player.height}</p>
+                <p>Height: {player.height}</p>
                 <p>Scoring: {player.scoring}</p>
                 <p>Passing: {player.passing}</p>
                 <p>Speed: {player.speed}</p>
-                <p>physical: {player.physical}</p>
-                <p>defence: {player.defence}</p>
+                <p>Physical: {player.physical}</p>
+                <p>Defence: {player.defence}</p>
                 <p>3PtShot: {player.threePtShot}</p>
-                <p>rebound: {player.rebound}</p>
-                <p>ballHandle: {player.ballHandling}</p>
-                <p>postUp: {player.postUp}</p>
+                <p>Rebound: {player.rebound}</p>
+                <p>BallHandle: {player.ballHandling}</p>
+                <p>PostUp: {player.postUp}</p>
               </div>
               {selectedPlayer === player && (
                 <div className="delete-player-button" onClick={(e) => handleDeletePlayer(e, player)}>
