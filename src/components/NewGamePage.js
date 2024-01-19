@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Team from './Team';
 import './NewGamePage.css';
 import './HomePage.css';
@@ -11,12 +12,14 @@ const NewGamePage = () => {
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [numTeams, setNumTeams] = useState(2);
   const [searchInput, setSearchInput] = useState('');
-  const [selectedPlayerCount, setSelectedPlayerCount] = useState(0); // New state variable for count
+  const [selectedPlayerCount, setSelectedPlayerCount] = useState(0);
+  const { courtId } = useParams();
 
 
   useEffect(() => {
     // Retrieve players from local storage
-    const storedPlayers = JSON.parse(localStorage.getItem('players')) || [];
+    const courtPlayersKey = `court_${courtId}_players`
+    const storedPlayers = JSON.parse(localStorage.getItem(courtPlayersKey)) || [];
     setPlayers(storedPlayers);
   }, []);
 
@@ -82,7 +85,7 @@ const NewGamePage = () => {
     localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayers));
 
     // Redirect to TeamsPage with state
-    navigate('/teams', { state: { selectedPlayers } });
+    navigate(`/teams/${courtId}`, { state: { selectedPlayers } });
   };
 
 

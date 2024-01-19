@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Team from './Team'; // Import the Team component
 import './TeamsPage.css';
 
@@ -7,6 +8,7 @@ const TeamsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [teams, setTeams] = useState([]);
+  const { courtId } = useParams();
   const [selectedPlayers, setSelectedPlayers] = useState([]);
 
 
@@ -66,7 +68,7 @@ const TeamsPage = () => {
 
     // Save the teams to local storage or state and navigate to the Teams page
     localStorage.setItem('teams', JSON.stringify(newteams));
-    navigate('/teams');
+    navigate(`/teams/${courtId}`);
   };
 
   return (
@@ -106,7 +108,7 @@ const TeamsPage = () => {
           </button>
         </p >
         <p>
-          <Link to="/" className="NGP-back-home-button">
+          <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
             Back to Home
           </Link>
         </p>
