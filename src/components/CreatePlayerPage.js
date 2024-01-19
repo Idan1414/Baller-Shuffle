@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import Player from './Player';
 import { Link, useNavigate } from 'react-router-dom';
 import './CreatePlayerPage.css';
+import { useParams } from 'react-router-dom';
 
 
 const CreatePlayerPage = () => {
   const navigate = useNavigate();
+  const { courtId } = useParams();
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
     photo: '',
@@ -18,7 +20,7 @@ const CreatePlayerPage = () => {
     rebound: 0,
     ballHandling: 0,
     postUp: 0,
-    height: 0,
+    height: 170,
   });
 
   const [errors, setErrors] = useState({
@@ -98,12 +100,10 @@ const CreatePlayerPage = () => {
         overall: calculateOverall(numericalAttributes),
       });
 
-      console.log('New Player:', newPlayer);
-      // Save the player data to your local storage, file, or database
-      const existingPlayers = JSON.parse(localStorage.getItem('players')) || [];
-      localStorage.setItem('players', JSON.stringify([...existingPlayers, newPlayer]));
-      navigate(`/creation_success?overall=${newPlayer.overall}&name=${newPlayer.name}`);
-
+      const courtPlayersKey = `court_${courtId}_players`;
+      const existingCourtPlayers = JSON.parse(localStorage.getItem(courtPlayersKey)) || [];
+      localStorage.setItem(courtPlayersKey, JSON.stringify([...existingCourtPlayers, newPlayer]));
+      navigate(`/creation_success/${courtId}?overall=${newPlayer.overall}&name=${newPlayer.name}`);
     }
 
 
@@ -271,8 +271,10 @@ const CreatePlayerPage = () => {
         />
         {errors.postUp && <p className="error-message">{errors.postUp}</p>}
       </div>
-      <button className='calc-save-button' onClick={handleCreatePlayer}>Create and Calculate Overall</button>
-      <Link to="/" className="NGP-back-home-button">
+      <button className='calc-save-button' onClick={handleCreatePlayer}>
+        Create and Calculate Overall
+      </button>
+      <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
         Back to Home
       </Link>
     </div>

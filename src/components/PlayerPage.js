@@ -9,6 +9,7 @@ import './CreatePlayerPage.css';
 const PlayerPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { courtId } = useParams();
 
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
@@ -41,8 +42,8 @@ const PlayerPage = () => {
 
 
   useEffect(() => {
-    // Fetch the player data based on the ID
-    const storedPlayers = JSON.parse(localStorage.getItem('players')) || [];
+    // Fetch the player data based on the ID and courtId
+    const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
     const selectedPlayer = storedPlayers.find(player => player.id === id);
 
     if (selectedPlayer) {
@@ -61,7 +62,7 @@ const PlayerPage = () => {
         height: selectedPlayer.height || 0,
       });
     }
-  }, [id]);
+  }, [id, courtId]);
 
   const validateName = () => {
     // Add your name validation logic here
@@ -116,12 +117,12 @@ const PlayerPage = () => {
       height: heightError,
       ...attributesErrors,
     });
-    const storedPlayers = JSON.parse(localStorage.getItem('players')) || [];
+    const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
     const existingPlayerIndex = storedPlayers.findIndex(player => player.id === id);
 
     if (!nameError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
       // All validations passed, update the existing player if it exists
-      const storedPlayers = JSON.parse(localStorage.getItem('players')) || [];
+      const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
       const existingPlayerIndex = storedPlayers.findIndex(player => player.id === id);
 
       if (existingPlayerIndex !== -1) {
@@ -133,8 +134,8 @@ const PlayerPage = () => {
         });
 
         storedPlayers[existingPlayerIndex] = updatedPlayer;
-        localStorage.setItem('players', JSON.stringify(storedPlayers));
-        navigate(`/edit_success?overall=${updatedPlayer.overall}&name=${updatedPlayer.name}`);
+        localStorage.setItem(`court_${courtId}_players`, JSON.stringify(storedPlayers));
+        navigate(`/edit_success/${courtId}?overall=${updatedPlayer.overall}&name=${updatedPlayer.name}`);
       }
     }
 
@@ -304,7 +305,7 @@ const PlayerPage = () => {
         {errors.postUp && <p className="error-message">{errors.postUp}</p>}
       </div>
       <button className='calc-save-button' onClick={handleUpdatePlayer}>Update Player</button>
-      <Link to="/" className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
         Back to Home
       </Link>
     </div>
