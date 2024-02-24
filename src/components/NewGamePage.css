@@ -59,7 +59,30 @@
   font-size: 2rem;
   color: rgba(192, 199, 209, 0.8);
   /* Adjusted text shadow for a more subtle effect */
-  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  margin: 1px 1px;
+
+}
+
+
+.instructions1 {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: rgba(192, 199, 209, 0.8);
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  margin: 1px 1px;
+
+}
+
+.instructions2 {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: rgba(192, 199, 209, 0.8);
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   margin: 1px 1px;
 
 }
@@ -87,7 +110,7 @@
 .NGP-player-cube {
   width: 150px;
   height: 80px;
-  background-color: #3c77d0; /* You can change the background color */
+  background-color:  #7cbfde; /* You can change the background color */
   margin: 10px;
   border: 2px solid #ffffffbe; /* Border color */
   border-radius: 10px; /* Rounded corners */
@@ -101,7 +124,7 @@
   vertical-align: top;
 }
 .NGP-player-cube:hover {
-  background-color: #2564b6; /* Hover background color */
+  background-color: #a2d2ff; /* Hover background color */
   color: rgb(0, 0, 0); /* Hover text color */
 }
 

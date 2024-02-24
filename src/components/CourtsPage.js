@@ -32,6 +32,7 @@ const CourtsPage = () => {
 
   return (
     <div className="home-page-style">
+      <div className="app-title">BALLR SHUFFLE</div>
       <h1 className="CourtsPage-title">MyCourts</h1>
       <div className="player-list">
         {courts.map((court) => (
@@ -51,7 +52,7 @@ const CourtsPage = () => {
        </Link>
         ))}
       </div>
-      <Link to="/new-court" className="create-player-button">
+      <Link to="/new-court" className="create-new-court-button">
         Create New Court
       </Link>
     </div>

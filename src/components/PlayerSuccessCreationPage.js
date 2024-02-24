@@ -7,6 +7,8 @@ const PlayerSuccessCreationPage = () => {
   const { search } = useLocation();
   const { courtId } = useParams();
   const searchParams = new URLSearchParams(search);
+  const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
   const overall = searchParams.get('overall');
   const name = searchParams.get('name');
 
@@ -16,9 +18,9 @@ const PlayerSuccessCreationPage = () => {
       <h1 className='PS-title'>{name} Created Successfully!</h1>
       <p className='overall'>OVERALL: {overall}</p>
 
-        <Link className='back-home-button' to={`/court_home_page/${courtId}`}>
-        Back to Home Page
-        </Link>
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
+        Back to Home
+      </Link>
     </div>
   );
 };

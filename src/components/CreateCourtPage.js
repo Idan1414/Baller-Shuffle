@@ -37,7 +37,7 @@ const CreateCourtPage = () => {
     <div className="create-player-page-style">
       <h1 className='CP-title'>Create New Court</h1>
       <div className="input-container">
-        <label htmlFor="courtName">Name:</label>
+        <label htmlFor="courtName">Court's Name : </label>
         <input
           type="text"
           id="courtName"
@@ -50,7 +50,7 @@ const CreateCourtPage = () => {
         Create Court
       </button>
       <Link to="/" className="NGP-back-home-button">
-        Back to Home
+        Back to MyCourts Page
       </Link>
     </div>
   );

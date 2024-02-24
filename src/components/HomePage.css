@@ -1,17 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
 
-
 html,
 body {
   margin: 0;
-  /* Remove default body margin */
   height: 100%;
-  /* Set height to 100% of the viewport */
-  background: linear-gradient(to right, #222, #555);
-  /* Faded black to grey gradient */
+  background-attachment: fixed;
+  background-size: cover;
+  overflow-x: hidden; /* Hide horizontal scroll */
 
 }
-
 body {
   font-family: 'Exo 2', sans-serif;
   /* Apply the font to the entire page */
@@ -19,18 +16,15 @@ body {
 
 /*--------------------BackGround------------------ */
 
-.home-page-style {
-  background: linear-gradient(to right, #222, #555);
-  /* Faded black to grey gradient */
-  min-height: 100vh;
-  /* Set minimum height to 100% of the viewport */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  /* Adjusted to align content at the top */
-  animation: fadeIn 0.3s ease-in-out;
-  /* Apply fadeIn animation */
+.home-page-style3 {
+    overflow-x: hidden; /* Hide horizontal scroll */
+    min-height: 100vh; /* Set minimum height to 100% of the viewport */
+    background-image: url('/public/newBack.webp');
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Adjusted to align content at the top */
+    animation: fadeIn 0.3s ease-in-out; /* Apply fadeIn animation */
 }
 
 /*--------------------TITLE------------------ */
@@ -44,7 +38,7 @@ body {
   /* Increased font size for emphasis */
   color: rgba(255, 165, 0, 0.8);
   /* Faded white-orange color */
-  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   /* Adding a text shadow for a 3D effect */
   margin: 20px 0;
   /* Adjusted margin to provide space */
@@ -91,12 +85,12 @@ body {
 
 /*--------------------CREATE PLAYER BUTTON------------------ */
 
-.create-player-button {
+.create-player-buttonn {
   margin-top: 30px;
   /* Adjusted margin to provide space below the title */
   padding: 10px 10px;
   /* Adjusted padding for a larger clickable area */
-  background-color: rgba(79, 140, 238, 0.8);
+  background-color: #7cbfde;
   /* Initial background color */
   color: #161005;
   /* Text color */
@@ -111,14 +105,14 @@ body {
   /* Remove underline */
 }
 
-.create-player-button:hover {
-  background-color: rgba(21, 111, 195, 0.775);
+.create-player-buttonn:hover {
+  background-color: #a2d2ff;
   /* Hover background color */
   color: rgb(0, 0, 0);
   /* Hover text color */
 }
 
-.create-player-button:active {
+.create-player-buttonn:active {
   transform: translateY(4px);
   /* Move the button down by 2 pixels when clicked */
   box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
@@ -165,7 +159,7 @@ body {
   width: 150px;
   position: relative;
   height: 80px;
-  background-color: #3c77d0;
+  background-color: #7cbfde; /* Pastel blue color */
   /* You can change the background color */
   margin: 10px;
   border: 2px solid #ffffffbe;
@@ -186,9 +180,9 @@ body {
 }
 
 .player-cube:hover {
-  background-color: #2564b6;
+  background-color: #a2d2ff; /* Lighter pastel blue on hover */
   /* Hover background color */
-  color: rgb(252, 252, 252);
+  color: rgb(248, 243, 243);
   /* Hover text color */
 }
 
@@ -224,12 +218,12 @@ body {
   /* Hover background color */
 }
 
-.tooltips {
+.tooltipsnew {
   position: absolute;
   top: 100%;
   left: 23%;
   transform: translateX(-20%);
-  background-color: #3498db;
+  background-color: #a3d2fb; /* Very light pastel blue color */
   /* Ocean blue color */
   color: #fff;
   padding: 0.3px;
@@ -243,7 +237,7 @@ body {
   width: 160px;
 }
 
-.player-cube:hover .tooltips {
+.player-cube:hover .tooltipsnew {
   opacity: 11;
   visibility: visible;
 }
@@ -263,16 +257,16 @@ body {
 }
 
 
-.HP-registered-players {
+.HP-registered-playerss {
   font-family: 'Exo 2', sans-serif;
   /* Using Exo 2 font */
   font-weight: 700;
   /* Bold */
   font-size: 2rem;
   /* Increased font size for emphasis */
-  color: #3c77d0;
+  color: #7cbfde;
   /* Faded white-orange color */
-  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   /* Adding a text shadow for a 3D effect */
   margin: 20px 0;
   /* Adjusted margin to provide space */
@@ -294,3 +288,4 @@ body {
 .back-to-mycourts-button:hover {
   background-color: #d8cca7; /* Hover color */
 }
+

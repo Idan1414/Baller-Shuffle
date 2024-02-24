@@ -2,65 +2,78 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import './HomePage.css';
-import Court from './Court';
+
+
 
 
 
 const HomePage = () => {
   const [players, setPlayers] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const { courtId } = useParams();
   const { search } = useLocation();
+  const { courtId } = useParams();
   const searchParams = new URLSearchParams(search);
   const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
 
 
   useEffect(() => {
-    // Fetch players for the selected court from local storage or API
-    const courtPlayersKey = `court_${courtId}_players`;
-    const storedPlayers = JSON.parse(localStorage.getItem(courtPlayersKey)) || [];
+    // Fetch courts and then players for the selected court from localStorage
+    const courts = JSON.parse(localStorage.getItem('courts')) || [];
+    const currentCourt = courts.find(court => court.id === courtId);
+    const storedPlayers = currentCourt ? currentCourt.players : [];
     setPlayers(storedPlayers);
   }, [courtId]);
 
-  const handleDeletePlayer = (event, player) => {
-    // Prevent the event from propagating to the parent (Link)
+  const handleDeletePlayer = (event, playerToDelete) => {
     event.preventDefault();
     event.stopPropagation();
-
-    // Show a confirmation dialog
-    const isConfirmed = window.confirm(`Are you sure you want to delete ${player.name}?`);
-
+  
+    const isConfirmed = window.confirm(`Are you sure you want to delete ${playerToDelete.name}?`);
+  
     if (isConfirmed) {
-      // Filter out the selected player and update the state
-      const updatedPlayers = players.filter((p) => p.id !== player.id);
-      setPlayers(updatedPlayers);
-
-      // Save the updated players to local storage
-      localStorage.setItem('players', JSON.stringify(updatedPlayers));
-
-      // Clear the selected player after deletion
+      // Retrieve the full list of courts from localStorage
+      const courts = JSON.parse(localStorage.getItem('courts')) || [];
+      // Find the current court by courtId
+      const currentCourtIndex = courts.findIndex(court => court.id === courtId);
+  
+      if (currentCourtIndex !== -1) {
+        // Filter out the player to be deleted
+        const updatedPlayers = courts[currentCourtIndex].players.filter(player => player.id !== playerToDelete.id);
+        // Update the players array for the current court
+        courts[currentCourtIndex].players = updatedPlayers;
+  
+        // Save the updated courts array to localStorage
+        localStorage.setItem('courts', JSON.stringify(courts));
+  
+        // Update the local state to reflect the changes
+        setPlayers(updatedPlayers);
+      } else {
+        console.error('Court not found');
+      }
+  
       setSelectedPlayer(null);
     }
   };
 
 
   return (
-    <div className="home-page-style">
+    <div className="home-page-style3">
        <Link to="/" className="back-to-mycourts-button">
         Back to MyCourts
       </Link>
       <h1 className="HP-title">{currCourtName} Basketball</h1>
-      <Link to={`/new-game/${courtId}`} className="create-game-button">
+      <Link to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="create-game-button">
       Create New Game
       </Link>
-      <h2 className='HP-registered-players'>Registered Players:</h2>
+      <h2 className='HP-registered-playerss'>Registered Players:</h2>
       <div className="player-list">
         {players.map((player) => (
-          <Link to={`/player/${player.id}/${courtId}/`} className="player-link">
+          <Link to={`/player/${player.id}/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}/`} className="player-link">
             <div key={player.id} className="player-cube" onMouseEnter={() => setSelectedPlayer(player)} onMouseLeave={() => setSelectedPlayer(null)}>
               {player.name}
               <p>{player.overall}</p>
-              <div className="tooltips">
+              <div className="tooltipsnew">
                 <p>Height: {player.height}</p>
                 <p>Scoring: {player.scoring}</p>
                 <p>Passing: {player.passing}</p>
@@ -84,7 +97,7 @@ const HomePage = () => {
       </div>
 
 
-      <Link to={`/new-player/${courtId}`} className="create-player-button">
+      <Link to={`/new-player/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="create-player-buttonn">
         Create New Player
       </Link>
     </div>

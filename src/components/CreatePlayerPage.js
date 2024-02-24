@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import Player from './Player';
-import { Link, useNavigate } from 'react-router-dom';
-import './CreatePlayerPage.css';
+import { Link, useNavigate,useLocation } from 'react-router-dom';import './CreatePlayerPage.css';
 import { useParams } from 'react-router-dom';
 
 
 const CreatePlayerPage = () => {
   const navigate = useNavigate();
   const { courtId } = useParams();
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
+
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
     photo: '',
@@ -100,10 +104,22 @@ const CreatePlayerPage = () => {
         overall: calculateOverall(numericalAttributes),
       });
 
-      const courtPlayersKey = `court_${courtId}_players`;
-      const existingCourtPlayers = JSON.parse(localStorage.getItem(courtPlayersKey)) || [];
-      localStorage.setItem(courtPlayersKey, JSON.stringify([...existingCourtPlayers, newPlayer]));
-      navigate(`/creation_success/${courtId}?overall=${newPlayer.overall}&name=${newPlayer.name}`);
+      // Retrieve the full list of courts
+      const courts = JSON.parse(localStorage.getItem('courts')) || [];
+      // Find the court by courtId
+      const courtIndex = courts.findIndex(court => court.id === courtId);
+
+      if (courtIndex !== -1) {
+        // Add the new player to the players array within the found court object
+        courts[courtIndex].players.push(newPlayer);
+
+        // Save the updated courts array back to localStorage
+        localStorage.setItem('courts', JSON.stringify(courts));
+      } else {
+        console.error('Court not found');
+      } 
+      navigate(`/creation_success/${courtId}?overall=${newPlayer.overall}&name=${newPlayer.name}&courtName=${currCourtName}&courtType=${currCourtType}`);
+
     }
 
 
@@ -274,7 +290,7 @@ const CreatePlayerPage = () => {
       <button className='calc-save-button' onClick={handleCreatePlayer}>
         Create and Calculate Overall
       </button>
-      <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
         Back to Home
       </Link>
     </div>
