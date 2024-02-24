@@ -16,17 +16,20 @@ You may also see any lint errors in the console.
 
 Here are some pictures of the App : 
 
-Home Page:
-<img width="1094" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/9b520752-1b68-4626-8bb3-c2904c0e84c2">
+Landing Page:
+<img width="1120" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/62340b68-62cf-4fce-96a3-65d56a6f8eca">
+
+Court Page:
+<img width="1108" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/f393a586-f1c5-481e-b8d5-dccff77282ce">
 
 
 Edit Player Page: 
-<img width="367" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/21dd785e-2d91-46d9-9bd6-0f41a7297b3c">
+<img width="1120" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/47706987-6191-4c1c-a602-8b1ee5510fa0">
 
 
 Create Game page: 
-<img width="1103" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/52608aa0-899e-4341-8ea5-94c8468783e6">
+<img width="1120" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/925cde45-3dc9-48b2-b32f-7cc5b2f41f25">
 
 
 Random Teams Page :
-<img width="866" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/ca668b92-a9cd-4017-aa8b-74baabbf2b35">
+<img width="750" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/d457f201-22c0-4253-86c8-65e0438b9f4b">
