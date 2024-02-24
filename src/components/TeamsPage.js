@@ -10,6 +10,10 @@ const TeamsPage = () => {
   const [teams, setTeams] = useState([]);
   const { courtId } = useParams();
   const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
 
 
   useEffect(() => {
@@ -108,8 +112,8 @@ const TeamsPage = () => {
           </button>
         </p >
         <p>
-          <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
-            Back to Home
+        <Link to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
+            Back to New Game
           </Link>
         </p>
       </div>

@@ -84,3 +84,21 @@ html, body {
     box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3); /* Add a subtle box shadow for a 3D effect */
   }
 
+
+
+  .EPP-back-home-button {
+    margin-top: 17px;
+    padding: 15px 19px;
+    background-color: rgba(237, 177, 14, 0.775);
+    color: #161005;
+    border: 2px solid #ffffffbe;
+    border-radius: 55px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    text-decoration: none;
+  }
+  
+  .EPP-back-home-button:hover {
+    background-color: #be8837c5;
+    color: rgb(0, 0, 0);
+  }

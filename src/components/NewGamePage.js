@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate,useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import Team from './Team';
 import './NewGamePage.css';
@@ -14,15 +14,25 @@ const NewGamePage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [selectedPlayerCount, setSelectedPlayerCount] = useState(0);
   const { courtId } = useParams();
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
+
 
 
   useEffect(() => {
-    // Retrieve players from local storage
-    const courtPlayersKey = `court_${courtId}_players`
-    const storedPlayers = JSON.parse(localStorage.getItem(courtPlayersKey)) || [];
-    setPlayers(storedPlayers);
-  }, []);
+    // Retrieve courts and then players for the selected court from localStorage
+    const courts = JSON.parse(localStorage.getItem('courts')) || [];
+    // Find the court by courtId
+    const currentCourt = courts.find(court => court.id === courtId);
+    if (currentCourt) { //truthy or falsey 
+      // Set the players state with the players array from the current court object
+      setPlayers(currentCourt.players);
+    }
+  }, [courtId]);
 
+  
   useEffect(() => {
     localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayers));
     // Update the selectedPlayerCount whenever selectedPlayers changes
@@ -79,13 +89,12 @@ const NewGamePage = () => {
       teams[teamIndex].calculateTeamStats();
     }
 
-    // Save the teams to local storage or state and navigate to the Teams page
+    // Save the teams to local storage
     localStorage.setItem('teams', JSON.stringify(teams));
-    navigate('/teams');
     localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayers));
 
     // Redirect to TeamsPage with state
-    navigate(`/teams/${courtId}`, { state: { selectedPlayers } });
+    navigate(`/teams/${courtId}?courtName=${(currCourtName)}&courtType=${(currCourtType)}`, { state: { selectedPlayers } });
   };
 
 
@@ -109,8 +118,8 @@ const NewGamePage = () => {
       </div>
 
       <div className="NGP-instructions">
-        <p>Choose the players that will be playing today:</p>
-        <p>Total Players Selected: {selectedPlayerCount}</p> {/* Display the count */}
+        <p className='instructions1'>Choose the players that will be playing today:</p>
+        <p className='instructions2'>Total Players Selected: {selectedPlayerCount}</p> {/* Display the count */}
       </div>
 
       <input
@@ -138,7 +147,7 @@ const NewGamePage = () => {
         Randomize Teams
       </button>
 
-      <Link to="/" className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
         Back to Home
       </Link>
     </div>

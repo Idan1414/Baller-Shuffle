@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Player from './Player';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import './CreatePlayerPage.css';
 
 
-const PlayerPage = () => {
+const EditPlayerPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { courtId } = useParams();
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const currCourtName = searchParams.get('courtName');
+  const currCourtType = searchParams.get('courtType');
 
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
@@ -42,25 +46,14 @@ const PlayerPage = () => {
 
 
   useEffect(() => {
-    // Fetch the player data based on the ID and courtId
-    const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
-    const selectedPlayer = storedPlayers.find(player => player.id === id);
-
+    // Retrieve the full list of courts
+    const courts = JSON.parse(localStorage.getItem('courts')) || [];
+    // Find the court by courtId
+    const currentCourt = courts.find(court => court.id === courtId);
+    const selectedPlayer = currentCourt ? currentCourt.players.find(player => player.id === id) : null;
+  
     if (selectedPlayer) {
-      setPlayerAttributes({
-        name: selectedPlayer.name || '',
-        photo: selectedPlayer.photo || '',
-        scoring: selectedPlayer.scoring || 0,
-        passing: selectedPlayer.passing || 0,
-        speed: selectedPlayer.speed || 0,
-        physical: selectedPlayer.physical || 0,
-        defence: selectedPlayer.defence || 0,
-        threePtShot: selectedPlayer.threePtShot || 0,
-        rebound: selectedPlayer.rebound || 0,
-        ballHandling: selectedPlayer.ballHandling || 0,
-        postUp: selectedPlayer.postUp || 0,
-        height: selectedPlayer.height || 0,
-      });
+      setPlayerAttributes({ ...selectedPlayer });
     }
   }, [id, courtId]);
 
@@ -83,7 +76,7 @@ const PlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
-  const handleUpdatePlayer = () => {
+  const handleUpdatePlayer = (currCourtName,currCourtType) => {
     const nameError = validateName();
     const heightError = validateNumber(playerAttributes.height, 50, 300, 'height');
 
@@ -118,38 +111,38 @@ const PlayerPage = () => {
       ...attributesErrors,
     });
     const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
-    const existingPlayerIndex = storedPlayers.findIndex(player => player.id === id);
 
-    if (!nameError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
-      // All validations passed, update the existing player if it exists
-      const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
-      const existingPlayerIndex = storedPlayers.findIndex(player => player.id === id);
+    if (!nameError && !heightError && !Object.values(attributesErrors).some(error => error !== '')) {
+      // Retrieve the full list of courts
+      const courts = JSON.parse(localStorage.getItem('courts')) || [];
+      // Find the court and player by their IDs
+      const courtIndex = courts.findIndex(court => court.id === courtId);
+      if (courtIndex !== -1) {
+        const playerIndex = courts[courtIndex].players.findIndex(player => player.id === id);
+  
+        if (playerIndex !== -1) {
+          // Update the player's attributes
+          courts[courtIndex].players[playerIndex] = {
+            ...courts[courtIndex].players[playerIndex],
+            ...playerAttributes,
+            ...numericalAttributes,
+            overall: calculateOverall(numericalAttributes),
+          };
 
-      if (existingPlayerIndex !== -1) {
-        const updatedPlayer = new Player({
-          ...storedPlayers[existingPlayerIndex],
-          ...playerAttributes,
-          ...numericalAttributes,
-          overall: calculateOverall(numericalAttributes),
-        });
-
-        storedPlayers[existingPlayerIndex] = updatedPlayer;
-        localStorage.setItem(`court_${courtId}_players`, JSON.stringify(storedPlayers));
-        navigate(`/edit_success/${courtId}?overall=${updatedPlayer.overall}&name=${updatedPlayer.name}`);
-      }
+         // Save the updated courts array back to localStorage
+         localStorage.setItem('courts', JSON.stringify(courts));
+         navigate(`/edit_success/${courtId}?overall=${courts[courtIndex].players[playerIndex].overall}&name=${encodeURIComponent(courts[courtIndex].players[playerIndex].name)}&courtName=${encodeURIComponent(currCourtName)}&courtType=${encodeURIComponent(currCourtType)}`);
+       } else {
+         console.error('Player not found');
+       }
+     } else {
+       console.error('Court not found');
     }
-
-
+  }
   };
 
 
 
-  // Implement a function to generate a unique ID
-  const generateUniqueId = () => {
-    // You can use a library like uuid to generate a unique ID
-    // For simplicity, this example uses a random number, but it's not guaranteed to be unique
-    return Math.random().toString(36).substr(2, 9);
-  };
 
   const calculateOverall = (attributes) => {
     const sum =
@@ -304,12 +297,12 @@ const PlayerPage = () => {
         />
         {errors.postUp && <p className="error-message">{errors.postUp}</p>}
       </div>
-      <button className='calc-save-button' onClick={handleUpdatePlayer}>Update Player</button>
-      <Link to={`/court_home_page/${courtId}`} className="NGP-back-home-button">
+      <button className='calc-save-button' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
         Back to Home
       </Link>
     </div>
   );
 };
 
-export default PlayerPage;
+export default EditPlayerPage;

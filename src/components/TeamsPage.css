@@ -6,6 +6,8 @@ body {
   /* Remove default body margin */
   height: 100%;
   /* Set height to 100% of the viewport */
+  overflow-x: hidden; /* Hide horizontal scroll */
+
 }
 
 body {
@@ -17,6 +19,9 @@ body {
 
 .teams-page-style {
   background: linear-gradient(to right, #222, #555);
+  background-image: url('/public/newBack.webp');
+  overflow-x: hidden; /* Hide horizontal scroll */
+
   /* Faded black to grey gradient */
   min-height: 100vh;
   /* Set minimum height to 100% of the viewport */
