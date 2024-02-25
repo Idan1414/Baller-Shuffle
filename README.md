@@ -17,7 +17,7 @@ You may also see any lint errors in the console.
 Here are some pictures of the App : 
 
 Landing Page:
-<img width="1120" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/62340b68-62cf-4fce-96a3-65d56a6f8eca">
+<img width="1117" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/eaf84236-18cb-4f4f-b616-30f513ff9b3e">
 
 Court Page:
 <img width="1108" alt="image" src="https://github.com/Idan1414/Neighborandom_basketball/assets/133697418/f393a586-f1c5-481e-b8d5-dccff77282ce">
