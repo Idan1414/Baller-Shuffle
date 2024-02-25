@@ -164,7 +164,7 @@ const EditPlayerPage = () => {
   };
 
   return (
-    <div className="create-player-page-style">
+    <div className="create-player-page-style2">
       <h1 className='CP-title'>Edit Player</h1>
       <div className="input-container">
         <label htmlFor="name">Name:</label>

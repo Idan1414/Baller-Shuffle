@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
 
 
 html,
@@ -41,35 +42,18 @@ body {
 /*--------------------TITLE------------------ */
 
 .app-title {
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Russo One', sans-serif; /* A cool and impactful font */
   font-weight: 800; /* Extra bold */
-  font-size: 4rem; /* Large font size */
-  color: #ffffff; /* White color */
-  text-shadow: 5px 5px 10px rgba(0, 0, 0, 0.7); /* Deep shadow for contrast */
-  text-align: center; /* Center the text */
-  width: 100%; /* Full width */
-  margin-top: 20px; /* Space from the top */
-  margin-bottom: 20px; /* Space before the MyCourts title */
+  font-size: 5rem; /* Larger font size for more impact */
+  background: -webkit-linear-gradient(45deg, #f06, #aef); /* Gradient text */
+  -webkit-background-clip: text;
+  text-shadow: 0 0 10px #FFD8B1, 0 0 20px  #FFD8B1, 0 0 30px #ff0, 0 0 40px rgb(0, 140, 255), 0 0 70px #f06, 0 0 80px #f06, 0 0 100px #f06; /* Glowing effect */
+  margin-top: 10px;
+  margin-bottom: 30px;
   position: relative;
-  display: inline-block;
-  line-height: 1.1; /* Adjust the line height to control the curvature */
-  transform: rotate(-4deg); /* Tilt the text slightly for the arch effect */
+  display: block !important; /* Ensure it's a block element */
 }
 
-.app-title:before {
-  content: '';
-  display: block;
-  position: absolute;
-  top: 50%; /* Position at the middle vertically */
-  left: 0;
-  width: 100%;
-  height: 50%; /* Only half height to make it look like an arch */
-  border-radius: 50%/100%; /* Horizontal and vertical border radius for the arch */
-  background-color: #f6ad65; /* Semi-transparent black background */
-  z-index: -1; /* Place it behind the text */
-  box-shadow: 14px 15px 10px rgba(0, 0, 0, 0.7); /* Shadow for depth */
-  transform: scaleX(1.3); /* Stretch the arch to exceed the text width */
-}
 
 
 .CourtsPage-title {

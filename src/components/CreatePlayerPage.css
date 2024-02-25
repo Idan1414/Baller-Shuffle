@@ -9,8 +9,10 @@ html, body {
     font-family: 'Exo 2', sans-serif; /* Apply the font to the entire page */
   }
   
-  .create-player-page-style {
+  .create-player-page-style2 {
     background: linear-gradient(to right, #222, #555); /* Faded black to grey gradient */
+    background-image: url('/public/newBack.webp');
+    overflow-x: hidden; /* Hide horizontal scroll */
     min-height: 100vh; /* Set minimum height to 100% of the viewport */
     display: flex;
     flex-direction: column;
