@@ -12,9 +12,8 @@ In the project directory, you can run:
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The local testing might not go so well because of the ongoing changes I am doing. (Implementing the DB connections for example).
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
 
 Here are some pictures of the App : 
 
