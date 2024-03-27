@@ -1,3 +1,5 @@
+An application that makes fair random teams for playing basketball and football "in the neighborhood".
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
