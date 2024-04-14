@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+
+html {
+  height: 100%; /* Make sure the html element covers the full height */
+}
+
+body {
+  margin: 0;
+  height: 100%; /* Make sure the body covers the full height */
+  background-image: url('/public/court.png'); /* Adjust the path as necessary */
+  background-size: cover; /* Cover the entire viewport */
+  background-attachment: fixed; /* Fix the background to the viewport */
+  background-repeat: no-repeat; /* Do not repeat the background */
+  overflow-x: hidden; /* Hide horizontal scroll */
+  font-family: 'Exo 2', sans-serif;
+}
+/*--------------------BackGround------------------ */
+
+.basketball-teams-page-style {
+  overflow-x: hidden; /* Hide horizontal scroll */
+  overflow-y: hidden;  /* Faded black to grey gradient */
+  min-height: 100vh;
+  /* Set minimum height to 100% of the viewport */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  /* Adjusted to align content at the top */
+  flex-wrap: wrap;
+  /* Allow teams to wrap to the next line if needed */
+  animation: fadeIn 1s ease-in-out;
+  /* Apply fadeIn animation */
+}
+
+/*--------------------Teams Distribution style------------------ */
+.teams-distribution-style {
+  background: linear-gradient(to right, #8bd091, #ffffff);
+  /* Faded black to grey gradient */
+  min-height: 100vh;
+  /* Set minimum height to 100% of the viewport */
+  display: inline-flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex;
+  min-height: auto;
+  /* Adjusted to align content at the top */
+  flex-wrap: wrap;
+  /* Allow teams to wrap to the next line if needed */
+  animation: fadeIn 2s ease-in-out;
+  /* Apply fadeIn animation */
+  border: 2px solid #666;
+  margin-top: flex;
+  /* Set margin-top to auto for bottom alignment */
+  padding: 1px;
+  border-radius: 22px;
+  margin-bottom: 0.3px;
+
+
+}
+
+.teams-distribution-style p {
+  color: #f6f6f6;
+  /* Set text color to white */
+  margin: 3px 0;
+  font-size: 1.3rem;
+  /* Adjusted margin for spacing */
+  text-shadow: -1px -1px 0 #161005,
+    1px -1px 0 #161005,
+    -1px 1px 0 #161005,
+    1px 1px 0 #161005;
+
+  .re-randomize-button,
+  .NGP-back-home-button {
+    margin-top: auto;
+    /* Set margin-top to auto for bottom alignment */
+  }
+}
+
+/*--------------------TITLE------------------ */
+
+.TP-title {
+  font-family: 'Exo 2', sans-serif;
+  /* Using Exo 2 font */
+  font-weight: 700;
+  /* Bold */
+  font-size: 3rem;
+  /* Increased font size for emphasis */
+  color: #8bd091;
+  /* Faded white-orange color */
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  /* Adding a text shadow for a 3D effect */
+  margin: 20px 0 10px;
+  /* Adjusted margin to provide space */
+}
+
+/*--------------------TEAM CONTAINER------------------ */
+
+.team-container {
+  display: flex;
+  flex-direction: column;
+  /* Display children elements in a row */
+  align-items: row;
+  /* This line is not needed */
+  margin: 20px;
+  /* Add margin between teams */
+  border: 2px solid #666;
+  padding: 15px;
+  /* Adjusted padding for spacing around the text */
+
+}
+
+
+
+/*--------------------TEAM PLAYERS------------------ */
+
+.team-players {
+  display: flex;
+  flex-direction: column;
+  /* Display players in a column */
+  align-items: center;
+}
+
+/*--------------------PLAYER------------------ */
+
+.player {
+  background-color: #444;
+  /* Dark background color for player info */
+  padding: 10px;
+  margin: 2px;
+  /* Add margin between players */
+  text-align: center;
+  color: #fff;
+  /* Set text color to white */
+  border-radius: 8px;
+}
+
+/*--------------------BACK HOME BUTTON------------------ */
+.back-home-button {
+  margin-top: 3px;
+  padding: 10px 10px;
+  background-color: rgba(237, 177, 14, 0.775);
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-decoration: none;
+}
+
+.back-home-button:hover {
+  background-color: #be8837c5;
+  color: rgb(0, 0, 0);
+}
+
+.back-home-button:active {
+  transform: translateY(4px);
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+}
+
+/*--------------------RE RANDOMIZE BUTTON------------------ */
+.re-randomize-button {
+  margin-top: auto;
+  /* Set margin-top to auto for bottom alignment */
+  padding: 10px 10px;
+  font-weight: 700;
+  /* Bold */
+  font-size: 2rem;
+  /* Increased font size for emphasis */
+  background-color: rgba(221, 78, 73, 0.775);
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-decoration: none;
+}
+
+.re-randomize-button:hover {
+  background-color: #c03030c5;
+  color: rgb(0, 0, 0);
+}
+
+.re-randomize-button:active {
+  transform: translateY(4px);
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+}
