@@ -11,7 +11,7 @@ In the project directory, you can run:
 ### `npm start`
 
 Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser. (you will need to write the "npm install" command in the repo,client and server folders in order to get the node modules.
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser. you will need to write the "npm install" command in the repo,client and server folders in order to get the node modules.
 The local testing might not go so well because of the ongoing changes I am doing. (Implementing the DB connections for example).
 
 
