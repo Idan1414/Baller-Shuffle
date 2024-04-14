@@ -11,29 +11,29 @@ In the project directory, you can run:
 ### `npm start`
 
 Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser. (you will need to write the "npm install" command in the repo,client and server folders in order to get the node modules.
 The local testing might not go so well because of the ongoing changes I am doing. (Implementing the DB connections for example).
 
 
 Here are some pictures of the App : 
 
 Login Page:
-<img width="1093" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/302b26c7-a1d8-480c-8d8e-10d29822a71e">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/609a2351-453b-4d1f-a18e-9542c08991d9)
 
 MyCourts page:
-<img width="1112" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/5170415a-7dff-4d7c-89dc-6ad5cf1d1594">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/278776bd-786d-488a-a718-860776abf086)
 
 Court Page: presents the players with their overall ratings.
-<img width="1110" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/632ba1ea-d427-47d0-a8c9-ab82cd444d25">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/81e4a6a3-ca7d-4656-8824-cb349049ee7c)
 
 
 Edit Player Page: 
-<img width="950" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/9f693ccb-6368-47b9-98bb-f3c399de2167">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/63c3d733-a633-4c69-bc7e-d91d23408d72)
 
 
 Create Game page: choose the number of teams and all the friends that will be playing today.
-<img width="1085" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/f585df06-ac2e-4b84-90cc-b6c3e8508be0">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/6671d8cf-1460-4df1-a0f0-99c07261b559)
 
 
 Random Teams Page : presents the teams. the user can drag and drop players in order to manually mix the teams or just click re-randomize.
-<img width="947" alt="image" src="https://github.com/Idan1414/Baller-Shuffle/assets/133697418/2bb61a74-59c9-42e2-9142-23d3b5b579ac">
+![image](https://github.com/Idan1414/Baller-Shuffle/assets/133697418/58c947b2-6913-4032-a035-5e15e4132480)
