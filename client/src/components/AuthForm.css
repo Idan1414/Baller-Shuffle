@@ -1,0 +1,213 @@
+@import url('https://fonts.cdnfonts.com/css/varsity-3');
+
+
+html {
+  height: 100%; /* Make sure the html element covers the full height */
+}
+
+body {
+  margin: 0;
+  height: 100%; /* Make sure the body covers the full height */
+  background-image: url('/public/6199236.jpg'); /* Adjust the path as necessary */
+  background-size: cover; /* Cover the entire viewport */
+  background-attachment: fixed; /* Fix the background to the viewport */
+  background-repeat: no-repeat; /* Do not repeat the background */
+  overflow-x: hidden; /* Hide horizontal scroll */
+  font-family: 'Exo 2', sans-serif;
+}
+
+
+.login-page-style {
+  overflow-x: hidden; /* Hide horizontal scroll */
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Updated from flex-start to center */
+  min-height: 100vh;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+
+.app-title-landing {
+font-family: 'Varsity Regular', sans-serif;
+  font-weight: 300; /* Extra bold */
+  font-size: 6.8vw; /* Responsive font size for impact */
+  background: #f08f18
+  ;
+  -webkit-background-clip: text;
+  color: transparent; /* Make the text color transparent to show the gradient */
+  margin-top: 70px;
+  align-self: center;
+  margin-bottom: 10px;
+  position: relative;
+  display: block; /* Ensure it's a block element */
+  /* Simple shadow for depth */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  /* Slight skew for a dynamic look */
+  transform: skew(-5deg);
+  /* Animation for a subtle entrance */
+  animation: enterAnimation 1s ease-out forwards;
+}
+
+/* Keyframes for the entrance animation */
+@keyframes enterAnimation {
+  0% {
+    opacity: 0;
+    transform: translateY(-20%) skew(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) skew(-5deg);
+  }
+}
+
+
+.auth-form {
+  animation: slideUp 0.5s ease-out forwards;
+  overflow-x: hidden; /* Hide horizontal scroll */
+  background-position: center; /* Center the background image */
+  background-size: cover; /* Ensure the background covers the cube */
+  background-image: url('/public/basketSoccer.png'); /* Add the basketball court background */
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  margin-top: -500px; 
+  max-width: 400px;
+  width: 100%;
+  color: #FFF;
+  animation: fadeIn 0.8s ease-in-out;
+
+}
+
+.graffiti-title {
+  font-size: 35px; /* Bigger size */
+  color: #000000; /* Pastel yellow */
+  text-shadow: 2px 2px #f9f7f4; /* Light blue shadow */
+  font-family: 'Permanent Marker', cursive; /* Graffiti-style font */
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Increase space between form elements */
+}
+
+.auth-form input,
+.auth-form button {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #768bab;
+  border-radius: 5px;
+}
+
+.auth-form button {
+  background-color: #333; /* Black background */
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for background and shadow */
+}
+
+.auth-form button:hover {
+  background-color: #444; /* Slightly lighter black on hover */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Shadow effect */
+}
+
+
+@media (max-width: 768px) {
+  .graffiti-title {
+    font-size: 77px;
+  }
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.8rem;
+  text-shadow: 0.2px 1px #0c0c0b;
+  margin-top: 2px;
+
+}
+.buttonRegisterOrLogin{
+  align-self: center;
+  width: 100%;
+  display: flex;
+  justify-content: center; 
+}
+
+.auth-form-container {
+  display: flex;
+  overflow: visible; /* Ensure content is not clipped */
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  max-width: 90%;
+  margin: 100px;
+  height: 100vh;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  background-color: #333;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  align-self: center;
+  width: 100%;
+  display: flex;
+  justify-content: center; 
+}
+
+.toggle-button:hover {
+  transform: translateY(-2px);
+}
+
+.toggle-button svg {
+  transition: transform 0.2s ease;
+}
+
+.toggle-button:hover svg {
+  transform: scale(1.2);
+}
+
+@keyframes fadeEffect {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeEffect 0.5s ease-in-out forwards;
+}
