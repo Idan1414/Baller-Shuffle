@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useLocation,useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import './CreatePlayerPage.css';
-import { jwtDecode } from 'jwt-decode'; 
+import { jwtDecode } from 'jwt-decode';
 
 
 const BasketballCreatePlayerPage = () => {
@@ -22,7 +22,7 @@ const BasketballCreatePlayerPage = () => {
   }
 
 
- 
+
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
     scoring: 0,
@@ -51,11 +51,50 @@ const BasketballCreatePlayerPage = () => {
     postUp: '',
   });
 
-  if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
-    navigate('/'); // Redirect to home if not authorized
-    return;
+
+  const [averages, setAverages] = useState(null);
+  const [averagesError, setAveragesError] = useState('');
+
+  useEffect(() => {
+    if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
+      navigate('/'); // Redirect to home if not authorized
     }
-  
+  }, [token, decodedToken, userIdFromUrl, navigate]);
+
+
+
+
+  useEffect(() => {
+    const fetchAverages = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/court/${courtId}/averages`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setAverages(data);
+        } else {
+          const errorData = await response.json();
+          setAveragesError(errorData.message || 'Error fetching averages');
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+        setAveragesError('Network error');
+      }
+    };
+
+    if (token) {
+      fetchAverages();
+    }
+  }, [courtId, token]);
+
+
+
   const validateName = () => {
     const isValid = /^[a-zA-Z\s]+$/.test(playerAttributes.name);
     return isValid ? '' : 'Please use only letters (uppercase or lowercase) and spaces';
@@ -118,7 +157,7 @@ const BasketballCreatePlayerPage = () => {
       console.log(playerData);
 
       try {
-        const response = await fetch(`http://localhost:5000/api/create_player/${courtId}`, {
+        const response = await fetch(`http://localhost:5000/api/create_player/${courtId}/${currUserId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -159,146 +198,251 @@ const BasketballCreatePlayerPage = () => {
 
   return (
     <div className="basketball-create-player-page-style">
-      <h1 className='CP-title'>Create New Player</h1>
-      <div className="input-container">
-        <label htmlFor="name">Name:</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={playerAttributes.name}
-          onChange={handleInputChange}
-        />
-        {errors.name && <p className="error-message">{errors.name}</p>}
-      </div>
+      <h1 className="CP-title">Create New Player</h1>
+      <div className="content-container">
+        <div className="form-container">
+          {/* Player Creation Form */}
+          <div className="input-wrapper">
+            <div className="input-container2">
+              <label htmlFor="name">Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={playerAttributes.name}
+                onChange={handleInputChange}
+              />
+              {errors.name && <p className="error-message">{errors.name}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="height">Height (cm):</label>
-        <input
-          type="number"
-          id="height"
-          name="height"
-          value={playerAttributes.height}
-          onChange={handleInputChange}
-        />
-        {errors.height && <p className="error-message">{errors.height}</p>}
-      </div>
+            <div className="input-container2">
+              <label htmlFor="height">Height (cm):</label>
+              <input
+                type="number"
+                id="height"
+                name="height"
+                value={playerAttributes.height}
+                onChange={handleInputChange}
+              />
+              {errors.height && <p className="error-message">{errors.height}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="scoring">Scoring:</label>
-        <input
-          type="number"
-          id="scoring"
-          name="scoring"
-          value={playerAttributes.scoring}
-          onChange={handleInputChange}
-        />
-        {errors.scoring && <p className="error-message">{errors.scoring}</p>}
-      </div>
+            {/* Repeat similar input containers for other attributes */}
+            {/* Scoring */}
+            <div className="input-container2">
+              <label htmlFor="scoring">Scoring:</label>
+              <input
+                type="number"
+                id="scoring"
+                name="scoring"
+                value={playerAttributes.scoring}
+                onChange={handleInputChange}
+              />
+              {errors.scoring && <p className="error-message">{errors.scoring}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="passing">Passing:</label>
-        <input
-          type="number"
-          id="passing"
-          name="passing"
-          value={playerAttributes.passing}
-          onChange={handleInputChange}
-        />
-        {errors.passing && <p className="error-message">{errors.passing}</p>}
-      </div>
+            {/* Passing */}
+            <div className="input-container2">
+              <label htmlFor="passing">Passing:</label>
+              <input
+                type="number"
+                id="passing"
+                name="passing"
+                value={playerAttributes.passing}
+                onChange={handleInputChange}
+              />
+              {errors.passing && <p className="error-message">{errors.passing}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="speed">Speed:</label>
-        <input
-          type="number"
-          id="speed"
-          name="speed"
-          value={playerAttributes.speed}
-          onChange={handleInputChange}
-        />
-        {errors.speed && <p className="error-message">{errors.speed}</p>}
-      </div>
+            {/* Speed */}
+            <div className="input-container2">
+              <label htmlFor="speed">Speed:</label>
+              <input
+                type="number"
+                id="speed"
+                name="speed"
+                value={playerAttributes.speed}
+                onChange={handleInputChange}
+              />
+              {errors.speed && <p className="error-message">{errors.speed}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="physical">Physical:</label>
-        <input
-          type="number"
-          id="physical"
-          name="physical"
-          value={playerAttributes.physical}
-          onChange={handleInputChange}
-        />
-        {errors.physical && <p className="error-message">{errors.physical}</p>}
-      </div>
+            {/* Physical */}
+            <div className="input-container2">
+              <label htmlFor="physical">Physical:</label>
+              <input
+                type="number"
+                id="physical"
+                name="physical"
+                value={playerAttributes.physical}
+                onChange={handleInputChange}
+              />
+              {errors.physical && <p className="error-message">{errors.physical}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="defence">Defence:</label>
-        <input
-          type="number"
-          id="defence"
-          name="defence"
-          value={playerAttributes.defence}
-          onChange={handleInputChange}
-        />
-        {errors.defence && <p className="error-message">{errors.defence}</p>}
-      </div>
+            {/* Defence */}
+            <div className="input-container2">
+              <label htmlFor="defence">Defence:</label>
+              <input
+                type="number"
+                id="defence"
+                name="defence"
+                value={playerAttributes.defence}
+                onChange={handleInputChange}
+              />
+              {errors.defence && <p className="error-message">{errors.defence}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="threePtShot">3 PT Shot:</label>
-        <input
-          type="number"
-          id="threePtShot"
-          name="threePtShot"
-          value={playerAttributes.threePtShot}
-          onChange={handleInputChange}
-        />
-        {errors.threePtShot && <p className="error-message">{errors.threePtShot}</p>}
-      </div>
+            {/* 3 PT Shot */}
+            <div className="input-container2">
+              <label htmlFor="threePtShot">3 PT Shot:</label>
+              <input
+                type="number"
+                id="threePtShot"
+                name="threePtShot"
+                value={playerAttributes.threePtShot}
+                onChange={handleInputChange}
+              />
+              {errors.threePtShot && <p className="error-message">{errors.threePtShot}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="rebound">Rebound:</label>
-        <input
-          type="number"
-          id="rebound"
-          name="rebound"
-          value={playerAttributes.rebound}
-          onChange={handleInputChange}
-        />
-        {errors.rebound && <p className="error-message">{errors.rebound}</p>}
-      </div>
+            {/* Rebound */}
+            <div className="input-container2">
+              <label htmlFor="rebound">Rebound:</label>
+              <input
+                type="number"
+                id="rebound"
+                name="rebound"
+                value={playerAttributes.rebound}
+                onChange={handleInputChange}
+              />
+              {errors.rebound && <p className="error-message">{errors.rebound}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="ballHandling">Ball Handling:</label>
-        <input
-          type="number"
-          id="ballHandling"
-          name="ballHandling"
-          value={playerAttributes.ballHandling}
-          onChange={handleInputChange}
-        />
-        {errors.ballHandling && <p className="error-message">{errors.ballHandling}</p>}
-      </div>
+            {/* Ball Handling */}
+            <div className="input-container2">
+              <label htmlFor="ballHandling">Ball Handling:</label>
+              <input
+                type="number"
+                id="ballHandling"
+                name="ballHandling"
+                value={playerAttributes.ballHandling}
+                onChange={handleInputChange}
+              />
+              {errors.ballHandling && <p className="error-message">{errors.ballHandling}</p>}
+            </div>
 
-      <div className="input-container">
-        <label htmlFor="postUp">Post Up:</label>
-        <input
-          type="number"
-          id="postUp"
-          name="postUp"
-          value={playerAttributes.postUp}
-          onChange={handleInputChange}
-        />
-        {errors.postUp && <p className="error-message">{errors.postUp}</p>}
+            {/* Post Up */}
+            <div className="input-container2">
+              <label htmlFor="postUp">Post Up:</label>
+              <input
+                type="number"
+                id="postUp"
+                name="postUp"
+                value={playerAttributes.postUp}
+                onChange={handleInputChange}
+              />
+              {errors.postUp && <p className="error-message">{errors.postUp}</p>}
+            </div>
+          </div>
+
+
+          {/* Averages Table */}
+          <div className="averages-container">
+            {averagesError && <p className="error-message">{averagesError}</p>}
+            {averages ? (
+              <table className="averages-table">
+                <thead>
+                  <tr>
+                    <th>Attribute</th>
+                    <th>Court Max</th>
+                    <th>Court Average</th>
+                    <th>Court Min</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Scoring</td>
+                    <td>{averages.maxScoring}</td>
+                    <td>{averages.avgScoring.toFixed(2)}</td>
+                    <td>{averages.minScoring}</td>
+                  </tr>
+                  <tr>
+                    <td>Passing</td>
+                    <td>{averages.maxPassing}</td>
+                    <td>{averages.avgPassing.toFixed(2)}</td>
+                    <td>{averages.minPassing}</td>
+                  </tr>
+                  <tr>
+                    <td>Speed</td>
+                    <td>{averages.maxSpeed}</td>
+                    <td>{averages.avgSpeed.toFixed(2)}</td>
+                    <td>{averages.minSpeed}</td>
+                  </tr>
+                  <tr>
+                    <td>Physical</td>
+                    <td>{averages.maxPhysical}</td>
+                    <td>{averages.avgPhysical.toFixed(2)}</td>
+                    <td>{averages.minPhysical}</td>
+                  </tr>
+                  <tr>
+                    <td>Defence</td>
+                    <td>{averages.maxDefence}</td>
+                    <td>{averages.avgDefence.toFixed(2)}</td>
+                    <td>{averages.minDefence}</td>
+                  </tr>
+                  <tr>
+                    <td>3 PT Shot</td>
+                    <td>{averages.maxThreePtShot}</td>
+                    <td>{averages.avgThreePtShot.toFixed(2)}</td>
+                    <td>{averages.minThreePtShot}</td>
+                  </tr>
+                  <tr>
+                    <td>Rebound</td>
+                    <td>{averages.maxRebound}</td>
+                    <td>{averages.avgRebound.toFixed(2)}</td>
+                    <td>{averages.minRebound}</td>
+                  </tr>
+                  <tr>
+                    <td>Ball Handling</td>
+                    <td>{averages.maxBallHandling}</td>
+                    <td>{averages.avgBallHandling.toFixed(2)}</td>
+                    <td>{averages.minBallHandling}</td>
+                  </tr>
+                  <tr>
+                    <td>Post Up</td>
+                    <td>{averages.maxPostUp}</td>
+                    <td>{averages.avgPostUp.toFixed(2)}</td>
+                    <td>{averages.minPostUp}</td>
+                  </tr>
+                  <tr>
+                    <td>COURT OVERALL</td>
+                    <td>{averages.maxOverall}</td>
+                    <td>{averages.avgOverall.toFixed(2)}</td>
+                    <td>{averages.minOverall}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              !averagesError && <p>Loading averages...</p>
+            )}
+            <div className='button-container'>
+              <button className="calc-save-button2" onClick={handleCreatePlayer}>
+                Create and Calculate Overall
+              </button>
+              <Link
+                to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
+                className="NPG-back-home-button11"
+              >
+                Back to Home
+              </Link>
+            </div>
+          </div>
+
+        </div>
       </div>
-      <button className='calc-save-button2' onClick={handleCreatePlayer}>
-        Create and Calculate Overall
-      </button>
-      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NGP-back-home-button">
-        Back to Home
-      </Link>
     </div>
   );
-}
+};
 
 export default BasketballCreatePlayerPage;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import './AuthForm.css'; 
-import {useNavigate } from 'react-router-dom';
+import './AuthForm.css';
+import { useNavigate } from 'react-router-dom';
 import { MdLogin, MdPersonAdd } from 'react-icons/md'; // Importing icons
 
 
@@ -39,10 +39,10 @@ const AuthForm = () => {
     if (!isLogin) { // Only validate email format during registration
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(username)) {
-          setUsernameError('Please enter a valid email address.');
-          return; // Stop the form submission if the email is not valid
+        setUsernameError('Please enter a valid email address.');
+        return; // Stop the form submission if the email is not valid
       }
-  }
+    }
     const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
     const response = await fetch(url, {
       method: 'POST',
@@ -51,13 +51,13 @@ const AuthForm = () => {
       },
       body: JSON.stringify({ username, password }),
     });
-  
+
     try {
       const data = await response.json(); // Attempt to parse JSON
-    
+
       if (response.ok) {
         console.log('Success:', data);
-    
+
         // Handle login success
         if (isLogin) {
           const userId = data.userId;
@@ -87,19 +87,19 @@ const AuthForm = () => {
       console.error('Error parsing response:', error);
       if (response.status === 404) {
         setUsernameError('User does not exist'); // Assuming non-JSON response for user not found
-      } else if((response.status === 401)) {
+      } else if ((response.status === 401)) {
         // Handle other errors or set a generic error message
         setUsernameError('Password is incorrect');
       }
     }
   };
-  
+
 
 
 
   return (
-  <div className='login-page-style'>
-    <h2 className="app-title-landing">BALLER SHUFFLE</h2>
+    <div className='login-page-style'>
+      <h2 className="app-title-landing">BALLER SHUFFLE</h2>
       <div className="auth-form-container">
         <div className={`auth-form ${fadeEffect ? 'fade-in' : ''}`}>
           <h2 className="graffiti-title">{isLogin ? 'Login' : 'Register'}</h2>
@@ -117,7 +117,7 @@ const AuthForm = () => {
             <div className="input-group">
               <input
                 type="password"
-                placeholder= {isLogin ? "Password" : "Strong Password"}
+                placeholder={isLogin ? "Password" : "Strong Password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -127,9 +127,9 @@ const AuthForm = () => {
             <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
           </form>
           <button className="toggle-button" onClick={toggleForm}>
-          {isLogin ? <MdPersonAdd /> : <MdLogin />}
-              {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
-            </button>
+            {isLogin ? <MdPersonAdd /> : <MdLogin />}
+            {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
+          </button>
         </div>
       </div>
     </div>

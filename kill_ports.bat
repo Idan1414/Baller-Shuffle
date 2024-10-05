@@ -13,5 +13,4 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000') do (
 )
 
 echo All processes on ports 3000 and 5000 have been terminated.
-
-npm start
+pause

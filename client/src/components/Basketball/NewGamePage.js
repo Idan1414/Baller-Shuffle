@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate,useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Team from './Team';
@@ -32,13 +32,13 @@ const NewGamePage = () => {
 
   useEffect(() => {
 
-     //User_id validation
-     const userIdFromUrl = new URLSearchParams(search).get('userId');
-    
-     if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
-       navigate('/'); // Redirect to home if not authorized
-       return;
-     }
+    //User_id validation
+    const userIdFromUrl = new URLSearchParams(search).get('userId');
+
+    if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
+      navigate('/'); // Redirect to home if not authorized
+      return;
+    }
 
     // Fetch players from the API for the given courtId
     const fetchPlayers = async () => {
@@ -48,13 +48,13 @@ const NewGamePage = () => {
             'Authorization': token, // Include token if needed
           },
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch players');
         }
-        
+
         const data = await response.json();
-                
+
         // Sort players by overall and update state
         const sortedPlayers = data.sort((a, b) => b.overall - a.overall);
         setPlayers(sortedPlayers);
@@ -158,7 +158,7 @@ const NewGamePage = () => {
         <p> </p>
 
       </div>
-          
+
       <input
         type="text"
         placeholder="Search by player name"

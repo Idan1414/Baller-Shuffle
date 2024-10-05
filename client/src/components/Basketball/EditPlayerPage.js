@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode'; 
+import { jwtDecode } from 'jwt-decode';
 import './CreatePlayerPage.css';
 
 
 const EditPlayerPage = () => {
   const navigate = useNavigate();
-  const { id,courtId } = useParams();
+  const { id, courtId } = useParams();
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const currCourtName = searchParams.get('courtName');
@@ -24,20 +24,20 @@ const EditPlayerPage = () => {
   }
 
   const [playerAttributes, setPlayerAttributes] = useState({
-      playerId: 0,
-      name: '',
-      scoring: 0,
-      passing: 0,
-      speed: 0,
-      physical: 0,
-      defence: 0,
-      threePtShot: 0,
-      rebound:0,
-      ballHandling: 0,
-      postUp: 0,
-      height: 0,
-      overall: 0,
-      overallToMix: 0
+    playerId: 0,
+    name: '',
+    scoring: 0,
+    passing: 0,
+    speed: 0,
+    physical: 0,
+    defence: 0,
+    threePtShot: 0,
+    rebound: 0,
+    ballHandling: 0,
+    postUp: 0,
+    height: 0,
+    overall: 0,
+    overallToMix: 0
   });
 
   const [errors, setErrors] = useState({
@@ -52,9 +52,16 @@ const EditPlayerPage = () => {
     rebound: '',
     ballHandling: '',
     postUp: '',
+    assignError: '',
   });
 
-  
+
+  const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [player_user_fk_exists, setUserFkExsits] = useState(false);
+
+
 
 
   useEffect(() => {
@@ -64,7 +71,7 @@ const EditPlayerPage = () => {
     if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
       navigate('/'); // Redirect to home if not authorized
       return;
-      }
+    }
 
     // Fetch the player by playerId
     fetch(`http://localhost:5000/api/player/${id}/${courtId}`, {
@@ -74,12 +81,40 @@ const EditPlayerPage = () => {
     })
       .then(response => response.json())
       .then(data => {
-        console.log(data);
         var selectedPlayer = data;
         setPlayerAttributes({ ...selectedPlayer });
-    })
+      })
       .catch(error => console.error(error));
-    }, [courtId,id]);
+  }, [courtId, id]);
+
+
+  useEffect(() => {
+    // Function to check if user_fk exists for the player
+    const checkUserFk = () => {
+      fetch(`http://localhost:5000/api/is_player_assinged/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token
+        }
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json(); // Parse the JSON response
+          } else {
+            throw new Error('Error fetching user_fk: ' + response.statusText);
+          }
+        })
+        .then((data) => {
+          setUserFkExsits(data.userFkExists); // Set the state based on the response
+        })
+        .catch((error) => {
+          console.error('Error fetching user_fk:', error);
+        });
+    };
+
+    checkUserFk();
+  }, [id, token]); // Dependencies include id and token
+
 
   const validateName = () => {
     // Add your name validation logic here
@@ -100,7 +135,7 @@ const EditPlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
-  const handleUpdatePlayer = (currCourtName,currCourtType) => {
+  const handleUpdatePlayer = (currCourtName, currCourtType) => {
     const nameError = validateName();
     const heightError = validateNumber(playerAttributes.height, 50, 300, 'height');
 
@@ -137,36 +172,66 @@ const EditPlayerPage = () => {
     const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
 
     if (!nameError && !heightError && !Object.values(attributesErrors).some(error => error !== '')) {
-          // Update the player's attributes
-          const updatedPlayer = {
-            ...playerAttributes,
-            ...numericalAttributes,
-            overall: calculateOverall(numericalAttributes),
-          };
+      // Update the player's attributes
+      const updatedPlayer = {
+        ...playerAttributes,
+        ...numericalAttributes,
+        overall: calculateOverall(numericalAttributes),
+      };
 
-          console.log(updatedPlayer);
+      console.log(updatedPlayer);
 
 
-        // Send the updated player data to the server
-        fetch(`http://localhost:5000/api/update_player/${id}/${courtId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token,
-          },
-          body: JSON.stringify(updatedPlayer),
+      // Send the updated player data to the server
+      fetch(`http://localhost:5000/api/update_player/${id}/${courtId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+        body: JSON.stringify(updatedPlayer),
+      })
+        .then(response => {
+          if (response.ok) {
+            navigate(`/edit_success/${courtId}?overall=${updatedPlayer.overall}&name=${encodeURIComponent(updatedPlayer.name)}&courtName=${encodeURIComponent(currCourtName)}&courtType=${encodeURIComponent(currCourtType)}&userId=${currUserId}`);
+          } else {
+            console.error('Failed to update player');
+          }
         })
-          .then(response => {
-            if (response.ok) {
-              navigate(`/edit_success/${courtId}?overall=${updatedPlayer.overall}&name=${encodeURIComponent(updatedPlayer.name)}&courtName=${encodeURIComponent(currCourtName)}&courtType=${encodeURIComponent(currCourtType)}&userId=${currUserId}`);
-            } else {
-              console.error('Failed to update player');
-            }
-          })
-          .catch(error => console.error('Error:', error));
+        .catch(error => console.error('Error:', error));
     }
   };
 
+
+  const handleAssignPlayer = (player_id, email, court_id) => {
+    fetch(`http://localhost:5000/api/assign_player/${player_id}/${email}/${court_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }
+    })
+      .then(response => {
+        if (response.ok) {
+          console.log("Player has been assigned to a user");
+          setEmailError(false); // Reset email error on successful assignment
+          setIsAssignPopupOpen(false);
+          setUserFkExsits(true);
+        } else if (response.status === 404) {
+          // If the response indicates that the email does not exist
+          setEmailError(true);
+          console.error('Email does not exist');
+        } else {
+          // Handle other error responses here if necessary
+          setEmailError(true);
+          console.error('An error occurred while assigning the player');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setEmailError(true); // Set error state in case of fetch error
+      });
+  }
 
 
 
@@ -192,7 +257,48 @@ const EditPlayerPage = () => {
   return (
     <div className="basketball-create-player-page-style">
       <h1 className='CP-title'>Edit Player</h1>
-      <div className="input-container">
+      {!player_user_fk_exists && (
+        <button className="assign-button" onClick={() => setIsAssignPopupOpen(true)}>
+          Assign Player to a User
+        </button>
+      )}
+
+      {isAssignPopupOpen && (
+        <div className="assign-popup active">
+          <h3 style={{ color: '#333' }}>Assign Player to a User if he is already registered with his Email</h3>
+
+          <input
+            type="email"
+            placeholder="Enter user's email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+
+          <button
+            className="assign-button"
+            onClick={() => handleAssignPlayer(id, email, courtId)}
+          >
+            Assign
+          </button>
+          {errors.assignError && <p className="error-message">{errors.assignError}</p>}
+
+          {/* New error message for email not existing */}
+          {emailError && <p className="error-message">Email does not exist in the system, please ask your friend to register to BallerShuffle.</p>}
+          
+          <button
+            className="close-button"
+            onClick={() => {
+              setIsAssignPopupOpen(false);
+              setEmailError(false); // Reset email error state
+              setEmail(''); // Clear the email input field
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      <div className="input-container2">
         <label htmlFor="name">Name:</label>
         <input
           type="text"
@@ -204,7 +310,7 @@ const EditPlayerPage = () => {
         {errors.name && <p className="error-message">{errors.name}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="height">Height (cm):</label>
         <input
           type="number"
@@ -216,7 +322,7 @@ const EditPlayerPage = () => {
         {errors.height && <p className="error-message">{errors.height}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="scoring">Scoring:</label>
         <input
           type="number"
@@ -228,7 +334,7 @@ const EditPlayerPage = () => {
         {errors.scoring && <p className="error-message">{errors.scoring}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="passing">Passing:</label>
         <input
           type="number"
@@ -240,7 +346,7 @@ const EditPlayerPage = () => {
         {errors.passing && <p className="error-message">{errors.passing}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="speed">Speed:</label>
         <input
           type="number"
@@ -252,7 +358,7 @@ const EditPlayerPage = () => {
         {errors.speed && <p className="error-message">{errors.speed}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="physical">Physical:</label>
         <input
           type="number"
@@ -264,7 +370,7 @@ const EditPlayerPage = () => {
         {errors.physical && <p className="error-message">{errors.physical}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="defence">Defence:</label>
         <input
           type="number"
@@ -276,7 +382,7 @@ const EditPlayerPage = () => {
         {errors.defence && <p className="error-message">{errors.defence}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="threePtShot">3 PT Shot:</label>
         <input
           type="number"
@@ -288,7 +394,7 @@ const EditPlayerPage = () => {
         {errors.threePtShot && <p className="error-message">{errors.threePtShot}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="rebound">Rebound:</label>
         <input
           type="number"
@@ -300,7 +406,7 @@ const EditPlayerPage = () => {
         {errors.rebound && <p className="error-message">{errors.rebound}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="ballHandling">Ball Handling:</label>
         <input
           type="number"
@@ -312,7 +418,7 @@ const EditPlayerPage = () => {
         {errors.ballHandling && <p className="error-message">{errors.ballHandling}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container2">
         <label htmlFor="postUp">Post Up:</label>
         <input
           type="number"
@@ -324,7 +430,7 @@ const EditPlayerPage = () => {
         {errors.postUp && <p className="error-message">{errors.postUp}</p>}
       </div>
       <button className='calc-save-button2' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
-      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NPG-back-home-button11">
         Back to Home
       </Link>
     </div>
