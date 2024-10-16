@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import './PlayerSuccessCreationPage.css';
+import '../BackHomeButton.css';
+
 
 const PlayerSuccessCreationPage = () => {
   const { search } = useLocation();
@@ -16,10 +18,10 @@ const PlayerSuccessCreationPage = () => {
 
   return (
     <div className='PS-page-style'>
-      <h1 className='PS-title'>{name} Created Successfully!</h1>
+      <h1 className='PS-title1'>{name} Created Successfully!</h1>
       <p className='overall'>OVERALL: {overall}</p>
 
-      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
     </div>

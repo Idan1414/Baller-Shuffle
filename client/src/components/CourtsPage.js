@@ -36,7 +36,6 @@ const CourtsPage = () => {
     })
       .then(response => response.json())
       .then(data => {
-        console.log(data);
         setCourts(data);
       })
       .catch(error => console.error(error));
@@ -50,7 +49,7 @@ const CourtsPage = () => {
     event.preventDefault();
     event.stopPropagation();
 
-    const isConfirmed = window.confirm(`Are you sure you want to delete ${court.courtName}?`);
+    const isConfirmed = window.confirm(`Are you sure you want to remove ${court.courtName}?`);
     if (!isConfirmed) return;
 
     try {
@@ -90,12 +89,15 @@ const CourtsPage = () => {
       </button>
       <div className="app-title">BALLER SHUFFLE</div>
       <h1 className="courtsPage-title">MyCourts</h1>
+      <Link to={`/new-court/${userId}`} className="create-new-court-button">
+        Create New Court
+      </Link>
       <div className="courts-list">
         {Array.isArray(courts) ? courts.map((court) => (
           <Link
             to={court.courtType === 'Basketball' ?
-              `/court_home_page/${court.id}?courtName=${court.courtName}&courtType=${court.courtType}&userId=${userId}` :
-              `/court_home_page_football/${court.id}?courtName=${court.courtName}&courtType=${court.courtType}&userId=${userId}`} className={`court-link ${court.courtType === 'Basketball' ? 'pastelOrange' : 'pastelGreen'}`}
+              `/court_home_page/${court.id}?userId=${userId}` :
+              `/court_home_page_football/${court.id}?userId=${userId}`} className={`court-link ${court.courtType === 'Basketball' ? 'pastelOrange' : 'pastelGreen'}`}
           >
             <div key={court.id} className={`CourtsPage-cube ${court.courtType === 'Basketball' ? 'pastelOrange' : 'pastelGreen'}`} onMouseEnter={() => setSelectedCourt(court)} onMouseLeave={() => setSelectedCourt(null)}>
               <p>{court.courtName}</p>
@@ -106,11 +108,10 @@ const CourtsPage = () => {
               )}
             </div>
           </Link>
-        )) : <p>You are not belong to any court</p>}
+        )) : <p>You are not belong to any court, ask your friends to create a player for you and assign your Email</p>}
+        
       </div>
-      <Link to={`/new-court/${userId}`} className="create-new-court-button">
-        Create New Court
-      </Link>
+
     </div>
   );
 };

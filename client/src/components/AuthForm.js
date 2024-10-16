@@ -3,14 +3,16 @@ import './AuthForm.css';
 import { useNavigate } from 'react-router-dom';
 import { MdLogin, MdPersonAdd } from 'react-icons/md'; // Importing icons
 
-
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [reEnterPassword, setReEnterPassword] = useState(''); // New state for re-enter password
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [reEnterPasswordError, setReEnterPasswordError] = useState(''); // Error state for re-enter password
   const [fadeEffect, setFadeEffect] = useState(false); // State to manage fade effect
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // New state for success pop-up
   const navigate = useNavigate();
 
   const toggleForm = () => {
@@ -20,29 +22,31 @@ const AuthForm = () => {
       setIsLogin(!isLogin);
       setUsernameError('');
       setPasswordError('');
-      // Remove fade effect after it has been applied
+      setReEnterPasswordError(''); // Reset re-enter password error
       setFadeEffect(false);
     }, 1);
   };
 
-
-
-
-
   const handleSubmit = async (event) => {
     event.preventDefault();
-    // Clear previous error messages
     setUsernameError('');
     setPasswordError('');
+    setReEnterPasswordError(''); // Reset errors before validation
 
-
-    if (!isLogin) { // Only validate email format during registration
+    if (!isLogin) {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(username)) {
         setUsernameError('Please enter a valid email address.');
-        return; // Stop the form submission if the email is not valid
+        return;
+      }
+
+      // Check if password and re-enter password match
+      if (password !== reEnterPassword) {
+        setReEnterPasswordError('Passwords do not match.');
+        return;
       }
     }
+
     const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
     const response = await fetch(url, {
       method: 'POST',
@@ -53,22 +57,28 @@ const AuthForm = () => {
     });
 
     try {
-      const data = await response.json(); // Attempt to parse JSON
+      let data;
+      const contentType = response.headers.get('content-type');
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json(); // Parse as JSON if it's JSON
+      } else {
+        data = await response.text(); // Parse as plain text if not JSON
+      }
 
       if (response.ok) {
         console.log('Success:', data);
 
-        // Handle login success
         if (isLogin) {
           const userId = data.userId;
           localStorage.setItem('token', data.token);
           navigate(`/courts_page/${userId}`);
-        } else if (!isLogin) {
-          // Handle registration success
-          setPasswordError('User created ');
-          //optionally reset form or provide UI feedback that registration was successful
-          //consider switching form state to login for a smoother user experience
-          setIsLogin(true);
+        } else {
+          setShowSuccessPopup(true);
+          setTimeout(() => {
+            setShowSuccessPopup(false);
+            setIsLogin(true);
+          }, 1000);
         }
       } else {
         const errorMessage = data.message || 'An error occurred';
@@ -83,28 +93,19 @@ const AuthForm = () => {
         }
       }
     } catch (error) {
-      // Handle non-JSON response
-      console.error('Error parsing response:', error);
-      if (response.status === 404) {
-        setUsernameError('User does not exist'); // Assuming non-JSON response for user not found
-      } else if ((response.status === 401)) {
-        // Handle other errors or set a generic error message
-        setUsernameError('Password is incorrect');
-      }
+      console.error('Error processing response:', error);
+      setUsernameError('An error occurred. Please try again later.');
     }
   };
 
-
-
-
   return (
     <div className='login-page-style'>
-      <h2 className="app-title-landing">BALLER SHUFFLE</h2>
+      <img src="/LOGOTRANS.png" alt="Baller Shuffle Logo" className='logo-image' />
       <div className="auth-form-container">
         <div className={`auth-form ${fadeEffect ? 'fade-in' : ''}`}>
-          <h2 className="graffiti-title">{isLogin ? 'Login' : 'Register'}</h2>
+          <h2 className="graffiti-title1">{isLogin ? 'Login' : 'Register'}</h2>
           <form onSubmit={handleSubmit}>
-            <div className="input-group">
+            <div className="input-group1">
               <input
                 type="text"
                 placeholder="Email"
@@ -112,9 +113,9 @@ const AuthForm = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
-              {usernameError && <div className="error-message">{usernameError}</div>}
+              {usernameError && <div className="error-message1">{usernameError}</div>}
             </div>
-            <div className="input-group">
+            <div className="input-group1">
               <input
                 type="password"
                 placeholder={isLogin ? "Password" : "Strong Password"}
@@ -122,8 +123,25 @@ const AuthForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              {passwordError && <div className="error-message">{passwordError}</div>}
+              {passwordError && <div className="error-message1">{passwordError}</div>}
             </div>
+
+            {/* Re-enter Password Input for Registration */}
+            {!isLogin && (
+              <div className="input-group1">
+                <input
+                  type="password"
+                  placeholder="Re-enter Password"
+                  value={reEnterPassword}
+                  onChange={(e) => setReEnterPassword(e.target.value)}
+                  required
+                />
+                {reEnterPasswordError && (
+                  <div className="error-message1">{reEnterPasswordError}</div>
+                )}
+              </div>
+            )}
+
             <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
           </form>
           <button className="toggle-button" onClick={toggleForm}>
@@ -131,10 +149,16 @@ const AuthForm = () => {
             {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
           </button>
         </div>
+
+        {/* Success Pop-up */}
+        {showSuccessPopup && (
+          <div className={`success-popup ${showSuccessPopup ? 'show' : 'hide'}`}>
+            Registration Success!
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
 
 export default AuthForm;

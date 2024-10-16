@@ -19,6 +19,10 @@ import FootballTeamsPage from '../components/Football/FootballTeamsPage';
 import CourtsPage from '../components/CourtsPage';
 import CreateCourtPage from '../components/CreateCourtPage';
 import AuthForm from '../components/AuthForm';
+import ScheduledGamesPage from '../components/ScheduledGamesPage';
+import GamePage from '../components/GamePage';
+
+
 
 
 
@@ -49,6 +53,10 @@ function App() {
         <Route path="/teams/:courtId" element={<TeamsPage />} />
         <Route path="/teams-football/:courtId" element={<FootballTeamsPage />} />
         <Route path="/new-court/:userId" element={<CreateCourtPage />} />
+        <Route path="/scheduled-games/:courtId" element={<ScheduledGamesPage />} />
+        <Route path="/game/:gameId/:courtId" element={<GamePage />} />
+
+        
       </Routes>
     </Router>
   );

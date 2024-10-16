@@ -198,13 +198,13 @@ const BasketballCreatePlayerPage = () => {
 
   return (
     <div className="basketball-create-player-page-style">
-      <h1 className="CP-title">Create New Player</h1>
-      <div className="content-container">
-        <div className="form-container">
+      <h1 className="CP-title-basketball">Create New Player</h1>
+      <div className="content-container-basketball">
+        <div className="form-container-basketball">
           {/* Player Creation Form */}
-          <div className="input-wrapper">
-            <div className="input-container2">
-              <label htmlFor="name">Name:</label>
+          <div className="input-wrapper-basketball">
+            <div className="input-container-basketball">
+              <label htmlFor="name">Name :</label>
               <input
                 type="text"
                 id="name"
@@ -215,8 +215,8 @@ const BasketballCreatePlayerPage = () => {
               {errors.name && <p className="error-message">{errors.name}</p>}
             </div>
 
-            <div className="input-container2">
-              <label htmlFor="height">Height (cm):</label>
+            <div className="input-container-basketball">
+              <label htmlFor="height">Height (cm) :</label>
               <input
                 type="number"
                 id="height"
@@ -229,8 +229,8 @@ const BasketballCreatePlayerPage = () => {
 
             {/* Repeat similar input containers for other attributes */}
             {/* Scoring */}
-            <div className="input-container2">
-              <label htmlFor="scoring">Scoring:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="scoring">Scoring :</label>
               <input
                 type="number"
                 id="scoring"
@@ -242,8 +242,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Passing */}
-            <div className="input-container2">
-              <label htmlFor="passing">Passing:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="passing">Passing :</label>
               <input
                 type="number"
                 id="passing"
@@ -255,8 +255,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Speed */}
-            <div className="input-container2">
-              <label htmlFor="speed">Speed:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="speed">Speed :</label>
               <input
                 type="number"
                 id="speed"
@@ -268,8 +268,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Physical */}
-            <div className="input-container2">
-              <label htmlFor="physical">Physical:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="physical">Physical :</label>
               <input
                 type="number"
                 id="physical"
@@ -281,8 +281,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Defence */}
-            <div className="input-container2">
-              <label htmlFor="defence">Defence:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="defence">Defence :</label>
               <input
                 type="number"
                 id="defence"
@@ -294,8 +294,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* 3 PT Shot */}
-            <div className="input-container2">
-              <label htmlFor="threePtShot">3 PT Shot:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="threePtShot">3 PT Shot :</label>
               <input
                 type="number"
                 id="threePtShot"
@@ -307,8 +307,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Rebound */}
-            <div className="input-container2">
-              <label htmlFor="rebound">Rebound:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="rebound">Rebound :</label>
               <input
                 type="number"
                 id="rebound"
@@ -320,8 +320,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Ball Handling */}
-            <div className="input-container2">
-              <label htmlFor="ballHandling">Ball Handling:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="ballHandling">Ball Handling :</label>
               <input
                 type="number"
                 id="ballHandling"
@@ -333,8 +333,8 @@ const BasketballCreatePlayerPage = () => {
             </div>
 
             {/* Post Up */}
-            <div className="input-container2">
-              <label htmlFor="postUp">Post Up:</label>
+            <div className="input-container-basketball">
+              <label htmlFor="postUp">Post Up :</label>
               <input
                 type="number"
                 id="postUp"
@@ -348,10 +348,10 @@ const BasketballCreatePlayerPage = () => {
 
 
           {/* Averages Table */}
-          <div className="averages-container">
+          <div className="averages-container-basketball">
             {averagesError && <p className="error-message">{averagesError}</p>}
             {averages ? (
-              <table className="averages-table">
+              <table className="averages-table-basketball">
                 <thead>
                   <tr>
                     <th>Attribute</th>
@@ -426,13 +426,13 @@ const BasketballCreatePlayerPage = () => {
             ) : (
               !averagesError && <p>Loading averages...</p>
             )}
-            <div className='button-container'>
-              <button className="calc-save-button2" onClick={handleCreatePlayer}>
+            <div className='button-container-basketball'>
+              <button className="calc-save-button-basketball" onClick={handleCreatePlayer}>
                 Create and Calculate Overall
               </button>
               <Link
                 to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
-                className="NPG-back-home-button11"
+                className="NPG-back-home-button-basketball"
               >
                 Back to Home
               </Link>

@@ -2,23 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import './BasketballCourtPage.css';
-
-
-
+import '../BackHomeButton.css';
 
 
 const HomePage = () => {
   const [players, setPlayers] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false); // State to hold admin status
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [myCreatorId, setMyCreatorId] = useState(-1);
+  const [currCourtName, setCourtName] = useState('');
+  const [currCourtType, setCourtType] = useState('');
   const { search } = useLocation();
   const { courtId } = useParams();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(search);
-  const currCourtName = searchParams.get('courtName');
-  const currCourtType = searchParams.get('courtType');
   const currUserId = searchParams.get('userId');
-
 
   const token = localStorage.getItem('token');
   let decodedToken;
@@ -28,13 +26,19 @@ const HomePage = () => {
   }
 
 
-
   useEffect(() => {
-    //user_id validation
+    // user_id validation
     const userIdFromUrl = new URLSearchParams(search).get('userId');
+
 
     if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
       navigate('/'); // Redirect to home if not authorized
+      return;
+    }
+
+    // Check if the user has access to the court
+    if (!decodedToken.courts || !decodedToken.courts.includes(courtId)) {
+      navigate('/'); // Redirect to home if the user does not have access to this court
       return;
     }
 
@@ -42,38 +46,83 @@ const HomePage = () => {
     // Check if the user is an admin
     fetch(`http://localhost:5000/api/is_admin/${currUserId}/${courtId}`, {
       headers: {
-        'Authorization': token,
+        Authorization: token,
       },
     })
-      .then(response => response.json())
-      .then(data => {
-        console.log(data.isAdmin); // Log admin status
+      .then((response) => response.json())
+      .then((data) => {
         setIsAdmin(data.isAdmin); // Set admin status from response
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error fetching admin status:', error);
       });
 
-    //Fetch Players from DB according to the courtId
-    fetch(`http://localhost:5000/api/players/${courtId}`, {
+
+    // Get court info
+    fetch(`http://localhost:5000/api/court_info/${courtId}`, {
       headers: {
-        'Authorization': token,
+        Authorization: token,
       },
     })
-      .then(response => response.json())
-      .then(data => {
-        var storedPlayers = data;
-        storedPlayers = storedPlayers.sort((a, b) => b.overall - a.overall);
-        setPlayers(storedPlayers);
+      .then((response) => response.json())
+      .then((data) => {
+        setCourtName(data[0].courtName); // Set courtName from response
+        setCourtType(data[0].courtType); // Set courtName from response
       })
-      .catch(error => console.error(error));
+      .catch((error) => {
+        console.error('Error fetching court info :', error);
+      });
+
+
+
+
+    // Fetch Players from DB according to the courtId
+    fetch(`http://localhost:5000/api/players/${courtId}`, {
+      headers: {
+        Authorization: token,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        var storedPlayers = data;
+        storedPlayers = storedPlayers.sort((a, b) => b.id - a.id);
+        setPlayers(storedPlayers);
+        // Set myCreatorId here
+        const myPlayer = storedPlayers.find((player) => player.user_fk == currUserId);
+        if (myPlayer) {
+          setMyCreatorId(myPlayer.creator_user_fk);
+        }
+      })
+      .catch((error) => console.error(error));
   }, [courtId]);
 
 
+  const handleUpdateCourtName = async () => {
+    const newCourtName = prompt('Enter the new court name:', currCourtName);
+    if (newCourtName && newCourtName !== currCourtName) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/update_court_name/${courtId}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ courtName: newCourtName }),
+        });
 
+        if (response.ok) {
+          setCourtName(newCourtName); // Update the state with the new court name
+        } else {
+          alert('Failed to update court name');
+        }
+      } catch (error) {
+        console.error('Error updating court name:', error);
+        alert('Error updating court name');
+      }
+    }
+  };
 
-
-  const handleDeletePlayer = async (event, playerId) => {
+  const handleDeletePlayer = async (event, playerId, playerUserFk) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -81,17 +130,23 @@ const HomePage = () => {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/delete_player/${playerId}/${courtId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': token,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `http://localhost:5000/api/delete_player/${playerId}/${courtId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
       if (response.ok) {
-        setPlayers(players.filter(player => player.playerId !== playerId)); // Remove the player from the state
+        setPlayers(players.filter((player) => player.playerId !== playerId)); // Remove the player from the state
         alert('Player deleted successfully');
+        if(playerUserFk== currUserId){
+          navigate(`/courts_page/${currUserId}`)
+        }
       } else {
         alert('Failed to delete player');
       }
@@ -101,43 +156,85 @@ const HomePage = () => {
     }
   };
 
-
   return (
     <div className="basketball-home-page-style">
-      <h1 className="HP-basketball-title">{currCourtName} {currCourtType}</h1>
-      <Link to={`/courts_page/${currUserId}`} className="back-to-mycourts-button2">
+      <Link to={`/courts_page/${currUserId}`} className="back-home-button">
         Back to MyCourts
       </Link>
-      <Link to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="basketball-create-game-button">
-        Create New Game
+      <h1 className="HP-basketball-title">
+        {currCourtName} {currCourtType}
+      </h1>
+      {isAdmin && (
+        <div class="admin-mode">
+          <h2>Admin Mode</h2>
+          <button class="update-court-button" onClick={handleUpdateCourtName}>
+            Update Court Name
+          </button>
+        </div>
+
+      )}
+
+      <div className="button-container">
+        <Link
+          to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
+          className="basketball-create-game-button"
+        >
+          Create New Manual Game
+        </Link>
+
+        <Link
+          to={`/scheduled-games/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
+          className="basketball-scheduled-games-button"
+        >
+          Scheduled Games
+        </Link>
+      </div>
+
+      <h2 className="HP-registered-players2">Registered Players:</h2>
+      <Link
+        to={`/new-player/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
+        className="create-player-button-basketball"
+      >
+        Add New Player
       </Link>
-      <h2 className='HP-registered-playerss'>Registered Players:</h2>
-      <div className="player-list22">
+      <div className="player-list-basketball">
         {players.map((player) => {
           // Determine the appropriate CSS class for the player
           let playerClass = '';
           if (player.user_fk == currUserId) {
-            playerClass = 'player-cube2--my-player'; 
-          } else if (player.creator_user_fk == currUserId) {
-            playerClass = 'player-cube2--creator-player'; 
+            playerClass = 'player-cube-basketball--my-player';
+          } else if (player.creator_user_fk == currUserId || player.user_fk == myCreatorId) {
+            playerClass = 'player-cube-basketball--creator-player';
           } else {
-            playerClass = 'player-cube2-not--related-player'; 
+            playerClass = 'player-cube-basketball-not--related-player';
           }
-          return (
-            <Link
-              key={player.playerId}
-              to={`/player/${player.playerId}/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
-              className="player-link2"
-            >
 
-              <div
-                className={`player-cube2 ${playerClass}`} // Apply the determined class here
-                onMouseEnter={() => setSelectedPlayer(player)}
-                onMouseLeave={() => setSelectedPlayer(null)}
-              >
-                {player.name}
-                <p>{player.overall}</p>
-                <div className="tooltipsnew2">
+
+          //A user can see and delete only his player and the players he created
+          const overallAndDeletionDisplay =
+            player.user_fk == currUserId ||
+              player.creator_user_fk == currUserId ||
+              isAdmin
+              ? player.overall
+              : '';
+
+
+          //A user can edit only the players he created
+          const playerClickable = player.creator_user_fk == currUserId || isAdmin
+
+
+
+          // Conditionally render the clickable link or a non-clickable div
+          const playerContent = (
+            <div
+              className={`player-cube-basketball ${playerClass}`}
+              onMouseEnter={() => setSelectedPlayer(player)}
+              onMouseLeave={() => setSelectedPlayer(null)}
+            >
+              {player.name}
+              <p>{overallAndDeletionDisplay}</p>
+              {overallAndDeletionDisplay && ( // Tooltip appears only if player is clickable
+                <div className="tooltipsnew-basketball">
                   <p className="player-info2">Height: {player.height}</p>
                   <p className="player-info2">Scoring: {player.scoring}</p>
                   <p className="player-info2">Passing: {player.passing}</p>
@@ -149,23 +246,35 @@ const HomePage = () => {
                   <p className="player-info2">BallHandle: {player.ballHandling}</p>
                   <p className="player-info2">PostUp: {player.postUp}</p>
                 </div>
-                {selectedPlayer === player && isAdmin && (
-                  <div className="delete-player-button" onClick={(e) => handleDeletePlayer(e, player.playerId)}>
-                    🗑️
-                  </div>
-                )}
-              </div>
+              )}
+              {selectedPlayer === player && overallAndDeletionDisplay && (
+                <div className="delete-player-button" onClick={(e) => handleDeletePlayer(e, player.playerId, player.user_fk)}>
+                  🗑️
+                </div>
+              )}
+            </div>
+          );
+
+
+
+          return playerClickable ? (
+            <Link
+              key={player.playerId}
+              to={`/player/${player.playerId}/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
+              className="player-link2"
+            >
+              {playerContent}
             </Link>
+          ) : (
+            <div key={player.playerId} className="player-link2">
+              {playerContent}
+            </div>
           );
         })}
       </div>
 
-      <Link to={`/new-player/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="create-player-button2">
-        Add New Player
-      </Link>
     </div>
   );
-
 };
 
 export default HomePage;

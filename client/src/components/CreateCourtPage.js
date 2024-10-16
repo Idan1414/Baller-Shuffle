@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate ,useParams} from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import './CreateCourtPage.css';
+import './BackHomeButton.css';
 
 const CreateCourtPage = () => {
   const navigate = useNavigate();
@@ -34,13 +35,15 @@ const CreateCourtPage = () => {
     if (!typeIsOk) {
       return alert("Please select either 'Basketball' or 'Football'.");
     }
-    console.log(courtSettings,userId);
+  
+    console.log(courtSettings, userId);
     try {
+      // Create the court
       const response = await fetch(`http://localhost:5000/api/create_court/${userId}`, {
         method: 'POST',
-        headers: { 
-        'Content-Type': 'application/json' ,
-        'Authorization': token,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
         },
         body: JSON.stringify(courtSettings),
       });
@@ -49,21 +52,43 @@ const CreateCourtPage = () => {
         throw new Error('Failed to create court.');
       }
   
-      const newCourt = await response.json();
+      const newCourt = await response.json(); // Successfully created court, proceed with updating the token
   
-      // Redirect to the appropriate court page
-      navigate(`/court_home_page/${newCourt.courtId}?courtName=${newCourt.courtName}&courtType=${newCourt.courtType}&userId=${userId}`);
+      // Call the /update-token endpoint to refresh the token
+      const updateTokenResponse = await fetch('http://localhost:5000/api/update-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token, // Send token in Authorization header
+        },
+        body: JSON.stringify({ token }), // Pass the token in the body (optional depending on server-side implementation)
+      });
+  
+      if (!updateTokenResponse.ok) {
+        throw new Error('Failed to update token');
+      }
+  
+      const { token: newToken } = await updateTokenResponse.json();
+  
+      // Update the token in localStorage
+      localStorage.setItem('token', newToken);
+  
+      console.log('Token updated with new court access');
+  
+      // Redirect to the courts page
+      navigate(`/courts_page/${userId}`);
+  
     } catch (error) {
-      console.error(error);
-      alert('An error occurred while creating the court.');
+      console.error('Error while creating court or updating token', error);
+      alert('An error occurred while creating the court or updating the token.');
     }
   };
-
+  
 
   const handleCourtTypeSelection = (type) => {
     setCourtSettings((prevSettings) => ({ ...prevSettings, courtType: type }));
   };
-    
+
   if (!token || decodedToken.userId !== parseInt(userId, 10)) {
     navigate('/'); // Redirect to home if not authorized
     return;
@@ -72,7 +97,7 @@ const CreateCourtPage = () => {
   return (
     <div className="create-court-page-style">
       <h1 className='CP-title'>Create New Court</h1>
-      <div className="input-container">
+      <div className="input-container1">
         <label htmlFor="courtName">Court's Name : </label>
         <input
           type="text"
@@ -96,10 +121,10 @@ const CreateCourtPage = () => {
           Football
         </div>
       </div>
-      <button className='calc-save-button' onClick={handleCreateCourt}>
+      <button className='create-court-button' onClick={handleCreateCourt}>
         Create Court
       </button>
-      <Link to={`/courts_page/${userId}`} className="NGP-back-home-button">
+      <Link to={`/courts_page/${userId}`} className="back-home-button">
         Back to MyCourts Page
       </Link>
     </div>

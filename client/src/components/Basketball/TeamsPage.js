@@ -6,10 +6,8 @@ import './TeamsPage.css';
 
 const TeamsPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [teams, setTeams] = useState([]);
   const { courtId } = useParams();
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const currCourtName = searchParams.get('courtName');
@@ -23,11 +21,6 @@ const TeamsPage = () => {
     // Retrieve teams from local storage
     const storedTeams = JSON.parse(localStorage.getItem('teams')) || [];
     setTeams(storedTeams);
-
-    // Retrieve selectedPlayers from state
-    // const state = location.state || {};
-    // const { selectedPlayers: selectedPlayersFromState } = state;
-    // setSelectedPlayers(selectedPlayersFromState || []);
   }, []);
 
 
@@ -92,14 +85,14 @@ const TeamsPage = () => {
   };
 
   const handleDrop = (event, targetTeam) => {
-   
+
     if (!draggedPlayer || !originTeam) return;
 
     // Avoid action if dropping on the same team
     if (targetTeam.team_id === originTeam.team_id) return;
-  
 
-     // Find and update the origin team
+
+    // Find and update the origin team
     const updatedOriginTeamIndex = teams.findIndex(team => team.team_id === originTeam.team_id);
     let updatedOriginTeam = new Team(teams[updatedOriginTeamIndex].players.filter(p => p.playerId !== draggedPlayer.playerId), teams[updatedOriginTeamIndex].team_id);
     updatedOriginTeam.calculateTeamStats();
@@ -114,7 +107,7 @@ const TeamsPage = () => {
     updatedTeams[updatedOriginTeamIndex] = updatedOriginTeam;
     updatedTeams[updatedTargetTeamIndex] = updatedTargetTeam;
 
-  
+
     setTeams(updatedTeams);
     setDraggedPlayer(null);
     setOriginTeam(null);
@@ -122,13 +115,13 @@ const TeamsPage = () => {
 
   return (
     <div className="basketball-teams-page-style">
-      <h1 className='TP-title2'>Fair Randomized Teams</h1>
+      <h1 className='TP-title1'>Fair Suffled Teams</h1>
       <div className="teams-distribution-style">
         {teams.map((team, index) => (
           <div key={team.team_id}
-          onDragOver={(e) => e.preventDefault()} // Necessary to allow dropping
-          onDrop={(e) => handleDrop(e, team)}
-          className="team-container">
+            onDragOver={(e) => e.preventDefault()} // Necessary to allow dropping
+            onDrop={(e) => handleDrop(e, team)}
+            className="team-container">
             <h2 style={{ textAlign: 'center' }}>Team {index + 1}</h2>
             <p> Overall: {team.team_overall}</p>
             <p> Height: {team.team_height}</p>
@@ -145,11 +138,11 @@ const TeamsPage = () => {
             <div className="team-players">
               <h3>Players:</h3>
               {team.players.map((player) => (
-                <div 
-                key={player.id} 
-                draggable="true"
-                onDragStart={(e) => handleDragStart(e, player, team)}
-                className="player">
+                <div
+                  key={player.id}
+                  draggable="true"
+                  onDragStart={(e) => handleDragStart(e, player, team)}
+                  className="player">
                   <p>{player.name}</p>
                 </div>
               ))}
@@ -159,12 +152,12 @@ const TeamsPage = () => {
       </div>
       <div style={{ textAlign: 'center' }}>
         <p>
-          <button onClick={handleReRandomize} className="re-randomize-button">
-            Re-Randomize
+          <button onClick={handleReRandomize} className="re-shuffle-button">
+            Re-Shuffle
           </button>
         </p >
         <p>
-        <Link to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NGP-back-home-button">
+          <Link to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
             Back to New Game
           </Link>
         </p>

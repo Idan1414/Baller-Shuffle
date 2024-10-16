@@ -1,24 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
 
 html {
-  height: 100%; /* Make sure the html element covers the full height */
+  height: 100%;
+  /* Make sure the html element covers the full height */
 }
 
 body {
   margin: 0;
-  height: 100%; /* Make sure the body covers the full height */
-  background-image: url('/public/court.png'); /* Adjust the path as necessary */
-  background-size: cover; /* Cover the entire viewport */
-  background-attachment: fixed; /* Fix the background to the viewport */
-  background-repeat: no-repeat; /* Do not repeat the background */
-  overflow-x: hidden; /* Hide horizontal scroll */
+  height: 100%;
+  /* Make sure the body covers the full height */
+  background-image: url('/public/court.png');
+  /* Adjust the path as necessary */
+  background-size: cover;
+  /* Cover the entire viewport */
+  background-attachment: fixed;
+  /* Fix the background to the viewport */
+  background-repeat: no-repeat;
+  /* Do not repeat the background */
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
   font-family: 'Exo 2', sans-serif;
 }
+
 /*--------------------BackGround------------------ */
 
 .basketball-teams-page-style {
-  overflow-x: hidden; /* Hide horizontal scroll */
-  overflow-y: hidden;  /* Faded black to grey gradient */
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  overflow-y: hidden;
+  /* Faded black to grey gradient */
   min-height: 100vh;
   /* Set minimum height to 100% of the viewport */
   display: flex;
@@ -34,7 +44,7 @@ body {
 
 /*--------------------Teams Distribution style------------------ */
 .teams-distribution-style {
-  background: linear-gradient(to right, #8bd091, #ffffff);
+  background: linear-gradient(to bottom, #c4af63, #ffffff);
   /* Faded black to grey gradient */
   min-height: 100vh;
   /* Set minimum height to 100% of the viewport */
@@ -54,9 +64,32 @@ body {
   padding: 1px;
   border-radius: 22px;
   margin-bottom: 0.3px;
-
-
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover transitions */
 }
+
+/* Hover effect for futuristic interaction */
+.teams-distribution-style:hover {
+  transform: scale(1.02);
+  /* Slight scale-up effect on hover */
+  box-shadow: 0 6px 40px rgba(0, 0, 0, 0.3);
+  /* More prominent shadow on hover */
+}
+
+/* Animation for fade-in effect */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+    /* Slight downward movement */
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    /* Final position */
+  }
+}
+
 
 .teams-distribution-style p {
   color: #f6f6f6;
@@ -69,8 +102,8 @@ body {
     -1px 1px 0 #161005,
     1px 1px 0 #161005;
 
-  .re-randomize-button,
-  .NGP-back-home-button {
+  .re-shuffle-button,
+  .back-home-button {
     margin-top: auto;
     /* Set margin-top to auto for bottom alignment */
   }
@@ -85,11 +118,12 @@ body {
   /* Bold */
   font-size: 3rem;
   /* Increased font size for emphasis */
-  color: #8bd091;
+  color: #c7b45fde;
   /* Faded white-orange color */
   text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
   /* Adding a text shadow for a 3D effect */
   margin: 20px 0 10px;
+  margin-top: 70px;
   /* Adjusted margin to provide space */
 }
 
@@ -134,11 +168,21 @@ body {
   border-radius: 8px;
 }
 
+
+.player:hover {
+  color: #000000;
+  background-color: #c7b45fde;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(26, 25, 23, 0.991);  transition: box-shadow 0.3s ease; /* Smooth transition for background color */
+  cursor: pointer; /* Cursor changes to pointer to indicate it's clickable */
+  
+  }
+
 /*--------------------BACK HOME BUTTON------------------ */
 .back-home-button {
-  margin-top: 3px;
+  margin-top: 5px;
   padding: 10px 10px;
-  background-color: rgba(237, 177, 14, 0.775);
+  background-color: rgba(254, 254, 254, 0.775);
   color: #161005;
   border: 2px solid #ffffffbe;
   border-radius: 55px;
@@ -148,7 +192,9 @@ body {
 }
 
 .back-home-button:hover {
-  background-color: #be8837c5;
+  background-color: #e8e4ddc5;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
   color: rgb(0, 0, 0);
 }
 
@@ -157,16 +203,16 @@ body {
   box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
 }
 
-/*--------------------RE RANDOMIZE BUTTON------------------ */
-.re-randomize-button {
+/*--------------------RE SHUFFLE BUTTON------------------ */
+.re-shuffle-button {
   margin-top: auto;
-  /* Set margin-top to auto for bottom alignment */
+  margin-bottom: 10px;
   padding: 10px 10px;
   font-weight: 700;
   /* Bold */
   font-size: 2rem;
   /* Increased font size for emphasis */
-  background-color: rgba(221, 78, 73, 0.775);
+  background-color: #c7b45fde;
   color: #161005;
   border: 2px solid #ffffffbe;
   border-radius: 55px;
@@ -175,12 +221,14 @@ body {
   text-decoration: none;
 }
 
-.re-randomize-button:hover {
-  background-color: #c03030c5;
+.re-shuffle-button:hover {
+  background-color: #c9bb4cc5;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
   color: rgb(0, 0, 0);
 }
 
-.re-randomize-button:active {
+.re-shuffle-button:active {
   transform: translateY(4px);
   box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
 }

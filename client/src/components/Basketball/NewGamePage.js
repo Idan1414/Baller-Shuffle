@@ -5,6 +5,8 @@ import { jwtDecode } from 'jwt-decode';
 import Team from './Team';
 import './NewGamePage.css';
 import './BasketballCourtPage.css';
+import '../BackHomeButton.css';
+
 
 
 const NewGamePage = () => {
@@ -142,8 +144,8 @@ const NewGamePage = () => {
       <h1 className="HP-basketball-title">NEW GAME</h1>
 
       <div className="team-options">
-        <label htmlFor="numTeams" className='num-of-teams1'>Choose number of teams:</label>
-        <select id="numTeams" className="custom-dropdown1" onChange={handleNumTeamsChange} value={numTeams}>
+        <label htmlFor="numTeams" className='num-of-teams'>Choose number of teams:</label>
+        <select id="numTeams" className="custom-dropdown" onChange={handleNumTeamsChange} value={numTeams}>
           {Array.from({ length: 19 }, (_, index) => (
             <option key={index + 2} value={index + 2}>
               {index + 2}
@@ -159,12 +161,16 @@ const NewGamePage = () => {
 
       </div>
 
-      <input
-        type="text"
-        placeholder="Search by player name"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-      />
+      <div className='NPG-search-container'>
+        <input
+          className='NGP-search-input-place'
+          type="text"
+          placeholder="Search by player name"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+      </div>
+
       <div className="NGP-player-list">
         {filteredPlayers.map((player) => (
           <label className={`NGP-player-cube2 ${selectedPlayers.includes(player.playerId) ? 'selected' : ''}`}>
@@ -181,10 +187,10 @@ const NewGamePage = () => {
       </div>
 
       <button className="NGP-randomize-teams-button" onClick={handleRandomizeTeams}>
-        Randomize Teams
+        Shuffle Teams
       </button>
 
-      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NGP-back-home-button">
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
     </div>

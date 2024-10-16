@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate,useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import Team from './FootballTeam';
 import './FootballNewGamePage.css';
 import './FootballCourtPage.css';
+import '../BackHomeButton.css';
+
 
 
 const FootballNewGamePage = () => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
-  const [numTeams, setNumTeams] = useState(2);
+  const [numTeams, setNumTeams] = useState(3);
   const [searchInput, setSearchInput] = useState('');
   const [selectedPlayerCount, setSelectedPlayerCount] = useState(0);
   const { courtId } = useParams();
@@ -18,38 +21,70 @@ const FootballNewGamePage = () => {
   const searchParams = new URLSearchParams(search);
   const currCourtName = searchParams.get('courtName');
   const currCourtType = searchParams.get('courtType');
+  const currUserId = searchParams.get('userId');
+
+  const token = localStorage.getItem('token');
+  let decodedToken;
+
+  if (token) {
+    decodedToken = jwtDecode(token);
+  }
 
 
 
   useEffect(() => {
-    // Retrieve courts and then players for the selected court from localStorage
-    const courts = JSON.parse(localStorage.getItem('courts')) || [];
-    // Find the court by courtId
-    const currentCourt = courts.find(court => court.id === courtId);
-    var storedPlayers = currentCourt ? currentCourt.players: [];
-    storedPlayers = storedPlayers.sort((a, b) => b.overall - a.overall);
-    if (currentCourt) { //truthy or falsey 
-      // Set the players state with the players array from the current court object
-      setPlayers(storedPlayers);
+
+    //User_id validation
+    const userIdFromUrl = new URLSearchParams(search).get('userId');
+
+    if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
+      navigate('/'); // Redirect to home if not authorized
+      return;
     }
+
+    // Fetch players from the API for the given courtId
+    const fetchPlayers = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/football_players/${courtId}`, {
+          headers: {
+            'Authorization': token, // Include token if needed
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch players');
+        }
+
+        const data = await response.json();
+
+        // Sort players by overall and update state
+        const sortedPlayers = data.sort((a, b) => b.overall - a.overall);
+        setPlayers(sortedPlayers);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+      }
+    };
+
+    fetchPlayers();
   }, [courtId]);
 
-  
+
   useEffect(() => {
     localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayers));
-    // Update the selectedPlayerCount whenever selectedPlayers changes
     setSelectedPlayerCount(selectedPlayers.length);
   }, [selectedPlayers]);
 
+
+
   const handlePlayerSelection = (playerId) => {
     setSelectedPlayers(prevSelectedPlayers => {
-      const isSelected = prevSelectedPlayers.some((player) => player.id === playerId);
+      const isSelected = prevSelectedPlayers.some((player) => player.playerId === playerId);
 
       if (isSelected) {
-        const updatedSelection = prevSelectedPlayers.filter((player) => player.id !== playerId);
+        const updatedSelection = prevSelectedPlayers.filter((player) => player.playerId !== playerId);
         return updatedSelection;
       } else {
-        const playerToAdd = players.find((player) => player.id === playerId);
+        const playerToAdd = players.find((player) => player.playerId === playerId);
         return [...prevSelectedPlayers, playerToAdd];
       }
     });
@@ -96,7 +131,7 @@ const FootballNewGamePage = () => {
     localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayers));
 
     // Redirect to TeamsPage with state
-    navigate(`/teams-football/${courtId}?courtName=${(currCourtName)}&courtType=${(currCourtType)}`, { state: { selectedPlayers } });
+    navigate(`/teams-football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`, { state: { selectedPlayers } });
   };
 
 
@@ -105,8 +140,9 @@ const FootballNewGamePage = () => {
   );
 
   return (
-    <div className="football-home-page-style">
-      <h1 className="HP-football-title">New Game</h1>
+    <div className="home-page-style">
+      <h1 className="HP-football-title">NEW GAME</h1>
+
       <div className="team-options">
         <label htmlFor="numTeams" className='num-of-teams'>Choose number of teams:</label>
         <select id="numTeams" className="custom-dropdown" onChange={handleNumTeamsChange} value={numTeams}>
@@ -119,26 +155,29 @@ const FootballNewGamePage = () => {
       </div>
 
       <div className="NGP-instructions">
-        <p className='instructions1'>Choose the players that will be playing today:</p>
-        <p className='instructions2'>Total Players Selected: {selectedPlayerCount}</p> {/* Display the count */}
+        <p className='instructions11'>Choose the players that will be playing today:</p>
+        <p className='instructions22'>Total Players Selected: {selectedPlayerCount}</p> {/* Display the count */}
         <p> </p>
 
       </div>
-          
-      <input
-        type="text"
-        placeholder="Search by player name"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-      />
-      <div className="NGP-player-list">
+
+      <div className='NPG-search-container'>
+        <input
+          className='NGP-search-input-place'
+          type="text"
+          placeholder="Search by player name"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+      </div>
+      <div className="NGP-player-list-football">
         {filteredPlayers.map((player) => (
-          <label className={`NGP-player-cube ${selectedPlayers.includes(player.id) ? 'selected' : ''}`}>
-            <div key={player.id} className='NGP-player-name' >
+          <label className={`NGP-player-cube-football ${selectedPlayers.includes(player.playerId) ? 'selected' : ''}`}>
+            <div key={player.playerId} className='NGP-player-name-football' >
               <input
                 type="checkbox"
-                checked={selectedPlayers.some((p) => p.id === player.id)}
-                onChange={() => handlePlayerSelection(player.id)}
+                checked={selectedPlayers.some((p) => p.playerId === player.playerId)}
+                onChange={() => handlePlayerSelection(player.playerId)}
               />
               {player.name}
             </div>
@@ -147,10 +186,10 @@ const FootballNewGamePage = () => {
       </div>
 
       <button className="NGP-randomize-teams-button" onClick={handleRandomizeTeams}>
-        Randomize Teams
+        Shuffle Teams
       </button>
 
-      <Link to={`/court_home_page_football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
+      <Link to={`/court_home_page_football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
     </div>

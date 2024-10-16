@@ -29,13 +29,14 @@ body {
 }
 
 /*--------------------TITLE------------------ */
-.PS-title {
+.PS-title1{
   font-family: 'Exo 2', sans-serif;
   font-weight: 700;
   font-size: 4rem;
   color: rgba(130, 235, 130, 0.718);
   text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
   margin: 20px 0;
+  margin-top: 120px;
 }
 
 /*--------------------OVERALL------------------ */

@@ -1,0 +1,38 @@
+
+.back-home-button {
+  position: absolute; /* Position relative to the nearest positioned ancestor */
+  top: 10px;       /* Distance from the top of the viewport */
+  left: 10px;      /* Distance from the left of the viewport */
+  margin: 0;       /* Removes any margin to ensure precise positioning */
+  margin-top: 1px;
+  font-weight: 700;
+  padding: 10px 10px;
+  font-size: 1rem;
+  margin-right: 16px;
+  background-color: #fefefe;
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); /* Initial glow effect */
+}
+
+.back-home-button:hover {
+  background-color: #fefef7e6;
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
+  /* Stronger glow on hover */
+}
+
+/* Media query for iPhone and smaller screens */
+@media screen and (max-width: 600px) {
+  .back-home-button {
+    top: 6px; /* Adjust button's top position to avoid covering the title */
+    left: 10px; /* Keep left positioning */
+    font-size: 0.8rem; /* Reduce font size for smaller screens */
+    padding: 4px 6px; /* Adjust padding for smaller screens */
+  }
+
+}

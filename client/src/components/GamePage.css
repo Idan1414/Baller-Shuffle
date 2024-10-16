@@ -1,0 +1,249 @@
+.game-page {
+  color: gold;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.game-title {
+  text-align: center;
+  margin-bottom: 20px;
+  margin-top: 50px;
+  font-size: 36px;
+}
+
+.game-details {
+  background-color: #222;
+  border: 1px solid gold;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 10px auto;
+  max-width: 600px;
+  text-align: left;
+}
+
+.game-details p {
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.register-button {
+  background-color: gold;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: block;
+  margin: 20px auto;
+}
+
+.register-button:hover {
+  background-color: #d4af37;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+
+.back-to-all-games-button {
+  margin-top: 17px;
+  font-weight: 100;
+  padding: 20px 20px;
+  font-size: 1rem;
+  background-color: silver;
+  color: #161005;
+  border: 2px solid silver;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: border 0.2s ,background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  font-weight: 600; 
+  box-shadow: 0 0 15px rgba(25, 22, 10, 0.922);
+}
+
+.back-to-all-games-button:hover {
+  background-color: darkgoldenrod; /* Darker gold on hover */
+  background-color: rgb(253, 252, 243);
+  border: 2px solid rgb(253, 252, 243);
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgb(247, 246, 242), 0 0 30px rgb(252, 249, 249);
+}
+
+
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  position: relative;
+  padding: 20px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: rgba(8, 7, 7, 0.916);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.close-button, .cancel-button {
+  background-color: #f44336;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.submit-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 20px;
+  margin-right: 10px;
+}
+
+.registered-players {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 20px auto;
+  align-items: center;
+}
+
+.registered-players h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #fefefe;
+  text-shadow: 2px 4px 4px #161005;
+}
+
+.main-reserve-title1 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: white;
+  margin: 20px auto;
+  align-items: center;
+}
+
+.main-reserve-title1 h3 {
+  font-size: 19px;
+  margin-bottom: 10px;
+  color: #fefefe;
+  text-shadow: 2px 4px 4px #161005;
+}
+
+.player-cube-container {
+  display: flex;
+  flex-wrap: wrap;
+  max-height: 300px; /* Limit height of player cubes container */
+  overflow-y: auto; /* Enable scrolling */
+  margin-top: 10px;
+}
+
+.player-cube {
+  width: 100px; /* Set a fixed width */
+  height: 100px; /* Set a fixed height */
+  margin: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.player-cube.selected {
+  background-color: gold; /* Change background color when selected */
+  color: rgb(0, 0, 0);
+}
+
+
+
+
+.player-items-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+
+.player-item {
+  width: 120px;
+  height: 100px;
+  margin: 5px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: white;
+  background-color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center text horizontally */
+  text-align: center;
+  position: relative;
+  transition : background-color 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.player-item .delete-button {
+  display: block;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: red;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px;
+  width: 20px;
+  height: 20px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  padding: 0;
+}
+
+.player-item:hover {
+  background-color: #515559;
+  transform: translateY(-2px);
+}
+
+/* Additional responsive styles */
+@media (max-width: 768px) {
+  .player-items-container {
+    flex-direction: flex;
+  }
+
+  .player-item {
+    width: 100px;
+    height: 60px;
+    font-size: 12px;
+  }
+}

@@ -2,21 +2,32 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import './FootballCreatePlayerPage.css';
+import '../BackHomeButton.css';
 
 
-const EditPlayerPage = () => {
+
+const FootballEditPlayerPage = () => {
   const navigate = useNavigate();
-  const {id} = useParams();
-  const { courtId } = useParams();
+  const { id, courtId } = useParams();
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const currCourtName = searchParams.get('courtName');
   const currCourtType = searchParams.get('courtType');
+  const currUserId = searchParams.get('userId');
+
+
+  const token = localStorage.getItem('token');
+  let decodedToken;
+
+  if (token) {
+    decodedToken = jwtDecode(token);  // Use jwtDecode instead of jwt_decode
+  }
 
   const [playerAttributes, setPlayerAttributes] = useState({
+    playerId: 0,
     name: '',
-    photo: '',
     finishing: 0,
     passing: 0,
     speed: 0,
@@ -24,6 +35,8 @@ const EditPlayerPage = () => {
     defence: 0,
     dribbling: 0,
     header: 0,
+    overall: 0,
+    overallToMix: 0
   });
 
   const [errors, setErrors] = useState({
@@ -35,20 +48,70 @@ const EditPlayerPage = () => {
     defence: '',
     dribbling: '',
     header: '',
+    assignError: '',
   });
 
 
+  const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [userAssingedAlreadyError, setUserAssingedAlreadyError] = useState(false);
+  const [player_user_fk_exists, setUserFkExsits] = useState(false);
+
+
+
+
   useEffect(() => {
-    // Retrieve the full list of courts
-    const courts = JSON.parse(localStorage.getItem('courts')) || [];
-    // Find the court by courtId
-    const currentCourt = courts.find(court => court.id === courtId);
-    const selectedPlayer = currentCourt ? currentCourt.players.find(player => player.id === id) : null;
-  
-    if (selectedPlayer) {
-      setPlayerAttributes({ ...selectedPlayer });
+
+    const userIdFromUrl = new URLSearchParams(search).get('userId');
+
+    if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
+      navigate('/'); // Redirect to home if not authorized
+      return;
     }
-  }, [id, courtId]);
+
+    // Fetch the player by playerId
+    fetch(`http://localhost:5000/api/football-player/${id}/${courtId}`, {
+      headers: {
+        'Authorization': token,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        var selectedPlayer = data;
+        setPlayerAttributes({ ...selectedPlayer });
+      })
+      .catch(error => console.error(error));
+  }, [courtId, id]);
+
+
+  useEffect(() => {
+    // Function to check if user_fk exists for the player
+    const checkUserFk = () => {
+      fetch(`http://localhost:5000/api/is_player_assinged/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token
+        }
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json(); // Parse the JSON response
+          } else {
+            throw new Error('Error fetching user_fk: ' + response.statusText);
+          }
+        })
+        .then((data) => {
+          setUserFkExsits(data.userFkExists); // Set the state based on the response
+        })
+        .catch((error) => {
+          console.error('Error fetching user_fk:', error);
+        });
+    };
+
+    checkUserFk();
+  }, [id, token]); // Dependencies include id and token
+
 
   const validateName = () => {
     // Add your name validation logic here
@@ -69,7 +132,7 @@ const EditPlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
-  const handleUpdatePlayer = () => {
+  const handleUpdatePlayer = (currCourtName, currCourtType) => {
     const nameError = validateName();
 
     const numericalAttributes = {
@@ -99,47 +162,83 @@ const EditPlayerPage = () => {
     const storedPlayers = JSON.parse(localStorage.getItem(`court_${courtId}_players`)) || [];
 
     if (!nameError && !Object.values(attributesErrors).some(error => error !== '')) {
-      // Retrieve the full list of courts
-      const courts = JSON.parse(localStorage.getItem('courts')) || [];
-      // Find the court and player by their IDs
-      const courtIndex = courts.findIndex(court => court.id === courtId);
-      if (courtIndex !== -1) {
-        const playerIndex = courts[courtIndex].players.findIndex(player => player.id === id);
-  
-        if (playerIndex !== -1) {
-          // Update the player's attributes
-          courts[courtIndex].players[playerIndex] = {
-            ...courts[courtIndex].players[playerIndex],
-            ...playerAttributes,
-            ...numericalAttributes,
-            overall: calculateOverall(numericalAttributes),
-          };
+      // Update the player's attributes
+      const updatedPlayer = {
+        ...playerAttributes,
+        ...numericalAttributes,
+        overall: calculateOverall(numericalAttributes),
+      };
 
-         // Save the updated courts array back to localStorage
-         localStorage.setItem('courts', JSON.stringify(courts));
-         navigate(`/edit_success_football/${courtId}?overall=${courts[courtIndex].players[playerIndex].overall}&name=${encodeURIComponent(courts[courtIndex].players[playerIndex].name)}&courtName=${encodeURIComponent(currCourtName)}&courtType=${encodeURIComponent(currCourtType)}`);
-       } else {
-         console.error('Player not found');
-       }
-     } else {
-       console.error('Court not found');
+
+      // Send the updated player data to the server
+      fetch(`http://localhost:5000/api/update-player-football/${id}/${courtId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+        body: JSON.stringify(updatedPlayer),
+      })
+        .then(response => {
+          if (response.ok) {
+            navigate(`/edit_success_football/${courtId}?overall=${updatedPlayer.overall}&name=${encodeURIComponent(updatedPlayer.name)}&courtName=${encodeURIComponent(currCourtName)}&courtType=${encodeURIComponent(currCourtType)}&userId=${currUserId}`);
+          } else {
+            console.error('Failed to update player');
+          }
+        })
+        .catch(error => console.error('Error:', error));
     }
-  }
   };
 
+
+  const handleAssignPlayer = (player_id, email, court_id) => {
+    fetch(`http://localhost:5000/api/assign_player/${player_id}/${email}/${court_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      }
+    })
+      .then(response => {
+        if (response.ok) {
+          console.log("Player has been assigned to a user");
+          setEmailError(false); // Reset email error on successful assignment
+          setUserAssingedAlreadyError(false)
+          setIsAssignPopupOpen(false);
+          setUserFkExsits(true);
+        } else if (response.status === 404) {
+          // If the response indicates that the email does not exist
+          setUserAssingedAlreadyError(false)
+          setEmailError(true);
+          console.error('Email does not exist');
+        } else if (response.status === 400) {
+          // Handle the case where the user is already assigned to the player in the specified court
+          setEmailError(false);
+          setUserAssingedAlreadyError(true)
+          console.error('This username(Email) is already assigned to a player in the specified court');
+        } else {// Handle other error responses here if necessary
+          setEmailError(true);
+          console.error('An error occurred while assigning the player');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setEmailError(true); // Set error state in case of fetch error
+      });
+  }
 
 
 
   const calculateOverall = (attributes) => {
     const sum =
-    attributes.finishing * 10 +
-    attributes.passing * 6 +
-    attributes.speed * 8 +
-    attributes.physical * 5 +
-    attributes.defence * 5 +
-    attributes.dribbling * 9 +
-    attributes.header * 3
-  const average = sum / 46;
+      attributes.finishing * 10 +
+      attributes.passing * 6 +
+      attributes.speed * 7 +
+      attributes.physical * 6 +
+      attributes.defence * 6 +
+      attributes.dribbling * 10 +
+      attributes.header * 3
+    const average = sum / 48;
 
     // Round to the nearest whole number
     return Math.round(average);
@@ -147,8 +246,50 @@ const EditPlayerPage = () => {
 
   return (
     <div className="football-create-player-page-style">
-      <h1 className='CP-title'>Edit Player</h1>
-      <div className="input-container">
+      <h1 className='CP-title-football'>Edit Player</h1>
+      {!player_user_fk_exists && (
+        <button className="assign-button" onClick={() => setIsAssignPopupOpen(true)}>
+          Assign Player to a User
+        </button>
+      )}
+
+      {isAssignPopupOpen && (
+        <div className="assign-popup active">
+          <h3 style={{ color: 'white' }}>Assign Player to a User if he is already registered with his Email</h3>
+
+          <input
+            type="email"
+            placeholder="Enter user's email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+
+          <button
+            className="assign-button"
+            onClick={() => handleAssignPlayer(id, email, courtId)}
+          >
+            Assign
+          </button>
+          {errors.assignError && <p className="error-message">{errors.assignError}</p>}
+
+          {/* New error message for email not existing */}
+          {emailError && <p className="error-message">Email does not exist in the system, please ask your friend to register to BallerShuffle.</p>}
+          {userAssingedAlreadyError && <p className="error-message">This username(Email) is already assigned to a player in this court.</p>}
+
+          <button
+            className="close-button"
+            onClick={() => {
+              setIsAssignPopupOpen(false);
+              setEmailError(false); // Reset email error state
+              setEmail(''); // Clear the email input field
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      <div className="input-container-football">
         <label htmlFor="name">Name:</label>
         <input
           type="text"
@@ -160,7 +301,7 @@ const EditPlayerPage = () => {
         {errors.name && <p className="error-message">{errors.name}</p>}
       </div>
 
-         <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="finishing">Finishing:</label>
         <input
           type="number"
@@ -172,7 +313,7 @@ const EditPlayerPage = () => {
         {errors.finishing && <p className="error-message">{errors.finishing}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="passing">Passing:</label>
         <input
           type="number"
@@ -184,7 +325,7 @@ const EditPlayerPage = () => {
         {errors.passing && <p className="error-message">{errors.passing}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="speed">Speed:</label>
         <input
           type="number"
@@ -196,7 +337,7 @@ const EditPlayerPage = () => {
         {errors.speed && <p className="error-message">{errors.speed}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="physical">Physical:</label>
         <input
           type="number"
@@ -208,7 +349,7 @@ const EditPlayerPage = () => {
         {errors.physical && <p className="error-message">{errors.physical}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="defence">Defence:</label>
         <input
           type="number"
@@ -220,9 +361,7 @@ const EditPlayerPage = () => {
         {errors.defence && <p className="error-message">{errors.defence}</p>}
       </div>
 
-
-
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="dribbling">Dribbling:</label>
         <input
           type="number"
@@ -234,7 +373,7 @@ const EditPlayerPage = () => {
         {errors.dribbling && <p className="error-message">{errors.dribbling}</p>}
       </div>
 
-      <div className="input-container">
+      <div className="input-container-football">
         <label htmlFor="header">Header:</label>
         <input
           type="number"
@@ -245,12 +384,14 @@ const EditPlayerPage = () => {
         />
         {errors.header && <p className="error-message">{errors.header}</p>}
       </div>
-      <button className='calc-save-button' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
-      <Link to={`/court_home_page_football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}`} className="NGP-back-home-button">
+
+
+      <button className='calc-save-button-football' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
+      <Link to={`/court_home_page_football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
     </div>
   );
 };
 
-export default EditPlayerPage;
+export default FootballEditPlayerPage;

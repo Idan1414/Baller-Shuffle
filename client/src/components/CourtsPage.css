@@ -2,18 +2,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
 
 html {
-  height: 100%; /* Make sure the html element covers the full height */
+  height: 100%;
+  /* Make sure the html element covers the full height */
 }
 
 body {
   margin: 0;
-  height: 100%; /* Make sure the body covers the full height */
-  background-image: url('/public/6199236.jpg'); /* Adjust the path as necessary */
-  background-size: cover; /* Cover the entire viewport */
-  background-attachment: fixed; /* Fix the background to the viewport */
-  background-repeat: no-repeat; /* Do not repeat the background */
-  overflow-x: auto; /* Hide horizontal scroll */
-  overflow-y: scroll; /* Allow vertical scrolling only when necessary */
+  height: 100%;
+  /* Make sure the body covers the full height */
+  background-image: url('/public/6199236.jpg');
+  /* Adjust the path as necessary */
+  background-size: cover;
+  /* Cover the entire viewport */
+  background-attachment: fixed;
+  /* Fix the background to the viewport */
+  background-repeat: no-repeat;
+  /* Do not repeat the background */
+  overflow-x: auto;
+  /* Hide horizontal scroll */
+  overflow-y: scroll;
+  /* Allow vertical scrolling only when necessary */
   font-family: 'Exo 2', sans-serif;
 }
 
@@ -22,8 +30,10 @@ body {
 /*--------------------BackGround------------------ */
 
 .home-page-style {
-  overflow-x: auto; /* Hide horizontal scroll */
-  overflow-y: auto;  /* Faded black to grey gradient */
+  overflow-x: auto;
+  /* Hide horizontal scroll */
+  overflow-y: auto;
+  /* Faded black to grey gradient */
   min-height: 100vh;
   /* Set minimum height to 100% of the viewport */
   display: flex;
@@ -41,15 +51,20 @@ body {
 
 .app-title {
   font-family: 'Varsity Regular', sans-serif;
-  font-weight: 10; /* Extra bold */
-  font-size: 3rem; /* Larger font size for more impact */
-  background: -webkit-linear-gradient(45deg, #f06, #aef); /* Gradient text */
+  font-weight: 10;
+  /* Extra bold */
+  font-size: 3rem;
+  /* Larger font size for more impact */
+  background: -webkit-linear-gradient(45deg, #f06, #aef);
+  /* Gradient text */
   -webkit-background-clip: text;
-  text-shadow: 0 0 10px #FFD8B1, 0 0 20px  #FFD8B1, 0 0 30px #FFD8B1, 0 0 40px #FFD8B1, 0 0 10px rgb(0, 94, 255), 0 0 10px rgb(0, 94, 255), 0 0 10px #f06; /* Glowing effect */
-  margin-top: 40px;
+  text-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px gold, 0 0 40px #FFD8B1, 0 0 10px rgb(0, 94, 255), 0 0 10px rgb(0, 94, 255), 0 0 10px #f06;
+  /* Glowing effect */
+  margin-top: 55px;
   margin-bottom: 30px;
   position: relative;
-  display: block !important; /* Ensure it's a block element */
+  display: block !important;
+  /* Ensure it's a block element */
 }
 
 
@@ -58,7 +73,7 @@ body {
   font-family: 'Exo 2', sans-serif;
   font-weight: 900;
   font-size: 2.4rem;
-  color: #FFD8B1;
+  color: white;
   /* The following line adds a shadow that creates a border effect */
   text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   margin: 20px 0;
@@ -72,7 +87,7 @@ body {
   /* Adjusted margin to provide space below the title */
   padding: 10px 10px;
   /* Adjusted padding for a larger clickable area */
-  background-color:  #FFD8B1;
+  background-color: #ffffff;
   /* Initial background color */
   color: #161005;
   /* Text color */
@@ -81,18 +96,21 @@ body {
   border-radius: 55px;
   /* Rounded corners */
   cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
   /* Smooth transition effect */
   text-decoration: none;
   /* Remove underline */
 }
 
 .create-new-court-button:hover {
-  background-color: #FFA366;
+  background-color: #faf3ee;
   /* Hover background color */
   color: rgb(0, 0, 0);
   /* Hover text color */
+  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
+
 }
+
 
 .create-new-court-button:active {
   transform: translateY(4px);
@@ -116,41 +134,62 @@ body {
 
 
 .CourtsPage-cube {
-  width: 400px;
+  width: 300px;
   position: relative;
   height: 200px;
-  background-size: cover; /* Ensure the background covers the cube */
-  background-position: center; /* Center the background image */
+  background-size: cover;
+  /* Ensure the background covers the cube */
+  background-position: center;
+  /* Center the background image */
   margin: 10px;
   border: 2px solid #ffffffbe;
   border-radius: 15px;
   padding: 10px;
   cursor: pointer;
-  background-color: rgba(255, 255, 255, 0); /* Set a transparent background color */
-  transition: background-color 0.3s; /* Transition for the background color */
+  background-color: rgba(255, 255, 255, 0);
+  /* Set a transparent background color */
+  transition: background-color 0.3s;
+  /* Transition for the background color */
   box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
   text-align: center;
   display: inline-block;
   vertical-align: top;
+  transition: transform 0.2s ease
 }
+
 .CourtsPage-cube.pastelOrange {
-  background-image: url('/public/court.png'); /* Add the basketball court background */
-  transition: background-color 0.3s; /* Transition for the background color */}
+  background-image: url('/public/court.png');
+  /* Add the basketball court background */
+  transition: transform 0.2s ease,background-color 0.3s;
+  /* Transition for the background color */
+}
 
 .CourtsPage-cube.pastelGreen {
-  background-image: url('/public/soccerCourt.webp'); /* Add the basketball court background */
-  transition: background-color 0.3s; /* Transition for the background color */}
+  background-image: url('/public/soccerCourt.webp');
+  /* Add the basketball court background */
+  transition: transform 0.2s ease,background-color 0.3s;
+  /* Transition for the background color */
+}
 
 
 .CourtsPage-cube.pastelOrange:hover {
-  background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white to "brighten" the image */
+  background-color: rgba(255, 255, 255, 0.2);
+  /* Semi-transparent white to "brighten" the image */
   color: white;
-  box-shadow: 0 0 10px white; /* White shadow */}
+  transform: scale(1.05);
+  /* Slightly increase size on hover */
+  box-shadow: 0 0 10px white;
+  /* White shadow */
+}
 
 .CourtsPage-cube.pastelGreen:hover {
-  background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white to "brighten" the image */
+  background-color: rgba(255, 255, 255, 0.2);
+  /* Semi-transparent white to "brighten" the image */
   color: white;
-  box-shadow: 0 0 10px white; /* White shadow */}
+  transform: scale(1.05);
+  box-shadow: 0 0 10px white;
+  /* White shadow */
+}
 
 
 .CourtsPage-cube:active {
@@ -162,11 +201,13 @@ body {
 
 /* Update the font size and add black text border */
 .CourtsPage-cube p {
-  font-size: 24px; /* Adjust the font size as needed */
+  font-size: 24px;
+  /* Adjust the font size as needed */
   color: #ffffff;
-  -webkit-text-stroke: 1px rgb(0, 0, 0); /* Black border on text */
+  -webkit-text-stroke: 1px rgb(0, 0, 0);
+  /* Black border on text */
   display: inline-block;
-  margin:auto;
+  margin: auto;
   padding: 5px;
 }
 
@@ -243,6 +284,7 @@ body {
   margin: 20px 0;
   /* Adjusted margin to provide space */
 }
+
 .courts-list {
   font-family: 'Exo 5', sans-serif;
   font-weight: 700;
@@ -250,35 +292,51 @@ body {
   color: rgb(255, 255, 255);
   text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
   margin: 20px 20px;
-  display: flex; 
-  flex-wrap: wrap; 
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-start; 
-  margin: 0 auto; 
+  align-items: flex-start;
+  margin: 0 auto;
   padding: 10px;
 }
 
 .logout-button {
-  position: absolute; /* Position the button relative to its first positioned ancestor */
-  top: 20px; /* Distance from the top */
-  left: 20px; /* Distance from the left */
-  padding: 10px 20px; /* Padding inside the button */
-  font-size: 1rem; /* Text size */
-  color: #000000; /* Text color */
-  background-color: #eff5f9; /* Button background color */
-  border: none; /* Remove border */
-  border-radius: 5px; /* Rounded corners */
-  cursor: pointer; /* Cursor changes to pointer to indicate it's clickable */
-  transition: background-color 0.3s ease; /* Smooth transition for background color */
-  font-family: 'Exo 2', sans-serif; /* Font family */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); /* Subtle shadow for depth */
-  text-decoration: none; /* Remove underline from text */
+  position: absolute;
+  /* Position the button relative to its first positioned ancestor */
+  top: 20px;
+  /* Distance from the top */
+  left: 20px;
+  /* Distance from the left */
+  padding: 10px 20px;
+  /* Padding inside the button */
+  font-size: 1rem;
+  /* Text size */
+  color: #000000;
+  /* Text color */
+  background-color: #eff5f9;
+  /* Button background color */
+  border: none;
+  /* Remove border */
+  border-radius: 5px;
+  /* Rounded corners */
+  cursor: pointer;
+  /* Cursor changes to pointer to indicate it's clickable */
+  transition: background-color 0.3s ease;
+  /* Smooth transition for background color */
+  font-family: 'Exo 2', sans-serif;
+  /* Font family */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  /* Subtle shadow for depth */
+  text-decoration: none;
+  /* Remove underline from text */
 }
 
 .logout-button:hover {
-  background-color: #c5502c; /* Darker shade on hover for feedback */
+  background-color: #c5502c;
+  /* Darker shade on hover for feedback */
 }
 
 .logout-button:focus {
-  outline: none; /* Remove outline on focus for cleaner look */
+  outline: none;
+  /* Remove outline on focus for cleaner look */
 }

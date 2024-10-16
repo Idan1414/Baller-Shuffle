@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+
+
+/*--------------------BackGround------------------ */
+html {
+  height: 100%;
+  /* Make sure the html element covers the full height */
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  /* Make sure the body covers the full height */
+  background-size: cover;
+  /* Cover the entire viewport */
+  background-attachment: fixed;
+  /* Fix the background to the viewport */
+  background-repeat: no-repeat;
+  /* Do not repeat the background */
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  font-family: 'Exo 2', sans-serif;
+}
+
+
+.scheduled-games-page {
+  /* Dark background for a futuristic feel */
+  color: #f8d36b;
+  /* Golden color for text */
+  padding: 20px;
+  border-radius: 10px;
+  animation: fadeIn 0.3s ease-in-out;
+  
+
+}
+
+.scheduled-games-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 20px;
+  margin-top: 60px;
+
+}
+
+.create-game-button {
+  margin-top: 17px;
+  font-weight: 100;
+  padding: 20px 20px;
+  font-size: 1rem;
+  /* Adjusted margin to provide space below the title */
+  margin-right: 16px;
+  background-color: gold;
+  color: #161005;
+  border: 2px solid gold;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(25, 22, 10, 0.922); /* Initial glow effect */
+}
+
+.create-game-button:hover {
+  background-color: gold;
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgb(235, 224, 139), 0 0 30px rgba(255, 255, 255, 0.8);
+}
+
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Space between games */
+  animation: fadeIn 0.9s ease-in-out;
+
+}
+
+.game-item {
+  background-color: #262626; /* Dark card background */
+  border: 2px solid #f8d36b; /* Golden border */
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center items horizontally */
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline from the link */
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Animation for hover */
+}
+
+.game-item:hover {
+  transform: scale(1.05); /* Slightly increase size on hover */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+}
+
+.game-item:active {
+  transform: scale(0.98); /* Slightly decrease size on click */
+}
+
+
+.game-date {
+  color: #f8d36b;
+  /* Golden color for the date */
+  font-size: 1.5rem;
+  text-decoration: none;
+  /* Remove underline */
+}
+
+
+
+
+.game-details {
+  text-align: center; /* Center the text inside */
+}
+
+.game-location,
+.game-mvp {
+  margin: 10px 0; /* Center alignment adjustment */
+  font-size: 1.2rem; /* Increase the font size for better visibility */
+  color: #f8d36b;
+}
+
+
+.button-container {
+  display: flex;
+  justify-content: center; /* Centers the buttons */
+  margin-bottom: 20px; /* Space between buttons and the games list */
+}
+
+.create-game-button, .back-home-button-scheduled-games {
+  margin: 0 10px; /* Margin for spacing */
+  display: inline-block; /* Ensures buttons stay inline */
+}

@@ -1,0 +1,163 @@
+.modal-overlay {
+  position: fixed; /* Position it fixed to cover the whole screen */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark background with transparency */
+  display: flex; /* Use flexbox for centering */
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
+  z-index: 1000; /* Ensure it's on top */
+  animation: fadeIn 0.3s ease-in-out;
+  
+
+}
+
+.modal {
+  background-color: #222; /* Dark background for the modal */
+  border: 2px solid gold; /* Gold border */
+  border-radius: 10px; /* Rounded corners */
+  padding: 20px; /* Padding inside the modal */
+  width: 400px; /* Set a fixed width */
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); /* Gold glow effect */
+  animation: glow 1.5s infinite alternate; /* Glowing animation */
+  position: relative; /* Position child elements correctly */
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 1);
+  }
+}
+
+.modal-title {
+  color: rgb(159, 159, 74); /* Gold title color */
+  font-size: 24px; /* Title font size */
+  margin-top: 20px; /* Add margin to the top to prevent overlap with the close button */
+}
+
+.cancel-button {
+  background: transparent; /* Keep the background transparent */
+  border: none; /* No border */
+  color: red; /* Set the color to red */
+  font-size: 20px; /* Font size for close button */
+  cursor: pointer; /* Pointer cursor on hover */
+  position: absolute; /* Position it within the modal */
+  top: 15px; /* Position it slightly lower (15px) */
+  left: 15px; /* Position it from the left */
+}
+
+
+.form-group {
+  margin-bottom: 2px; /* Space between form groups */
+}
+
+label {
+  color: gold; /* Label color */
+  margin-bottom: 5px; /* Space below the label */
+  display: block; /* Block display for labels */
+}
+
+input[type="text"],
+input[type="datetime-local"],
+input[type="number"],
+textarea {
+  width: calc(100% - 20px); /* Full width minus padding */
+  padding: 10px; /* Padding inside inputs */
+  border: 1px solid gold; /* Gold border */
+  border-radius: 5px; /* Rounded corners for inputs */
+  background-color: #333; /* Dark background for inputs */
+  color: white; /* White text */
+}
+
+input[type="text"]:focus,
+input[type="datetime-local"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: none; /* Remove outline on focus */
+  box-shadow: 0 0 5px rgba(255, 215, 0, 1); /* Glow effect on focus */
+}
+
+.submit-button {
+  background-color: gold; /* Gold background for submit button */
+  color: black; /* Black text */
+  padding: 10px 15px; /* Padding for the button */
+  margin-left: 9px; /* Margin for spacing */
+  border: none; /* No border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  font-size: 16px; /* Font size for the button */
+  transition: background-color 0.3s ease; /* Smooth transition */
+  margin-top: -70px;
+}
+
+.submit-button:hover {
+  color: rgb(255, 254, 254);
+  box-shadow: 0 0 20px rgb(255, 255, 253), 0 0 30px rgba(255, 255, 255, 0.8);
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s , box-shadow 0.2s ;
+
+
+  /* Stronger glow on hover */
+
+}
+@media (max-width: 600px) {
+  .modal {
+    width: 80%; /* Adjust width for mobile */
+    height: 98%; /* Set height to 80% of the screen */
+    padding: 15px; /* Adjust padding */
+    border-radius: 8px; /* Rounded corners */
+    overflow-y: auto; /* Enable scrolling if content exceeds modal height */
+    box-sizing: border-box; /* Ensure padding doesn't affect width/height */
+  }
+  
+
+  .modal-title {
+    font-size: 18px; /* Reduce title font size */
+    margin-bottom: 10px; /* Space below title */
+    text-align: center; /* Center the title */
+  }
+
+  .cancel-button {
+    font-size: 16px; /* Adjust font size for close button */
+    position: absolute;
+    top: 10px; /* Position close button at the top-right */
+    right: 15px;
+    cursor: pointer;
+  }
+
+  .form-group {
+    margin-bottom: 10px; /* Reduce space between form fields */
+  }
+
+  input[type="text"],
+  input[type="datetime-local"],
+  input[type="number"],
+  textarea {
+    width: calc(100% - 10px); /* Ensure inputs are still full-width with smaller padding */
+    padding: 8px; /* Adjust input padding */
+    margin-bottom: 10px; /* Add space below inputs */
+    font-size: 14px; /* Slightly smaller font for inputs */
+  }
+
+  .submit-button {
+    font-size: 10px; /* Smaller button font size */
+    padding: 3px 2px; /* Adjust padding */
+    width: 50%; /* Make button full width */
+  }
+
+  .cancel-button {
+    font-size: 14px; /* Smaller button font size */
+    padding: 8px 12px; /* Adjust padding */
+    width: 30%; /* Make button full width */
+  }
+
+  /* Ensure form content fits inside the modal and is scrollable if needed */
+  .modal-content {
+    max-height: calc(80% - 40px); /* Ensure content does not exceed modal height */
+    overflow-y: auto; /* Enable scrolling inside modal if needed */
+  }
+}

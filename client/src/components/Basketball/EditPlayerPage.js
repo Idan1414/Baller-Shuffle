@@ -4,6 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import './CreatePlayerPage.css';
+import '../BackHomeButton.css';
 
 
 const EditPlayerPage = () => {
@@ -59,6 +60,7 @@ const EditPlayerPage = () => {
   const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
+  const [userAssingedAlreadyError, setUserAssingedAlreadyError] = useState(false);
   const [player_user_fk_exists, setUserFkExsits] = useState(false);
 
 
@@ -215,12 +217,19 @@ const EditPlayerPage = () => {
         if (response.ok) {
           console.log("Player has been assigned to a user");
           setEmailError(false); // Reset email error on successful assignment
+          setUserAssingedAlreadyError(false)
           setIsAssignPopupOpen(false);
           setUserFkExsits(true);
         } else if (response.status === 404) {
           // If the response indicates that the email does not exist
+          setUserAssingedAlreadyError(false)
           setEmailError(true);
           console.error('Email does not exist');
+        } else if (response.status === 400) {
+          // Handle the case where the user is already assigned to the player in the specified court
+          setEmailError(false);
+          setUserAssingedAlreadyError(true)
+          console.error('This username(Email) is already assigned to a player in this court');
         } else {
           // Handle other error responses here if necessary
           setEmailError(true);
@@ -256,7 +265,7 @@ const EditPlayerPage = () => {
 
   return (
     <div className="basketball-create-player-page-style">
-      <h1 className='CP-title'>Edit Player</h1>
+      <h1 className='CP-title-basketball'>Edit Player</h1>
       {!player_user_fk_exists && (
         <button className="assign-button" onClick={() => setIsAssignPopupOpen(true)}>
           Assign Player to a User
@@ -265,7 +274,7 @@ const EditPlayerPage = () => {
 
       {isAssignPopupOpen && (
         <div className="assign-popup active">
-          <h3 style={{ color: '#333' }}>Assign Player to a User if he is already registered with his Email</h3>
+          <h3 style={{ color: 'white' }}>Assign Player to a User if he is already registered with his Email</h3>
 
           <input
             type="email"
@@ -285,6 +294,7 @@ const EditPlayerPage = () => {
 
           {/* New error message for email not existing */}
           {emailError && <p className="error-message">Email does not exist in the system, please ask your friend to register to BallerShuffle.</p>}
+          {userAssingedAlreadyError && <p className="error-message">This username(Email) is already assigned to a player in this court.</p>}
           
           <button
             className="close-button"
@@ -298,8 +308,8 @@ const EditPlayerPage = () => {
           </button>
         </div>
       )}
-      <div className="input-container2">
-        <label htmlFor="name">Name:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="name">Name :</label>
         <input
           type="text"
           id="name"
@@ -310,8 +320,8 @@ const EditPlayerPage = () => {
         {errors.name && <p className="error-message">{errors.name}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="height">Height (cm):</label>
+      <div className="input-container-basketball">
+        <label htmlFor="height">Height (cm) :</label>
         <input
           type="number"
           id="height"
@@ -322,8 +332,8 @@ const EditPlayerPage = () => {
         {errors.height && <p className="error-message">{errors.height}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="scoring">Scoring:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="scoring">Scoring :</label>
         <input
           type="number"
           id="scoring"
@@ -334,8 +344,8 @@ const EditPlayerPage = () => {
         {errors.scoring && <p className="error-message">{errors.scoring}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="passing">Passing:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="passing">Passing :</label>
         <input
           type="number"
           id="passing"
@@ -346,8 +356,8 @@ const EditPlayerPage = () => {
         {errors.passing && <p className="error-message">{errors.passing}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="speed">Speed:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="speed">Speed :</label>
         <input
           type="number"
           id="speed"
@@ -358,8 +368,8 @@ const EditPlayerPage = () => {
         {errors.speed && <p className="error-message">{errors.speed}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="physical">Physical:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="physical">Physical :</label>
         <input
           type="number"
           id="physical"
@@ -370,8 +380,8 @@ const EditPlayerPage = () => {
         {errors.physical && <p className="error-message">{errors.physical}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="defence">Defence:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="defence">Defence :</label>
         <input
           type="number"
           id="defence"
@@ -382,8 +392,8 @@ const EditPlayerPage = () => {
         {errors.defence && <p className="error-message">{errors.defence}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="threePtShot">3 PT Shot:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="threePtShot">3 PT Shot :</label>
         <input
           type="number"
           id="threePtShot"
@@ -394,8 +404,8 @@ const EditPlayerPage = () => {
         {errors.threePtShot && <p className="error-message">{errors.threePtShot}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="rebound">Rebound:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="rebound">Rebound :</label>
         <input
           type="number"
           id="rebound"
@@ -406,8 +416,8 @@ const EditPlayerPage = () => {
         {errors.rebound && <p className="error-message">{errors.rebound}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="ballHandling">Ball Handling:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="ballHandling">Ball Handling :</label>
         <input
           type="number"
           id="ballHandling"
@@ -418,8 +428,8 @@ const EditPlayerPage = () => {
         {errors.ballHandling && <p className="error-message">{errors.ballHandling}</p>}
       </div>
 
-      <div className="input-container2">
-        <label htmlFor="postUp">Post Up:</label>
+      <div className="input-container-basketball">
+        <label htmlFor="postUp">Post Up :</label>
         <input
           type="number"
           id="postUp"
@@ -429,8 +439,8 @@ const EditPlayerPage = () => {
         />
         {errors.postUp && <p className="error-message">{errors.postUp}</p>}
       </div>
-      <button className='calc-save-button2' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
-      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="NPG-back-home-button11">
+      <button className='calc-save-button-basketball' onClick={() => handleUpdatePlayer(currCourtName, currCourtType)}>Update Player</button>
+      <Link to={`/court_home_page/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
     </div>
