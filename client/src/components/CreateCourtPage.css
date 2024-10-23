@@ -1,152 +1,203 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+
 /*--------------------BackGround------------------ */
 html {
-  height: 100%; /* Make sure the html element covers the full height */
+  height: 100%;
+  /* Make sure the html element covers the full height */
 }
 
 body {
   margin: 0;
-  height: 100%; /* Make sure the body covers the full height */
-  background-size: cover; /* Cover the entire viewport */
-  background-attachment: fixed; /* Fix the background to the viewport */
-  background-repeat: no-repeat; /* Do not repeat the background */
-  overflow-x: hidden; /* Hide horizontal scroll */
-  font-family: 'Exo 2', sans-serif;
+  height: 100%;
+  /* Make sure the body covers the full height */
+  background-size: cover;
+  /* Cover the entire viewport */
+  background-attachment: fixed;
+  /* Fix the background to the viewport */
+  background-repeat: no-repeat;
+  /* Do not repeat the background */
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  font-family: 'Arial', sans-serif;
 }
-  
-  .create-court-page-style {
-    overflow-x: hidden; /* Hide horizontal scroll */
-    overflow-y: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Adjusted to align content at the top */
-    animation: fadeIn 0.2s ease-in-out; /* Apply fadeIn animation */
-  }
-  
+
+.create-court-page-style {
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  /* Adjusted to align content at the top */
+  animation: fadeIn 0.2s ease-in-out;
+  /* Apply fadeIn animation */
+}
+
 /*--------------------TITLE------------------ */
 
 .CP-title {
-    font-family: 'Exo 2', sans-serif; /* Using Exo 2 font */
-    font-weight: 700; /* Bold */
-    font-size: 3rem; /* Increased font size for emphasis */
-    color: white; /* Faded white-orange color */
-    text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5); /* Adding a text shadow for a 3D effect */
-    margin: 20px 0; /* Adjusted margin to provide space */
-    margin-top: 60px;
-  }
-  
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  /* Bold */
+  font-size: 3rem;
+  /* Increased font size for emphasis */
+  color: white;
+  /* Faded white-orange color */
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  /* Adding a text shadow for a 3D effect */
+  margin: 20px 0;
+  /* Adjusted margin to provide space */
+  margin-top: 60px;
+}
 
-  /*--------------------INPUT CONTAINER------------------ */
-  .input-container1 {
-    margin-bottom: 20px;
-    text-shadow: 0 0 1px white;
-  }
-  
-  label {
-    font-family: 'Exo 2', sans-serif; /* Using Exo 2 font for labels */
-    font-weight: 600; /* Semi-bold */
-    font-size: 1.2rem; /* Adjust font size */
-    color: white; /* Light blue color for labels */
-    margin-bottom: 5px; /* Add a small margin below labels */
-  }
-  
-  input {
-    font-family: 'Exo 2', sans-serif; /* Using Exo 2 font for inputs */
-    font-weight: 400; /* Regular weight */
-    font-size: 1rem; /* Adjust font size */
-    color: white;
-    padding: 8px; /* Adjust padding for inputs */
-    border: 1px solid #6ab3d5; /* Light blue border for inputs */
-    border-radius: 22px; /* Rounded corners */
-  }
-  
-  .error-message {
-    color: red;
-    margin-top: 5px;
-  }
-  
+
+/*--------------------INPUT CONTAINER------------------ */
+.input-container1 {
+  margin-bottom: 20px;
+  text-shadow: 0 0 1px white;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.input-container1 label {
+  font-family: 'Arial', sans-serif;
+  /* Using Exo 2 font for labels */
+  font-weight: 100;
+  /* Semi-bold */
+  font-size: 1.2rem;
+  /* Adjust font size */
+  color: white;
+  /* Light blue color for labels */
+  margin-bottom: 5px;
+  /* Add a small margin below labels */
+}
+
+.input-container1 input {
+  font-family: 'Arial', sans-serif;
+  /* Using Exo 2 font for inputs */
+  font-weight: 100;
+  /* Regular weight */
+  font-size: 1rem;
+  /* Adjust font size */
+  color: white;
+  padding: 8px;
+  /* Adjust padding for inputs */
+  border: 1px solid #6ab3d5;
+  /* Light blue border for inputs */
+  border-radius: 22px;
+  /* Rounded corners */
+}
+
+.error-message {
+  color: red;
+  margin-top: 5px;
+}
+
 
 /*--------------------CALCULATION BUTTON------------------ */
 
 .create-court-button {
-    margin-top: 32px; /* Adjusted margin to provide space below the title */
-    padding: 20px 20px; /* Adjusted padding for a larger clickable area */
-    background-color: rgb(255, 255, 255); /* Initial background color */
-    color: #161005; /* Text color */
-    border: 2px solid #ffffffbe; /* Border color */
-    border-radius: 22px; /* Rounded corners */
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s,box-shadow 0.3ms; /* Smooth transition effect */
-    text-decoration: none; /* Remove underline */
-    font-weight: bold;
-    font-size: 18px; 
-  }
-  
-  .create-court-button:hover {
-    background-color: #ffffff; /* Hover background color */
-    color: rgb(0, 0, 0); /* Hover text color */
-    box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
-    ;
-  }
-  .create-court-button:active {
-    transform: translateY(4px); /* Move the button down by 2 pixels when clicked */
-    box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3); /* Add a subtle box shadow for a 3D effect */
-  }
+  margin-top: 32px;
+  /* Adjusted margin to provide space below the title */
+  padding: 20px 20px;
+  /* Adjusted padding for a larger clickable area */
+  background-color: rgb(255, 255, 255);
+  /* Initial background color */
+  color: #161005;
+  /* Text color */
+  border: 2px solid #ffffffbe;
+  /* Border color */
+  border-radius: 22px;
+  /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.3ms;
+  /* Smooth transition effect */
+  text-decoration: none;
+  /* Remove underline */
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.create-court-button:hover {
+  background-color: #ffffff;
+  /* Hover background color */
+  color: rgb(0, 0, 0);
+  /* Hover text color */
+  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
+  ;
+}
+
+.create-court-button:active {
+  transform: translateY(4px);
+  /* Move the button down by 2 pixels when clicked */
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+  /* Add a subtle box shadow for a 3D effect */
+}
 
 /*--------------------COURT TYPES------------------ */
 
-  .court-type-selection {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-  }
-  
-  .court-type-cube-BasketBall {
-    width: 120px;
-    position: relative;
-    height: 70px;
-    background-size: cover; /* Ensure the background covers the cube */
-    background-position: center; /* Center the background image */
-    margin: 10px;
-    border: 2px solid #ffffffbe;
-    border-radius: 15px;
-    padding: 10px;
-    cursor: pointer;
-    background-image: url('/public/court.png'); /* Add the basketball court background */
-    transition: background-color 0.3s; /* Transition for the background color */
-    box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    display: inline-block;
-    vertical-align: top;
-  }
+.court-type-selection {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
 
-  .court-type-cube-FootBall {
-    width: 120px;
-    position: relative;
-    height: 70px;
-    background-size: cover; /* Ensure the background covers the cube */
-    background-position: center; /* Center the background image */
-    margin: 10px;
-    border: 2px solid #ffffffbe;
-    border-radius: 15px;
-    padding: 10px;
-    cursor: pointer;
-    background-image: url('/public/soccerCourt.webp'); /* Add the basketball court background */
-    transition: background-color 0.3s; /* Transition for the background color */
-    box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    display: inline-block;
-    vertical-align: top;
-  }
-  
-  .court-type-cube-BasketBall.selected {
-    background-image: url('/public/court.png'); /* Add the basketball court background */
-    color: white;
-    border-color: #0044cc;
-  }
-  .court-type-cube-FootBall.selected {
-    background-image: url('/public/soccerCourt.webp'); /* Add the basketball court background */
-    color: white;
-    border-color: #0044cc;
-  }
+.court-type-cube-BasketBall {
+  width: 120px;
+  position: relative;
+  height: 70px;
+  background-size: cover;
+  /* Ensure the background covers the cube */
+  background-position: center;
+  /* Center the background image */
+  margin: 10px;
+  border: 2px solid #ffffffbe;
+  border-radius: 15px;
+  padding: 10px;
+  cursor: pointer;
+  background-image: url('/public/court.png');
+  /* Add the basketball court background */
+  transition: background-color 0.3s;
+  /* Transition for the background color */
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.court-type-cube-FootBall {
+  width: 120px;
+  position: relative;
+  height: 70px;
+  background-size: cover;
+  /* Ensure the background covers the cube */
+  background-position: center;
+  /* Center the background image */
+  margin: 10px;
+  border: 2px solid #ffffffbe;
+  border-radius: 15px;
+  padding: 10px;
+  cursor: pointer;
+  background-image: url('/public/soccerCourt.webp');
+  /* Add the basketball court background */
+  transition: background-color 0.3s;
+  /* Transition for the background color */
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.court-type-cube-BasketBall.selected {
+  background-image: url('/public/court.png');
+  /* Add the basketball court background */
+  color: white;
+  border-color: #0044cc;
+}
+
+.court-type-cube-FootBall.selected {
+  background-image: url('/public/soccerCourt.webp');
+  /* Add the basketball court background */
+  color: white;
+  border-color: #0044cc;
+}

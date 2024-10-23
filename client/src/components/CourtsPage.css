@@ -10,8 +10,6 @@ body {
   margin: 0;
   height: 100%;
   /* Make sure the body covers the full height */
-  background-image: url('/public/6199236.jpg');
-  /* Adjust the path as necessary */
   background-size: cover;
   /* Cover the entire viewport */
   background-attachment: fixed;
@@ -22,7 +20,7 @@ body {
   /* Hide horizontal scroll */
   overflow-y: scroll;
   /* Allow vertical scrolling only when necessary */
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Arial', sans-serif;
 }
 
 
@@ -50,7 +48,7 @@ body {
 @import url('https://fonts.googleapis.com/css?family=Permanent+Marker&display=swap');
 
 .app-title {
-  font-family: 'Varsity Regular', sans-serif;
+  font-family: 'Exo 2', Arial;
   font-weight: 10;
   /* Extra bold */
   font-size: 3rem;
@@ -70,53 +68,57 @@ body {
 
 
 .courtsPage-title {
-  font-family: 'Exo 2', sans-serif;
-  font-weight: 900;
-  font-size: 2.4rem;
+  font-family: 'Exo 2', Arial;
+  font-weight: 200;
+  font-size: 3rem;
   color: white;
   /* The following line adds a shadow that creates a border effect */
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   margin: 20px 0;
+  margin-top: -88px;
 }
 
 
 /*--------------------CREATE PLAYER BUTTON------------------ */
-
 .create-new-court-button {
+  font-family: 'Exo 2', Arial;
   margin-top: 30px;
-  /* Adjusted margin to provide space below the title */
-  padding: 10px 10px;
-  /* Adjusted padding for a larger clickable area */
-  background-color: #ffffff;
-  /* Initial background color */
+  padding: 12px 24px;
+  background: linear-gradient(145deg, #ffffff, #e6e6e6);
   color: #161005;
-  /* Text color */
-  border: 2px solid #ffffffbe;
-  /* Border color */
+  border: none;
   border-radius: 55px;
-  /* Rounded corners */
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
-  /* Smooth transition effect */
   text-decoration: none;
-  /* Remove underline */
+  font-weight: 500;
+  position: relative;
+  box-shadow: 
+    0 8px 15px rgba(50, 50, 93, 0.2),   /* Increased depth shadow */
+    0 4px 6px rgba(0, 0, 0, 0.15),      /* Darker middle shadow */
+    0 1px 3px rgba(0, 0, 0, 0.1),       /* Close shadow for definition */
+    inset 0 2px 2px rgba(255, 255, 255, 1); /* Stronger inner highlight */
+  transform: translateY(0);
+  transition: all 0.25s ease;
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .create-new-court-button:hover {
-  background-color: #faf3ee;
-  /* Hover background color */
-  color: rgb(0, 0, 0);
-  /* Hover text color */
-  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
-
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  transform: translateY(-3px);  /* Increased lift */
+  box-shadow: 
+    0 15px 25px rgba(50, 50, 93, 0.25),  /* Larger hover shadow */
+    0 8px 10px rgba(0, 0, 0, 0.2),       /* Deeper middle shadow */
+    0 4px 6px rgba(0, 0, 0, 0.1),        /* Close shadow */
+    inset 0 2px 2px rgba(255, 255, 255, 1);
 }
 
-
 .create-new-court-button:active {
-  transform: translateY(4px);
-  /* Move the button down by 2 pixels when clicked */
-  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
-  /* Add a subtle box shadow for a 3D effect */
+  transform: translateY(2px);  /* More pronounced press */
+  background: linear-gradient(145deg, #e6e6e6, #ffffff);
+  box-shadow: 
+    0 4px 8px rgba(50, 50, 93, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),  /* Deeper inner shadow when pressed */
+    inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes fadeIn {
@@ -152,22 +154,27 @@ body {
   /* Transition for the background color */
   box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
   text-align: center;
+  font-family: 'Exo 2', Arial;
   display: inline-block;
   vertical-align: top;
   transition: transform 0.2s ease
 }
 
 .CourtsPage-cube.pastelOrange {
-  background-image: url('/public/court.png');
+  background-image: url('/public/BasketBallWallpaper.jpg');
   /* Add the basketball court background */
   transition: transform 0.2s ease,background-color 0.3s;
   /* Transition for the background color */
+  font-family: 'Exo 2', Arial;
+
 }
 
 .CourtsPage-cube.pastelGreen {
-  background-image: url('/public/soccerCourt.webp');
+  background-image: url('/public/FootBallWallpaper.jpg');
   /* Add the basketball court background */
   transition: transform 0.2s ease,background-color 0.3s;
+  font-family: 'Exo 2', Arial;
+
   /* Transition for the background color */
 }
 
@@ -202,9 +209,9 @@ body {
 /* Update the font size and add black text border */
 .CourtsPage-cube p {
   font-size: 24px;
+  font-family: 'Exo 2', Arial;
   /* Adjust the font size as needed */
   color: #ffffff;
-  -webkit-text-stroke: 1px rgb(0, 0, 0);
   /* Black border on text */
   display: inline-block;
   margin: auto;
@@ -267,11 +274,29 @@ body {
   .player-cube {
     width: 100%;
   }
+  .CourtsPage-cube {
+    width: 140px;
+    position: relative;
+    height: 100px;
+    font-family: 'Exo 2', Arial;
+  }
+
+  /* Adjust loading spinner size for mobile */
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #c4af63;
+  }
+  .CourtsPage-cube p {
+    font-size: 17px;
+    font-family: 'Exo 2', Arial;
+  }
 }
 
 
 .HP-registered-players {
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Arial', sans-serif;
   /* Using Exo 2 font */
   font-weight: 700;
   /* Bold */
@@ -286,7 +311,7 @@ body {
 }
 
 .courts-list {
-  font-family: 'Exo 5', sans-serif;
+  font-family: 'Arial', sans-serif;
   font-weight: 700;
   font-size: 2rem;
   color: rgb(255, 255, 255);
@@ -295,6 +320,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in forwards;
   align-items: flex-start;
   margin: 0 auto;
   padding: 10px;
@@ -323,7 +350,7 @@ body {
   /* Cursor changes to pointer to indicate it's clickable */
   transition: background-color 0.3s ease;
   /* Smooth transition for background color */
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Exo 2', Arial;
   /* Font family */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   /* Subtle shadow for depth */
@@ -339,4 +366,35 @@ body {
 .logout-button:focus {
   outline: none;
   /* Remove outline on focus for cleaner look */
+}
+
+
+.logo-image1 {
+  width: 400px;
+  /* Adjust the size as needed */
+  margin-bottom:35px;
+
+  /* Reduce bottom margin to bring it closer */
+  margin-top: 30px;
+  margin-left: -20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #c4af63;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Add this to prevent content flash */
+
+.courts-list.loaded {
+  opacity: 1;
 }

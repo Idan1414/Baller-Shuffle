@@ -3,6 +3,7 @@ import './AuthForm.css';
 import { useNavigate } from 'react-router-dom';
 import { MdLogin, MdPersonAdd } from 'react-icons/md'; // Importing icons
 
+
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -46,8 +47,10 @@ const AuthForm = () => {
         return;
       }
     }
-
-    const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
+    console.log(process.env.REACT_APP_DB_HOST)
+    const url = isLogin
+      ? `http://${process.env.REACT_APP_DB_HOST}:5000/login`
+      : `http://${process.env.REACT_APP_DB_HOST}:5000/register`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -100,7 +103,7 @@ const AuthForm = () => {
 
   return (
     <div className='login-page-style'>
-      <img src="/LOGOTRANS.png" alt="Baller Shuffle Logo" className='logo-image' />
+      <img src="/HadarLOGO.png" alt="Baller Shuffle Logo" className='logo-image' />
       <div className="auth-form-container">
         <div className={`auth-form ${fadeEffect ? 'fade-in' : ''}`}>
           <h2 className="graffiti-title1">{isLogin ? 'Login' : 'Register'}</h2>

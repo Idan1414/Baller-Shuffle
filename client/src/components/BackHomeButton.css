@@ -1,20 +1,21 @@
 
 .back-home-button {
+  font-family: 'Exo 2', Arial;
   position: absolute; /* Position relative to the nearest positioned ancestor */
   top: 10px;       /* Distance from the top of the viewport */
   left: 10px;      /* Distance from the left of the viewport */
   margin: 0;       /* Removes any margin to ensure precise positioning */
   margin-top: 1px;
-  font-weight: 700;
+  font-weight: 200;
   padding: 10px 10px;
   font-size: 1rem;
   margin-right: 16px;
-  background-color: #fefefe;
+  background-color: #fefefe !important;
   color: #161005;
   border: 2px solid #ffffffbe;
   border-radius: 55px;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s !important;
   text-decoration: none;
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); /* Initial glow effect */
 }

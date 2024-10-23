@@ -1,20 +1,23 @@
 .game-page {
-  color: gold;
+  color: #86dfe1;
   padding: 20px;
-  font-family: 'Arial', sans-serif;
+  font-family: sans-serif, Arial;
   animation: fadeIn 0.3s ease-in-out;
 }
 
 .game-title {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
   text-align: center;
-  margin-bottom: 20px;
-  margin-top: 50px;
-  font-size: 36px;
+  color: #86dfe1;
 }
 
 .game-details {
+  font-family: 'Exo 2', Arial;
   background-color: #222;
-  border: 1px solid gold;
+  border: 1px solid #86dfe1;
   border-radius: 10px;
   padding: 15px;
   margin: 10px auto;
@@ -23,13 +26,16 @@
 }
 
 .game-details p {
+  font-family: 'Arial', Arial;
   font-size: 18px;
   margin: 10px 0;
 }
 
 .register-button {
-  background-color: gold;
-  color: black;
+  font-family: 'Exo 2', Arial;
+  font-weight: 100;
+  background-color: #116e70;
+  color: rgb(255, 255, 255);
   border: none;
   border-radius: 5px;
   padding: 10px 15px;
@@ -41,10 +47,11 @@
 }
 
 .register-button:hover {
-  background-color: #d4af37;
+  background-color: #6ecfd1;
 }
 
 .button-container {
+  font-family: 'Exo 2', Arial;
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
@@ -61,14 +68,15 @@
   border: 2px solid silver;
   border-radius: 55px;
   cursor: pointer;
-  transition: border 0.2s ,background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: border 0.2s, background-color 0.2s, color 0.2s, box-shadow 0.2s;
   text-decoration: none;
-  font-weight: 600; 
+  font-weight: 600;
   box-shadow: 0 0 15px rgba(25, 22, 10, 0.922);
 }
 
 .back-to-all-games-button:hover {
-  background-color: darkgoldenrod; /* Darker gold on hover */
+  background-color: darkgoldenrod;
+  /* Darker gold on hover */
   background-color: rgb(253, 252, 243);
   border: 2px solid rgb(253, 252, 243);
   color: rgb(0, 0, 0);
@@ -79,6 +87,7 @@
 
 /* Modal Styles */
 .modal-overlay {
+  font-family: 'Exo 2', Arial;
   position: fixed;
   top: 0;
   left: 0;
@@ -88,9 +97,19 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
+
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  /* Fully visible when shown */
+  transform: translateY(0);
+  /* Move to its original position */
 }
 
 .modal-content {
+  font-family: 'Exo 2', Arial;
   position: relative;
   padding: 20px;
   max-width: 500px;
@@ -101,7 +120,8 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.close-button, .cancel-button {
+.close-button,
+.cancel-button {
   background-color: #f44336;
   color: white;
   padding: 10px 15px;
@@ -113,6 +133,7 @@
 }
 
 .submit-button {
+  font-family: 'Exo 2', Arial;
   background-color: #4CAF50;
   color: white;
   padding: 10px 15px;
@@ -125,6 +146,7 @@
 }
 
 .registered-players {
+  font-family: 'Exo 2', Arial;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -133,6 +155,7 @@
 }
 
 .registered-players h2 {
+  font-family: 'Exo 2', Arial;
   font-size: 24px;
   margin-bottom: 10px;
   color: #fefefe;
@@ -140,6 +163,7 @@
 }
 
 .main-reserve-title1 {
+  font-family: 'Exo 2', Arial;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -149,6 +173,7 @@
 }
 
 .main-reserve-title1 h3 {
+  font-family: 'Arial', Arial;
   font-size: 19px;
   margin-bottom: 10px;
   color: #fefefe;
@@ -158,14 +183,20 @@
 .player-cube-container {
   display: flex;
   flex-wrap: wrap;
-  max-height: 300px; /* Limit height of player cubes container */
-  overflow-y: auto; /* Enable scrolling */
+  max-height: 300px;
+  /* Limit height of player cubes container */
+  overflow-y: auto;
+  /* Enable scrolling */
   margin-top: 10px;
+  font-family: 'Exo 2', Arial;
 }
 
 .player-cube {
-  width: 100px; /* Set a fixed width */
-  height: 100px; /* Set a fixed height */
+  font-family: 'Exo 2', Arial;
+  width: 100px;
+  /* Set a fixed width */
+  height: 100px;
+  /* Set a fixed height */
   margin: 5px;
   display: flex;
   align-items: center;
@@ -178,8 +209,36 @@
 }
 
 .player-cube.selected {
-  background-color: gold; /* Change background color when selected */
+  background-color: #6ecfd1;
+  /* Change background color when selected */
   color: rgb(0, 0, 0);
+}
+
+
+.my-player-cube {
+  font-family: 'Exo 2', Arial;
+  width: 100px;
+  /* Set a fixed width */
+  height: 100px;
+  /* Set a fixed height */
+  margin: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 20px rgba(250, 250, 249, 0.986),
+    0 0 30px rgba(233, 245, 173, 0.979);  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.my-player-cube.selected {
+  background-color: #6ecfd1;
+  /* Change background color when selected */
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgba(250, 250, 249, 0.986),
+  0 0 30px rgba(233, 245, 173, 0.979);  border-radius: 8px;
 }
 
 
@@ -199,23 +258,27 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   color: white;
-  background-color: black;
+  background-color: rgba(0, 0, 0, 0.427);
   display: flex;
   align-items: center;
-  justify-content: center; /* Center text horizontally */
+  justify-content: center;
+  /* Center text horizontally */
   text-align: center;
   position: relative;
-  transition : background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
+
+
 
 .player-item .delete-button {
   display: block;
   position: absolute;
-  top: 5px;
-  right: 5px;
-  background-color: red;
-  color: white;
+  top: 2px;
+  left: 5px;
+  font-weight: 600;
+  background-color: rgba(255, 0, 0, 0.516);
+  color: rgb(66, 64, 64);
   border: none;
   cursor: pointer;
   font-size: 14px;
@@ -231,9 +294,60 @@
 }
 
 .player-item:hover {
-  background-color: #515559;
+  background-color: #4f5254;
   transform: translateY(-2px);
 }
+
+.approved-player-item {
+  width: 120px;
+  height: 100px;
+  margin: 5px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: white;
+  background-color: rgba(53, 173, 42, 0.427);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Center text horizontally */
+  text-align: center;
+  position: relative;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+
+
+.approved-player-item .delete-button {
+  display: block;
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  font-weight: 600;
+  background-color: rgba(255, 0, 0, 0.477);
+  color: rgb(66, 64, 64);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px;
+  width: 20px;
+  height: 20px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  padding: 0;
+}
+
+.approved-player-item:hover {
+  background-color: #21a955ba;
+  transform: translateY(-2px);
+}
+
+
+
+
 
 /* Additional responsive styles */
 @media (max-width: 768px) {
@@ -243,7 +357,535 @@
 
   .player-item {
     width: 100px;
-    height: 60px;
+    height: 90px;
     font-size: 12px;
   }
+
+  .approved-player-item {
+    width: 100px;
+    height: 90px;
+    font-size: 12px;
+  }
+
+  .approve-button {
+    color: white;
+    font-size: 8px;
+  }
+
+
+
+  .game-details p {
+    font-size: 15px;
+
+  }
+
+  .shuffle-teams-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+  }
+  .team-section {
+    width: 100%;
+    margin: 10px 0;
+
+  }
+
+  .team-section ul li {
+    margin-left: 60px;
+    
+
+  }
+
+}
+
+.shuffle-teams-button {
+  font-family: 'Exo 2', Arial;
+  background: linear-gradient(145deg, #98D7A2, #8AC89F);
+  color: #ffffff;
+  font-weight: 100;
+  font-size: 1.1rem;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(152, 215, 162, 0.3);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0;
+  z-index: 1;
+
+}
+
+/* Hover effect */
+.shuffle-teams-button:hover {
+  background: linear-gradient(145deg, #8AC89F, #7AB98F);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(152, 215, 162, 0.4);
+}
+
+/* Active/Click effect */
+.shuffle-teams-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 10px rgba(152, 215, 162, 0.2);
+}
+
+/* Disabled state */
+.shuffle-teams-button:disabled {
+  background: linear-gradient(145deg, #C8E6CC, #B8D6BC);
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.7;
+}
+
+/* Optional: Add a subtle pulse animation */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(152, 215, 162, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 4px 25px rgba(152, 215, 162, 0.5);
+  }
+
+  100% {
+    box-shadow: 0 4px 15px rgba(152, 215, 162, 0.3);
+  }
+}
+
+.shuffle-teams-button:hover {
+  animation: pulse 2s infinite;
+}
+
+/* Optional: Add a ripple effect on click */
+.shuffle-teams-button::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 1s;
+}
+
+.shuffle-teams-button:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+
+.teams-shuffle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teams-game-title {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-align: center;
+  color: #86dfe1;
+}
+
+.teams-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.team-section {
+  background-color: #104445;
+  border-radius: 88px;
+  padding: 10px;
+  width: 200px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.team-section h2 {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  align-self: center;
+  align-items: center;
+  align-content: center;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.team-section ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  /* Ensure there’s no margin around the ul */
+}
+
+.team-section ul li {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+  padding: 6px;
+  width: 60%;
+  color: #ffffff;
+  /* Keeping this to maintain white text color */
+  background-color: #97e1e22b;
+  margin-bottom: 5px;
+  margin-left: 33px;
+  border-radius: 43px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  /* Center the text within the list item */
+}
+
+
+.vote-for-mvp-button {
+  margin-top: 17px;
+  font-weight: 100;
+  padding: 20px 20px;
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  margin-right: 16px;
+  background-color: gold;
+  /* Pastel peach */
+  color: #0a081c;
+  /* Darker brown text */
+  border: 2px solid gold;
+  /* Slightly darker peach border */
+  border-radius: 55px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(177, 159, 140, 0.4);
+  /* Softer shadow */
+}
+
+.vote-for-mvp-button:hover {
+  background-color: rgb(255, 232, 101);
+  border: 2px solid rgb(253, 226, 72);
+  /* Lighter peach on hover */
+  box-shadow: 0 0 20px rgba(211, 208, 109, 0.6),
+    0 0 30px rgba(252, 253, 247, 0.4);
+  transform: scale(1.05);
+
+}
+
+
+
+.create-game-button {
+  margin-top: 17px;
+  font-weight: 100;
+  padding: 20px 20px;
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  margin-right: 16px;
+  background-color: #116e70;
+  /* Pastel peach */
+  color: #ffffff;
+  /* Darker brown text */
+  border: 2px solid #116e70;
+  /* Slightly darker peach border */
+  border-radius: 55px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(177, 159, 140, 0.4);
+  /* Softer shadow */
+}
+
+.create-game-button:hover {
+  background-color: #39a0a1;
+  border: 2px solid #39a0a1;
+  transform: scale(1.05);
+
+
+  /* Lighter peach on hover */
+  box-shadow: 0 0 20px rgba(51, 190, 222, 0.6),
+    0 0 30px rgba(42, 151, 165, 0.4);
+}
+
+
+
+.vote-for-mvp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  /* Semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is on top of other content */
+}
+
+.vote-for-mvp-modal {
+  background-image: url('/public/GoldenWall.jpg');
+  background-position: center;
+  background-size: cover;
+  /* Initial background color */
+  border-radius: 8px;
+  padding: 20px;
+  width: 400px;
+  /* Adjust width as needed */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  max-height: 80vh;
+  /* Limit the height of the modal */
+  overflow: hidden;
+  /* Prevent overflow from modal */
+  opacity: 0;
+  /* Start invisible */
+  transform: translateY(-20px);
+  /* Start slightly above the center */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  /* Smooth transition for opacity and position */
+}
+
+.vote-for-mvp-modal.show {
+  opacity: 1;
+  /* Fully visible when shown */
+  transform: translateY(0);
+  /* Move to its original position */
+}
+
+.vote-for-mvp-modal h2 {
+  margin-bottom: 9px;
+  font-size: x-large;
+  color: #0a081c;
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+}
+
+.vote-for-mvp-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 68px;
+  max-height: 34vh;
+  /* Limit height for the players list */
+  overflow-y: auto;
+  /* Allow vertical scrolling */
+  overflow-x: hidden;
+  /* Prevent horizontal scrolling */
+
+}
+
+
+.vote-for-mvp-player-item {
+  cursor: pointer;
+  padding: 15px;
+  color: #0a081c;
+  border-radius: 4px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  /* Enable flexbox */
+  justify-content: center;
+  /* Center horizontally */
+  align-items: center;
+  /* Center vertically */
+  height: 60px;
+}
+
+.vote-for-mvp-player-item:hover {
+  background-color: rgba(255, 215, 0, 0.3);
+  /* Light gold on hover */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  /* Gold shadow on hover */
+}
+
+.vote-for-mvp-player-item.selected {
+  transform: scale(1.09);
+  /* Slightly enlarge on hover */
+  font-weight: bold;
+  color: goldenrod;
+}
+
+.vote-for-mvp-submit-vote-button {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  margin-top: 30px;
+  margin-bottom: 2px;
+  padding: 10px 15px;
+  background: linear-gradient(90deg, #FFD700, #FFEA00);
+  /* Gradient gold */
+  color: #333;
+  /* Dark text for contrast */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.vote-for-mvp-submit-vote-button:hover {
+  transform: scale(1.05);
+  /* Slightly enlarge on hover */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  /* Gold shadow on hover */
+}
+
+
+.vote-for-mvp-submit-vote-button:active {
+  transform: scale(0.95);
+  /* Slightly reduce size on click */
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+  /* Smaller shadow on click */
+}
+
+.vote-for-mvp-close-modal-button {
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  margin-top: 8px;
+  padding: 10px 15px;
+  background: linear-gradient(90deg, #DC3545, #FF6F61);
+  /* Gradient red */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.vote-for-mvp-close-modal-button:hover {
+  transform: scale(1.05);
+  /* Slightly enlarge on hover */
+  box-shadow: 0 0 10px rgba(255, 99, 71, 0.6);
+  /* Red shadow on hover */
+}
+
+
+.vote-for-mvp-message {
+  color: #0a081c;
+  margin-top: 47px;
+}
+
+
+.reveal-mvp-button {
+  margin-top: 17px;
+  font-weight: 100;
+  padding: 20px 20px;
+  font-family: 'Exo 2', Arial, Helvetica, sans-serif;
+  font-size: 2rem;
+  margin-right: 16px;
+  background-color: gold;
+  /* Pastel peach */
+  color: #0f0c01e4;
+  /* Darker brown text */
+  border: 2px solid gold;
+  /* Slightly darker peach border */
+  border-radius: 55px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 0 20px rgba(203, 206, 53, 0.742),
+    0 0 30px rgba(225, 203, 58, 0.845);
+  /* Softer shadow */
+}
+
+.reveal-mvp-button:hover {
+  background-color: rgb(255, 232, 101);
+  border: 2px solid rgb(253, 226, 72);
+  /* Lighter peach on hover */
+  transform: scale(1.09);
+}
+
+
+.mvp-winner {
+  font-size: 2em;
+  font-weight: bold;
+  text-align: center;
+  color: rgb(0, 0, 0);
+  background-color: gold; /* Golden background */
+  padding: 20px;
+  border-radius: 80px;
+  box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.7); /* Golden glow effect */
+  
+  /* Animation for slow appearance */
+  opacity: 0;
+  transform: scale(0.8);
+  animation: fadeInAndGrow 2s ease-out forwards;
+}
+
+.mvp-names {
+  display: block; /* Ensure names start on a new line */
+  margin-top: 10px; /* Space between title and names */
+}
+
+@keyframes fadeInAndGrow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+.approve-button {
+  position: absolute;
+  top: 2px;
+  font-weight: 700;
+  right: 5px;
+  background-color: green;
+  color: rgb(201, 199, 199);
+  font-size: 13px;
+  padding: 2px 6px;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+
+.delete-game-button {
+  font-family: 'Exo 2', Arial;
+  position: absolute; /* Position relative to the nearest positioned ancestor */
+  top: 10px;       /* Distance from the top of the viewport */
+  right: 10px;      /* Distance from the right of the viewport */
+  margin: 0;       /* Removes any margin to ensure precise positioning */
+  margin-top: 1px;
+  font-weight: 200;
+  padding: 10px 10px;
+  font-size: 1rem;
+  margin-right: 16px;
+  background-color: #ea565682 !important;
+  color: #161005;
+  border: 2px solid #ea565616;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s !important;
+  text-decoration: none;
+}
+
+.delete-game-button:hover {
+  background-color: #fefef7e6;
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgb(215, 144, 144), 0 0 30px rgba(222, 57, 57, 0.441);
+  /* Stronger glow on hover */
+}
+
+/* Media query for iPhone and smaller screens */
+@media screen and (max-width: 600px) {
+  .delete-game-button {
+    top: 10px; /* Adjust button's top position to avoid covering the title */
+    right: 3px; /* Keep right positioning */
+    font-size: 1rem; /* Reduce font size for smaller screens */
+    padding: 8px 6px; /* Adjust padding for smaller screens */
+  }
+
 }

@@ -1,0 +1,415 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+
+/*--------------------BackGround------------------ */
+html {
+  height: 100%;
+  /* Make sure the html element covers the full height */
+  font-size: 0.7rem;
+  /* Adjust font size */
+
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  /* Make sure the body covers the full height */
+  background-size: cover;
+  /* Cover the entire viewport */
+  background-attachment: fixed;
+  /* Fix the background to the viewport */
+  background-repeat: no-repeat;
+  /* Do not repeat the background */
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  font-family: 'Exo 2', sans-serif;
+
+}
+
+.EP-edit-player-page-style {
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  overflow-y: hidden;
+  min-height: 100vh;
+  /* Set minimum height to 100% of the viewport */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  /* Adjusted to align content at the top */
+  animation: fadeIn 0.2s ease-in-out;
+  /* Apply fadeIn animation */
+
+}
+
+/*--------------------TITLE------------------ */
+
+.EP-title {
+  font-family: 'Exo 2', sans-serif;
+  /* Using Exo 2 font */
+  font-weight: 700;
+  /* Bold */
+  font-size: 3rem;
+  /* Increased font size for emphasis */
+  color: rgb(251, 254, 255);
+  /* Faded white-orange color */
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  /* Adding a text shadow for a 3D effect */
+  margin: 20px 0;
+  /* Adjusted margin to provide space */
+}
+
+
+.EP-content-container {
+
+  display: flex;
+  /* Enable flexbox for the content container */
+  justify-content: space-between;
+  /* Space out child elements */
+
+}
+
+/*--------------------INPUT CONTAINER------------------ */
+.EP-input-wrapper {
+  flex: 1;
+  /* Allow this div to take remaining space */
+  margin-right: 10px;
+  /* Space between inputs and the averages table */
+  flex: 0 0 30%; /* Adjust to a fixed width or percentage */
+}
+
+.EP-input-container {
+  display: flex; /* Enable flexbox */
+  align-items: center; /* Align items vertically centered */
+  margin-bottom: 0px; /* Space below each input container */
+  padding: 1px;
+
+}
+
+.EP-input-container label {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: rgb(255, 255, 255);
+  text-shadow: 0 0 1px white;
+  margin-bottom: 5px;
+  margin-right: 7px; /* Space between label and input */
+  min-width: 100px; /* Optional: Set a minimum width for consistent spacing */
+}
+
+.EP-input-container input {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 100;
+  font-size: 1.2rem;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 2px solid rgba(108, 209, 237, 0.7) !important; /* Lighter blue border */
+  border-radius: 22px !important;
+  color: rgb(108, 209, 237) !important; /* Light blue text */ 
+  background-color: rgba(0, 0, 50, 0.6) !important; /* Ensure background is bluish and transparent */
+  text-shadow: 0 0 3px rgba(108, 209, 237, 0.8), 0 0 5px rgba(108, 209, 237, 0.5) ; /* Glowing text shadow */
+  box-shadow: 0 0 5px rgba(108, 209, 237, 0.6), 0 0 25px rgba(108, 209, 237, 0.4); /* Glowing effect around input */
+  outline: none; /* Remove default outline */
+  transition: box-shadow 0.3s ease, background-color 0.3s ease !important; /* Smooth hover effect */
+  flex: 1;
+}
+
+
+.EP-input-container input:focus {
+  box-shadow: 0 0 25px rgba(108, 209, 237, 0.8), 0 0 40px rgba(108, 209, 237, 0.5)!important; /* Stronger glow on focus */
+  border: 2px solid rgba(108, 209, 237, 1) !important; /* Brighter blue border */
+  caret-color: rgb(108, 209, 237) !important; /* Light blue caret */
+}
+
+.EP-error-message {
+  color: red;
+  margin-top: 5px;
+}
+
+.EP-error-message-averages {
+  color: #f44336; /* Red for errors */
+  font-size: 0.9em;
+  margin-top: 5px; /* Space above message */
+  text-align: center; /* Centered error message */
+}
+
+.EP-error-message-averages {
+  color: rgb(255, 255, 255);
+  margin-top: 5px;
+}
+
+
+
+/*--------------------CALCULATION BUTTON------------------ */
+
+.EP-calc-save-button {
+  font-family: 'Exo 2',  sans-serif;
+  margin-top: 8px;
+  /* Adjusted margin to provide space below the title */
+  margin-right: 16px;
+  padding: 20px 40px;
+  /* Adjusted padding for a larger clickable area */
+  background-color: rgba(141, 230, 227, 0.781);
+  /* Initial background color */
+  color: #161005;
+  /* Text color */
+  border: 2px solid #ffffffbe;
+  /* Border color */
+  border-radius: 22px;
+  /* Rounded corners */
+  cursor: pointer;
+  transition: transform 0.2s , background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  /* Smooth transition effect */
+  text-decoration: none;
+  /* Remove underline */
+  font-size: 1.1rem;
+  /* Adjust font size */
+}
+
+.EP-calc-save-button:hover {
+  color: rgb(0, 0, 0);
+  transform: scale(1.05); /* Scale on hover */
+  box-shadow: 0 0 10px rgb(80, 231, 193), 0 0 10px rgb(255, 254, 249);
+  /* Stronger glow on hover */
+  /* Hover text color */
+}
+
+.EP-calc-save-button:active {
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+  transform: scale(0.95); /* Scale on hover */
+  /* Add a subtle box shadow for a 3D effect */
+}
+
+.EP-NPG-back-home-button {
+  margin-top: 17px;
+  padding: 20px 20px;
+  margin-top: 32px;
+  /* Adjusted margin to provide space below the title */
+  margin-right: 16px;
+  background-color: #fefefe;
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); /* Initial glow effect */
+}
+
+.EP-NPG-back-home-button:hover {
+  background-color: #fefef7e6;
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
+  /* Stronger glow on hover */
+}
+
+
+.EP-form-container {
+  display: flex;
+  padding: 2px;
+  padding-left: 202px;
+  margin-right: 1px;
+  align-items: center;
+  /* Align items to the left */
+  width: 100%;
+  /* Ensure full width of container */
+}
+
+.EP-button-container {
+  display: flex;
+  /* Use flexbox for layout */
+  flex-direction: column;
+  /* Stack items vertically */
+  align-items: center;
+  /* Center items horizontally */
+
+}
+
+
+
+
+/* Assign buttons in Edit page */
+
+.EP-assign-button {
+  background-color: #4CAF50; /* Green background */
+  color: white; /* White text */
+  border: none; /* Remove borders */
+  padding: 10px 20px; /* Padding */
+  text-align: center; /* Centered text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Inline-block for spacing */
+  font-size: 16px; /* Font size */
+  margin: 4px 2px; /* Margin */
+  cursor: pointer; /* Pointer cursor */
+  border-radius: 4px; /* Rounded corners */
+  transition: background-color 0.3s, transform 0.3s; /* Transition for hover effect */
+}
+
+.EP-assign-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* Assign popup */
+.EP-assign-popup {
+  position: fixed; /* Fixed position */
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust for true center */
+  background-color: #f9f9f9; /* Softer white background */
+  border: 1px solid #ddd; /* Light grey border */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); /* Deeper shadow for better contrast */
+  z-index: 1000; /* Ensure it is on top */
+  width: 320px; /* Adjust width */
+  padding: 20px; /* Padding */
+  border-radius: 10px; /* Rounded corners */
+  animation: floatIn 0.5s ease-out; /* Smooth float-in animation */
+  opacity: 0; /* Start hidden */
+}
+
+.EP-assign-popup.active {
+  display: block;
+  opacity: 1; /* Make it visible */
+  background-color: #161005;
+}
+
+.EP-assign-popup h3 {
+  margin-bottom: 15px; /* Space below heading */
+  font-size: 1.2em;
+  color: #444; /* Darker grey for the heading */
+  text-align: center; /* Centered text */
+}
+
+.EP-assign-popup.active input {
+  width: 100%; /* Full width */
+  padding: 8px;
+  margin: 10px 0;
+  background-color: transparent;
+  color: #fdfcfc;
+  border: 1px solid #ccc; /* Light border */
+  border-radius: 4px; /* Rounded corners */
+  font-size: 0.9em;
+  box-sizing: border-box; /* Ensure padding doesn't affect width */
+}
+
+.EP-assign-popup .EP-assign-button,
+.EP-assign-popup .EP-close-button {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+}
+
+.EP-assign-popup .EP-assign-button {
+  background-color: #4CAF50; /* Primary green */
+  color: white;
+  margin-top: 10px;
+}
+
+.EP-assign-popup .EP-assign-button:hover {
+  background-color: #45a049; /* Darker green */
+  transform: scale(1.05); /* Scale on hover */
+}
+
+.EP-assign-popup .EP-close-button {
+  background-color: #f44336; /* Red close button */
+  color: white;
+  margin-top: 10px;
+}
+
+.EP-assign-popup .close-button:hover {
+  background-color: #d32f2f; /* Darker red on hover */
+  transform: scale(1.05); /* Scale on hover */
+}
+
+.EP-error-message {
+  color: #f44336; /* Red for errors */
+  font-size: 0.9em;
+  margin-top: 5px; /* Space above message */
+  text-align: center; /* Centered error message */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .EP-assign-popup {
+    width: 80%; /* Almost full width on smaller screens */
+  }
+  .EP-success-popup {
+    width: 30%; /* Take up most of the screen width */
+    font-size: 1rem; /* Smaller font size */
+    padding: 15px 10px; /* Adjust padding for smaller screens */
+  }
+
+  .EP-success-popup.show {
+    visibility: visible;
+    opacity: 1;
+    width: 80%;
+    font-size: small;
+    animation: popupFadeIn 0.5s ease forwards;
+  }
+}
+
+
+/* Keyframes for fading in the success popup */
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Keyframes for fading out the success popup */
+@keyframes popupFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* Success popup styles */
+.EP-success-popup {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto; /* Automatically centers in the middle */
+  width: fit-content; /* Adjust width to content */
+  height: fit-content; /* Adjust height to content */
+  background-color: #4CAF50;
+  color: white;
+  padding: 20px 50px;
+  border-radius: 10px;
+  font-size: 1rem;
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0; /* Start hidden */
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease, transform 0.5s ease;
+}
+
+
+
+/* Class to apply when showing the success popup */
+.EP-success-popup.show {
+  visibility: visible;
+  opacity: 1;
+  animation: popupFadeIn 0.5s ease forwards;
+}
+
+/* Class to apply when hiding the success popup */
+.EP-success-popup.hide {
+  animation: popupFadeOut 0.5s ease forwards;
+  visibility: hidden;
+}

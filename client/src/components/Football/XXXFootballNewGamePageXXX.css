@@ -1,0 +1,198 @@
+
+
+/*--------------------RANDOMIZE TEAMS BUTTON------------------ */
+.NGP-randomize-teams-button {
+  margin-top: 3px;
+  margin-left: -15px;
+  padding: 15px 20px;
+  background-color: #c9bb4cc5; /* A pastel green color */
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-decoration: none;
+  font-weight: bold;
+  font-family: 'Arial', sans-serif;
+  font-size: 1.1rem; /* Adjust as needed */
+  letter-spacing: 0.05rem; /* To give letters more space and improve readability */
+}
+
+.NGP-randomize-teams-button:hover {
+  background-color: #c9bb4cc5;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
+  color: rgb(0, 0, 0);
+}
+/*--------------------INSTRUCTIONS------------------ */
+
+.NGP-instructions {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgba(192, 199, 209, 0.8);
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
+  margin: 1px 1px;
+
+}
+
+
+/*--------------------NUM OF TEAM TO CHOOSE------------------ */
+
+.num-of-teams1 {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  color: #e7edf0;
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  margin: 1px 1px;
+
+}
+
+
+.instructions11 {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #f8f8f8;
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  margin: 1px 1px;
+
+}
+
+.instructions22 {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #f3f6f8;
+  /* Adjusted text shadow for a more subtle effect */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  margin: 1px 1px;
+
+}
+.team-options {
+  display: flex;                /* Use flexbox for alignment */
+  flex-direction: column;      /* Stack items vertically */
+  align-items: center;         /* Center items horizontally */
+  margin: 20px 0;             /* Add vertical spacing */
+  padding: 15px;               /* Add padding inside the section */
+  border: 1px solid #191414;   /* Light border for separation */
+  border-radius: 8px;          /* Rounded corners */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+.num-of-teams {
+  font-size: 18px;             /* Increase font size */
+  font-weight: bold;           /* Bold text */
+  margin-bottom: 10px;         /* Space below the label */
+  color: white;                /* Set text color to white */
+}
+
+.custom-dropdown {
+  width: 100%;                 /* Full width */
+  max-width: 70px;           /* Limit maximum width */
+  padding: 10px;              /* Padding for better touch target */
+  border: 1px solid #141212;   /* Dark border for dropdown */
+  border-radius: 5px;         /* Rounded corners */
+  font-size: 16px;            /* Consistent font size */
+  background-color: rgb(239, 234, 234); /* Light background for dropdown */
+  color: black;               /* Text color for dropdown */
+  cursor: pointer;             /* Pointer cursor on hover */
+  transition: border-color 0.2s , box-shadow 0.2s; /* Smooth border color change */
+}
+
+/* Ensures that the text color remains visible when an option is selected */
+.custom-dropdown option {
+  color: black;               /* Text color for dropdown options */
+}
+
+/* Changes the border color on hover */
+.custom-dropdown:hover {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
+}
+
+/* Changes the border color when focused */
+.custom-dropdown:focus {
+  outline: none;               /* Remove default outline */
+  border-color: #4387ca;       /* Change border color when focused */
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+  .team-options {
+      width: 140%;              /* Responsive width on small screens */
+  }
+}
+
+
+
+
+/*--------------------Players List------------------ */
+.NGP-player-list-football {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgba(103, 157, 49, 0.8);
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  margin: 20px 20px;
+  display: flex; 
+  flex-wrap: wrap; 
+  justify-content: center;
+  align-items: flex-start; 
+  margin: 0 auto; 
+  padding: 10px;
+}
+
+.NGP-player-cube-football {
+  width: 140px;
+  height: 27px;
+  background-color:  #6e987e; /* You can change the background color */
+  margin: 10px;
+  border: 2px solid #ffffffbe; /* Border color */
+  border-radius: 10px; /* Rounded corners */
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s; /* Smooth transition effect */
+  text-decoration: none; /* Remove underline */
+  font-size: 12px;
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3); /* Add a subtle ` shadow for a 3D effect */
+  text-align: center;
+  display: inline-block;
+  vertical-align: top;
+   flex-wrap: wrap; 
+  justify-content: center;
+  align-items: flex-start; 
+}
+.NGP-player-cube-football:hover {
+  background-color: #75c765; /* Hover background color */
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
+  color: rgb(0, 0, 0); /* Hover text color */
+}
+
+.NGP-player-cube-football:active {
+  background-color: #6ff4a2; /* Active background color */
+  color: rgb(0, 0, 0); /* Active text color */
+  transform: translateY(4px); /* Move the cube down by 4 pixels when clicked */
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3); /* Add a subtle box shadow for a 3D effect */
+}
+
+.NGP-player-cube-football.selected {
+  border: 2px solid green !important;
+  background-color: lightgreen !important;
+}
+
+
+.NGP-player-link-football {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.NGP-player-name-football {
+  color: #ffffff;
+  text-decoration: none;
+}

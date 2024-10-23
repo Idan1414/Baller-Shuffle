@@ -10,7 +10,7 @@ body {
   margin: 0;
   height: 100%;
   /* Make sure the body covers the full height */
-  background-image: url('/public/6199236.jpg');
+  background-image: url('/public/BackGroundForBallerGREY.jpg');
   /* Adjust the path as necessary */
   background-size: cover;
   /* Cover the entire viewport */
@@ -83,13 +83,13 @@ body {
 }
 
 .logo-image {
-  width: 400px;
+  width: 500px;
   /* Adjust the size as needed */
-  margin: 0 0 5px;
+  margin: 0 0 0px;
   /* Reduce bottom margin to bring it closer */
-  margin-top: -60px;
-
-
+  margin-top: 0px;
+  margin-left: -35px;
+  
 }
 
 

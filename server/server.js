@@ -35,7 +35,29 @@ const promiseQuery = (sql, params) => {
 
 //-----------------------------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------------------------
+
+
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'IdanSQL',
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME || 'ballershuffleschema'
+});
+
+
+db.connect(err => {
+  if (err) {
+    console.error('Database connection error:', err);
+    return; // Prevent starting the server if DB connection fails
+  }
+  console.log('Connected to the database');
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
+//---------------------------------------------------------------------------------------
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
@@ -232,6 +254,7 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
     const players = results.map(p => ({
       playerId: p.playerId,
       name: p.name,
+      num_of_mvps: p.num_of_mvps,
       finishing: p.finishing,
       passing: p.passing,
       speed: p.speed,
@@ -270,6 +293,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
     const players = results.map(p => ({
       playerId: p.playerId,
       name: p.name,
+      num_of_mvps: p.num_of_mvps,
       scoring: p.scoring,
       passing: p.passing,
       speed: p.speed,
@@ -296,7 +320,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
 
 
 // BASKETBALL - Averages endpoint
-app.get('/api/court/:court_id/averages', authenticateToken, async (req, res) => {
+app.get('/api/court_averages/:court_id/', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
 
@@ -358,7 +382,7 @@ app.get('/api/court/:court_id/averages', authenticateToken, async (req, res) => 
 
 //-----------------------------------------------------------------------------------------------
 // FOOTBALL - Averages endpoint
-app.get('/api/football-court/:court_id/averages', authenticateToken, async (req, res) => {
+app.get('/api/football_court_averages/:court_id/', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
 
@@ -903,6 +927,36 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
   }
 });
 
+//-----------------------------------------------------------------------------------------------
+
+// Add Admin Endpoint
+app.post('/api/add_admin/:court_id', authenticateToken, async (req, res) => {
+  const courtId = req.params.court_id;
+  const { userId } = req.body; // The user ID of the person to be added as admin
+
+  try {
+    // Check if the user is already an admin for this court
+    const { results: adminCheck } = await promiseQuery(
+      'SELECT * FROM ballershuffleschema.court_admins WHERE court_id = ? AND user_id = ?',
+      [courtId, userId]
+    );
+
+    if (adminCheck.length > 0) {
+      return res.status(409).json({ message: 'User is already an admin' });
+    }
+
+    // Add the user as an admin
+    await promiseQuery(
+      'INSERT INTO ballershuffleschema.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
+      [userId, courtId, 1] // 1 signifies is_admin
+    );
+
+    res.status(201).json({ message: 'User added as admin successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error adding admin');
+  }
+});
 
 //-----------------------------------------------------------------------------------------------
 // Update Court Name Endpoint
@@ -988,27 +1042,6 @@ app.delete('/api/delete_court/:user_id/:court_id', authenticateToken, async (req
 
 
 
-//-----------------------------------------------------------------------------------------------
-
-
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'ballershuffleschema'
-});
-
-db.connect(err => {
-  if (err) {
-    throw err;
-  }
-  console.log('Connected to the database');
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
 //-----------------------------------------------------------------------------------------------
 
@@ -1017,40 +1050,56 @@ app.get('/api/scheduled_games/:court_id', authenticateToken, async (req, res) =>
   const courtId = req.params.court_id;
 
   try {
-    // Query to fetch scheduled games from the database with MVP name
+    // Query to fetch scheduled games from the database
     const { results } = await promiseQuery(
-      `SELECT g.*, p.name AS mvp_name
+      `SELECT g.*, JSON_UNQUOTE(JSON_EXTRACT(g.mvps, '$')) AS mvp_ids
        FROM games AS g 
-       LEFT JOIN players AS p ON g.mvp = p.id
        WHERE g.court_id = ? 
        ORDER BY g.game_start_time DESC`, // Order by date, latest first
       [courtId]
     );
-
 
     // Check if any games were found
     if (results.length === 0) {
       return res.status(404).json({ message: 'No scheduled games found for the specified court ID.' });
     }
 
-    // Mapping results to a structured format
-    const games = results.map(g => ({
-      game_id: g.game_id,
-      game_court_id: g.court_id,
-      start_date: g.game_start_time,
-      start_regis: g.registration_open_time,
-      close_regis: g.registration_close_time,
-      max_players: g.max_players,
-      num_of_teams: g.num_of_teams,
-      created_by: g.created_by,
-      location: g.location,
-      description: g.description,
-      mvp: {
-        id: g.mvp,
-        name: g.mvp_name // Getting the MVP's name from the join
-      },
-      max_players_each_user_can_add: g.max_players_each_user_can_add
-    }));
+    // Prepare to store the final games data
+    const games = [];
+
+    // Process each game to handle multiple MVPs
+    for (const game of results) {
+      const mvpIds = JSON.parse(game.mvp_ids); // Parse the JSON array of MVP IDs
+
+      // Fetch the names of the MVPs (handling multiple MVPs)
+      const { results: mvpPlayers } = await promiseQuery(
+        `SELECT id, name 
+         FROM players 
+         WHERE id IN (?)`, [mvpIds]
+      );
+
+      // Map the MVP player IDs and names
+      const mvpList = mvpPlayers.map(player => ({
+        id: player.id,
+        name: player.name
+      }));
+
+      // Add the game data to the games array, including the MVPs
+      games.push({
+        game_id: game.game_id,
+        game_court_id: game.court_id,
+        start_date: game.game_start_time,
+        start_regis: game.registration_open_time,
+        close_regis: game.registration_close_time,
+        max_players: game.max_players,
+        num_of_teams: game.num_of_teams,
+        created_by: game.created_by,
+        location: game.location,
+        description: game.description,
+        mvps: mvpList, // Now an array of MVPs
+        max_players_each_user_can_add: game.max_players_each_user_can_add
+      });
+    }
 
     // Sending the games data as a JSON response
     res.json(games);
@@ -1062,6 +1111,7 @@ app.get('/api/scheduled_games/:court_id', authenticateToken, async (req, res) =>
     res.status(500).json({ message: 'An error occurred while fetching scheduled games.' });
   }
 });
+
 
 
 
@@ -1129,7 +1179,6 @@ app.put('/api/update_game/:gameId', authenticateToken, (req, res) => {
     description,
     max_players_each_user_can_add,
   } = req.body;
-  console.log(req.body)
 
   // Update query for modifying an existing game
   const sql = `
@@ -1174,11 +1223,10 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
   const gameId = req.params.game_id;
 
   try {
-    // Query to fetch game details from the database
+    // Query to fetch game details and MVPs from the database
     const { results } = await promiseQuery(
-      `SELECT g.*, p.name AS mvp_name, u.username AS creator_username
+      `SELECT g.*, u.username AS creator_username
        FROM games AS g 
-       LEFT JOIN players AS p ON g.mvp = p.id
        LEFT JOIN users AS u ON g.created_by = u.id
        WHERE g.game_id = ?`,
       [gameId]
@@ -1190,6 +1238,17 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
     }
 
     const game = results[0]; // Get the first result since game_id is unique
+
+    // Fetch MVPs (since it's stored as JSON in the `mvps` column)
+    const mvpIds = game.mvps ? JSON.parse(game.mvps) : []; // Parse the JSON array
+
+    let mvps = [];
+    if (mvpIds.length > 0) {
+      const mvpQuery = `SELECT id, name FROM players WHERE id IN (?)`;
+      const mvpResults = await promiseQuery(mvpQuery, [mvpIds]);
+      mvps = mvpResults.results; // Array of MVP player objects with `id` and `name`
+    }
+
     // Mapping results to a structured format
     const gameDetails = {
       game_id: game.game_id,
@@ -1202,12 +1261,10 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
       created_by: {
         user_id: game.created_by,
         username: game.creator_username // Getting the username of the creator
-      }, location: game.location,
-      description: game.description,
-      mvp: {
-        id: game.mvp,
-        name: game.mvp_name // Getting the MVP's name from the join
       },
+      location: game.location,
+      description: game.description,
+      mvps, // Array of MVP objects (with `id` and `name`)
       max_players_each_user_can_add: game.max_players_each_user_can_add
     };
 
@@ -1221,6 +1278,9 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching game details.' });
   }
 });
+
+
+//REGISTER PLAYERS API ---------------------------------------------
 
 app.post('/api/register-players', authenticateToken, async (req, res) => {
   const { playersIds, gameId, userId } = req.body;
@@ -1268,12 +1328,14 @@ app.get('/api/game_registrations/:game_id', authenticateToken, async (req, res) 
     }
 
     const registrations = results.map(r => ({
+      registration_id: r.registration_id,
       gameId: r.game_id,
       playerId: r.player_id,
       playerUserId: r.playerUserId,
       playerName: r.playerName,
-      userIdCreator: r.registered_by,
+      registered_by: r.registered_by,
       registrationDate: r.registration_time,
+      approved: r.approved,
     }));
 
     res.json(registrations); // Return the registrations as JSON
@@ -1337,4 +1399,226 @@ app.delete('/api/game_registrations_deletion/:game_id/:player_id', authenticateT
   }
 });
 
+//-----------------------------------------------------------------------------------------------
 
+// Approve registration endpoint
+app.post('/api/approve_registration', authenticateToken, async (req, res) => {
+  const { registration_id } = req.body; // Get the registration ID from the request body
+
+  try {
+    // Update the registration_to_game to approved (set approved = 1) where registrationId matches
+    const { results } = await promiseQuery(
+      `UPDATE registrations_to_game 
+       SET approved = 1 
+       WHERE registration_id = ?`, 
+      [registration_id]
+    );
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: 'Registration not found' });
+    }
+
+    res.status(200).json({ message: 'Registration approved successfully' });
+  } catch (error) {
+    console.error('Error approving registration:', error);
+    res.status(500).send('Failed to approve registration');
+  }
+});
+
+//-----------------------------------------------------------------------------------------------
+
+// Add or update teams for a game
+app.post('/api/game_teams', authenticateToken, async (req, res) => {
+  try {
+    const { game_id, teams } = req.body; // `teams` is an array of arrays, where each inner array is a team of player_ids
+
+    // Validate input
+    if (!game_id || !Array.isArray(teams) || teams.length === 0) {
+      return res.status(400).json({ message: 'Invalid input data' });
+    }
+
+    // Start a transaction to ensure all or nothing in the database changes
+    await promiseQuery('START TRANSACTION');
+
+    // First, delete any existing teams for the given game_id
+    await promiseQuery('DELETE FROM game_teams WHERE game_fk = ?', [game_id]);
+
+    // Insert each team as a new entry in the database
+    for (const team of teams) {
+      const teamJson = JSON.stringify(team); // Convert team array to JSON
+      await promiseQuery('INSERT INTO game_teams (game_fk, team) VALUES (?, ?)', [game_id, teamJson]);
+    }
+
+    // Commit the transaction
+    await promiseQuery('COMMIT');
+
+    res.status(201).json({ message: 'Teams updated successfully' });
+  } catch (error) {
+    console.error(error);
+
+    // Roll back transaction in case of error
+    await promiseQuery('ROLLBACK');
+    res.status(500).send('Error updating teams');
+  }
+});
+
+
+// Get teams for a game
+app.get('/api/get_game_teams/:game_id', authenticateToken, async (req, res) => {
+  const { game_id } = req.params;
+
+  try {
+    // Fetch teams for the game and join with player names
+    const { results } = await promiseQuery(`
+      SELECT JSON_EXTRACT(gt.team, '$.playerIds') AS player_ids 
+      FROM game_teams gt
+      WHERE gt.game_fk = ?;
+    `, [game_id]);
+
+    // Parse player_ids for each row
+    const parsedResults = results.map(row => ({
+      player_ids: JSON.parse(row.player_ids)  // Make sure it's parsed into an array
+    }));
+
+    res.status(200).json(parsedResults);  // Send parsed results
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching teams' });
+  }
+});
+
+/*------------------------------------------------------------------------------------*/
+// MVP Vote endpoint
+app.post('/api/mvp-vote', authenticateToken, async (req, res) => {
+  const { game_id, voter_user_id, mvp_player_id } = req.body;
+
+  if (!game_id || !mvp_player_id) {
+    return res.status(400).json({ message: 'Missing required fields.' });
+  }
+
+  try {
+    // Check if a vote already exists for the user in this game
+    const { results: existingVote } = await promiseQuery(
+      'SELECT vote_id FROM mvp_votes WHERE game_id = ? AND voter_user_id = ?',
+      [game_id, voter_user_id]
+    );
+
+    if (existingVote.length > 0) {
+      // Update existing vote
+      await promiseQuery(
+        'UPDATE mvp_votes SET mvp_player_id = ? WHERE game_id = ? AND voter_user_id = ?',
+        [mvp_player_id, game_id, voter_user_id]
+      );
+    } else {
+      // Insert new vote
+      await promiseQuery(
+        'INSERT INTO mvp_votes (game_id, voter_user_id, mvp_player_id) VALUES (?, ?, ?)',
+        [game_id, voter_user_id, mvp_player_id]
+      );
+    }
+
+    res.status(200).json({ message: 'Vote successfully recorded.' });
+  } catch (error) {
+    console.error('Error updating or creating vote:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+
+
+//-----------------------------------------------------------------------------------------------
+
+// MVP Votes endpoint to decide who is the MVP
+app.post('/api/mvp-votes/:game_id', authenticateToken, async (req, res) => {
+  try {
+    const gameId = req.params.game_id;
+
+    // Query to count votes for each player in the game
+    const { results } = await promiseQuery(
+      `SELECT mvp_player_id, COUNT(*) AS vote_count
+       FROM mvp_votes
+       WHERE game_id = ?
+       GROUP BY mvp_player_id
+       ORDER BY vote_count DESC`,
+      [gameId]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No votes found for this game' });
+    }
+
+    // Determine the maximum vote count
+    const maxVoteCount = results[0].vote_count;
+
+    // Filter out players who have the maximum vote count (to handle ties)
+    const mvpPlayers = results
+      .filter(player => player.vote_count === maxVoteCount)
+      .map(player => player.mvp_player_id); // Ensure correct field is referenced
+
+    // Update the games table with the new MVPs
+    const mvpsJson = JSON.stringify(mvpPlayers);
+    await promiseQuery(
+      `UPDATE games
+       SET mvps = ?
+       WHERE game_id = ?`,
+      [mvpsJson, gameId]
+    );
+
+    // Update players' num_of_mvps for each MVP player
+    for (const playerId of mvpPlayers) {
+      await promiseQuery(
+        `UPDATE players
+             SET num_of_mvps = COALESCE(num_of_mvps, 0) + 1
+             WHERE id = ?`,
+        [playerId]
+      );
+    }
+
+    // Send back the MVP players (could be one or more in case of ties)
+    res.json({ mvpPlayers, maxVoteCount });
+  } catch (error) {
+    console.error('Error fetching or updating MVP votes:', error);
+    res.status(500).send('Error fetching MVP votes');
+  }
+});
+
+//-----------------------------------------------------------------------------------------------
+
+
+// Delete Game endpoint
+app.delete('/api/delete_game/:game_id', authenticateToken, async (req, res) => {
+  const gameId = req.params.game_id;
+
+  try {
+    // Start a transaction to ensure all deletes succeed or none do
+    await promiseQuery('START TRANSACTION');
+
+    // Delete from mvp_votes table
+    await promiseQuery('DELETE FROM mvp_votes WHERE game_id = ?', [gameId]);
+
+    // Delete from game_teams table
+    await promiseQuery('DELETE FROM game_teams WHERE game_fk = ?', [gameId]);
+
+    // Delete from registrations_to_game table
+    await promiseQuery('DELETE FROM registrations_to_game WHERE game_id = ?', [gameId]);
+
+    // Finally, delete the game itself
+    const { results } = await promiseQuery('DELETE FROM games WHERE game_id = ?', [gameId]);
+
+    if (results.affectedRows === 0) {
+      await promiseQuery('ROLLBACK');
+      return res.status(404).json({ message: 'Game not found' });
+    }
+
+    // If everything succeeded, commit the transaction
+    await promiseQuery('COMMIT');
+    res.status(200).json({ message: 'Game deleted successfully' });
+
+  } catch (error) {
+    // If anything failed, rollback the transaction
+    await promiseQuery('ROLLBACK');
+    console.error('Error deleting game:', error);
+    res.status(500).json({ message: 'Error deleting game' });
+  }
+});

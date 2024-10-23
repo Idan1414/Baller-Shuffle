@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import './FootballCreatePlayerPage.css';
+import '../CreatePlayerPage.css';
+import '../BackHomeButton.css';
 import { jwtDecode } from 'jwt-decode';
 
 
@@ -10,8 +11,6 @@ const FootballCreatePlayerPage = () => {
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const userIdFromUrl = new URLSearchParams(search).get('userId');
-  const currCourtName = searchParams.get('courtName');
-  const currCourtType = searchParams.get('courtType');
   const currUserId = searchParams.get('userId');
 
   const token = localStorage.getItem('token');
@@ -51,19 +50,25 @@ const FootballCreatePlayerPage = () => {
   const [averages, setAverages] = useState(null);
   const [averagesError, setAveragesError] = useState('');
 
+
   useEffect(() => {
-    if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
+    if (!token || decodedToken.userId !== parseInt(currUserId, 10)) {
       navigate('/'); // Redirect to home if not authorized
+      return;
+    }
+
+    // Check if the user has access to the court
+    if (!decodedToken.courts || !decodedToken.courts.includes(courtId)) {
+      navigate('/'); // Redirect to home if the user does not have access to this court
+      return;
     }
   }, [token, decodedToken, userIdFromUrl, navigate]);
-
-
 
 
   useEffect(() => {
     const fetchAverages = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/football-court/${courtId}/averages`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/football_court_averages/${courtId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -143,10 +148,9 @@ const FootballCreatePlayerPage = () => {
         ...numericalAttributes,
         overall: calculateOverall(numericalAttributes),
       };
-      console.log(playerData);
 
       try {
-        const response = await fetch(`http://localhost:5000/api/create_player_football/${courtId}/${currUserId}`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/create_player_football/${courtId}/${currUserId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -157,7 +161,7 @@ const FootballCreatePlayerPage = () => {
 
         if (response.ok) {
           console.log('Player created successfully');
-          navigate(`/creation_success_football/${courtId}?overall=${playerData.overall}&name=${playerData.name}&courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`);
+          navigate(`/creation_success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&userId=${currUserId}`);
         } else {
           console.error('Error creating player:', response.statusText);
         }
@@ -182,13 +186,13 @@ const FootballCreatePlayerPage = () => {
 
 
   return (
-    <div className="football-create-player-page-style">
-      <h1 className="CP-title-football">Create New Player</h1>
-      <div className="content-container-football">
-        <div className="form-container-football">
+    <div className="create-player-page-style">
+      <h1 className="CP-title">Create New Player</h1>
+      <div className="CP-content-container">
+        <div className="CP-form-container">
           {/* Player Creation Form */}
-          <div className="input-wrapper-football">
-            <div className="input-container-football">
+          <div className="CP-input-wrapper">
+            <div className="CP-input-container">
               <label htmlFor="name">Name:</label>
               <input
                 type="text"
@@ -202,10 +206,12 @@ const FootballCreatePlayerPage = () => {
 
             {/* Repeat similar input containers for other attributes */}
             {/* Finishing */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="finishing">Finishing:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="finishing"
                 name="finishing"
                 value={playerAttributes.finishing}
@@ -215,10 +221,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Passing */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="passing">Passing:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="passing"
                 name="passing"
                 value={playerAttributes.passing}
@@ -228,10 +236,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Speed */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="speed">Speed:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="speed"
                 name="speed"
                 value={playerAttributes.speed}
@@ -241,10 +251,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Physical */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="physical">Physical:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="physical"
                 name="physical"
                 value={playerAttributes.physical}
@@ -254,10 +266,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Defence */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="defence">Defence:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="defence"
                 name="defence"
                 value={playerAttributes.defence}
@@ -267,10 +281,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Dribbling */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="dribbling">Dribbling:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="dribbling"
                 name="dribbling"
                 value={playerAttributes.dribbling}
@@ -280,10 +296,12 @@ const FootballCreatePlayerPage = () => {
             </div>
 
             {/* Header */}
-            <div className="input-container-football">
+            <div className="CP-input-container">
               <label htmlFor="header">Header:</label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 id="header"
                 name="header"
                 value={playerAttributes.header}
@@ -295,10 +313,10 @@ const FootballCreatePlayerPage = () => {
 
 
           {/* Averages Table */}
-          <div className="averages-container-football">
-            {averagesError && <p className="error-message">{averagesError}</p>}
+          <div className="averages-container">
+            {averagesError && <p className="error-message-averages">No players in this court, no averages to present yet.</p>}
             {averages ? (
-              <table className="averages-table-football">
+              <table className="averages-table">
                 <thead>
                   <tr>
                     <th>Attribute</th>
@@ -361,13 +379,13 @@ const FootballCreatePlayerPage = () => {
             ) : (
               !averagesError && <p>Loading averages...</p>
             )}
-            <div className='button-container-football'>
-              <button className="calc-save-button-football" onClick={handleCreatePlayer}>
+            <div className='CP-button-container'>
+              <button className="calc-save-button" onClick={handleCreatePlayer}>
                 Create and Calculate Overall
               </button>
               <Link
-                to={`/court_home_page_football/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
-                className="NPG-back-home-button-football"
+                to={`/court_home_page/${courtId}?userId=${currUserId}`}
+                className="back-home-button"
               >
                 Back to Home
               </Link>

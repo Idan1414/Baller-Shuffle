@@ -2,44 +2,25 @@
 
 
 /*--------------------BackGround------------------ */
-html {
-  height: 100%;
-  /* Make sure the html element covers the full height */
-}
-
-body {
-  margin: 0;
-  height: 100%;
-  /* Make sure the body covers the full height */
-  background-size: cover;
-  /* Cover the entire viewport */
-  background-attachment: fixed;
-  /* Fix the background to the viewport */
-  background-repeat: no-repeat;
-  /* Do not repeat the background */
-  overflow-x: hidden;
-  /* Hide horizontal scroll */
-  font-family: 'Exo 2', sans-serif;
-}
 
 
 .scheduled-games-page {
-  /* Dark background for a futuristic feel */
-  color: #f8d36b;
-  /* Golden color for text */
+  color: #116e70;  /* Softer gold color */
   padding: 20px;
   border-radius: 10px;
-  animation: fadeIn 0.3s ease-in-out;
-  
-
+  justify-content: top;
+  opacity: 0;
+  animation: fadeIn 1s ease-in-out forwards; /* Trigger fade-in animation */
 }
+
+
 
 .scheduled-games-title {
   text-align: center;
-  font-size: 2rem;
+  font-size: 2.5rem;
   margin-bottom: 20px;
   margin-top: 60px;
-
+  color: #ffffffcf;  /* Muted gold for title */
 }
 
 .create-game-button {
@@ -47,87 +28,133 @@ body {
   font-weight: 100;
   padding: 20px 20px;
   font-size: 1rem;
-  /* Adjusted margin to provide space below the title */
   margin-right: 16px;
-  background-color: gold;
-  color: #161005;
-  border: 2px solid gold;
+  background-color: #116e70;  /* Pastel peach */
+  color: #f5f7f9;  /* Darker brown text */
+  border: 2px solid #7baad7;  /* Slightly darker peach border */
   border-radius: 55px;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
   text-decoration: none;
   font-weight: 600;
-  box-shadow: 0 0 15px rgba(25, 22, 10, 0.922); /* Initial glow effect */
+  box-shadow: 0 0 15px rgba(177, 159, 140, 0.4);  /* Softer shadow */
 }
 
 .create-game-button:hover {
-  background-color: gold;
-  color: rgb(0, 0, 0);
-  box-shadow: 0 0 20px rgb(235, 224, 139), 0 0 30px rgba(255, 255, 255, 0.8);
+  background-color: #116e70;  /* Lighter peach on hover */
+  color: #fafafa;
+  box-shadow: 0 0 20px rgba(95, 179, 196, 0.6), 
+             0 0 30px rgba(94, 187, 220, 0.4);
 }
 
 .games-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* Space between games */
   animation: fadeIn 0.9s ease-in-out;
-
 }
 
 .game-item {
-  background-color: #262626; /* Dark card background */
-  border: 2px solid #f8d36b; /* Golden border */
+  background-image: url('/public/wallpaperflare.com_wallpaper1.jpg');
+  background-position: center;
+  background-size: cover;  /* Initial background color */
+  border: 2px solid #116e70;  /* Muted gold border */
   border-radius: 10px;
-  padding: 10px;
+  padding: 15px;
   display: flex;
-  flex-direction: column; /* Stack items vertically */
-  align-items: center; /* Center items horizontally */
-  text-align: center; /* Center text */
-  text-decoration: none; /* Remove underline from the link */
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Animation for hover */
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+
 .game-item:hover {
-  transform: scale(1.05); /* Slightly increase size on hover */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+  transform: scale(1.022);
+  box-shadow: 0 6px 24px rgba(212, 182, 149, 0.3);
 }
 
 .game-item:active {
-  transform: scale(0.98); /* Slightly decrease size on click */
+  transform: scale(0.98);
+}
+
+
+
+.game-over-item {
+  position: relative; /* So that the pseudo-element can be positioned inside this div */
+  background-image: url('/public/wallpaperflare.com_wallpaper1.jpg');
+  background-position: center;
+  background-size: cover;  /* Initial background color */
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.game-over-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(237, 235, 235, 0.352); /* Transparent overlay */
+  z-index: 1;
+  border-radius: 10px; /* Ensure the overlay matches the container */
+}
+
+
+.game-over-item:hover {
+  transform: scale(1.022);
+  box-shadow: 0 6px 24px rgba(212, 182, 149, 0.3);
+}
+
+.game-over-item:active {
+  transform: scale(0.98);
 }
 
 
 .game-date {
-  color: #f8d36b;
-  /* Golden color for the date */
-  font-size: 1.5rem;
+  color: #b2dcdf;  /* Muted gold */
+  font-size: 2rem;
   text-decoration: none;
-  /* Remove underline */
 }
 
-
-
-
-.game-details {
-  text-align: center; /* Center the text inside */
+.game-details1 {
+  text-align: center;
 }
 
 .game-location,
 .game-mvp {
-  margin: 10px 0; /* Center alignment adjustment */
-  font-size: 1.2rem; /* Increase the font size for better visibility */
-  color: #f8d36b;
-}
+  margin: 10px 0;
+  font-size: 1.2rem;
+  color: #b1d3d3;  /* Muted gold */
 
+}
 
 .button-container {
   display: flex;
-  justify-content: center; /* Centers the buttons */
-  margin-bottom: 20px; /* Space between buttons and the games list */
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.create-game-button, .back-home-button-scheduled-games {
-  margin: 0 10px; /* Margin for spacing */
-  display: inline-block; /* Ensures buttons stay inline */
+.create-game-button, 
+.back-home-button-scheduled-games {
+  margin: 0 10px;
+  display: inline-block;
+}
+
+
+/* Optional: Add subtle transitions for color changes */
+* {
+  transition: background-color 0.3s ease, 
+              color 0.3s ease, 
+              border-color 0.3s ease;
 }

@@ -60,7 +60,7 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/${existingGameData ? `update_game/${existingGameData.game_id}` : 'create_game'}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/${existingGameData ? `update_game/${existingGameData.game_id}` : 'create_game'}`, {
         method: existingGameData ? 'PUT' : 'POST', // Use PUT for updates
         headers: {
           'Content-Type': 'application/json',
@@ -81,10 +81,10 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay1">
       <div className="modal">
-        <button type="button" className='close-button' onClick={onClose}>Cancel</button>
-        <h2 className='modal-title'>{existingGameData ? 'Edit Game' : 'Create New Scheduled Game'}</h2>
+        <button type="button" className='cancel-button' onClick={onClose}>X</button>
+        <h2 className='modal-title'>{existingGameData ? 'Edit Game' : 'Create New Game'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Game Start Time:</label>
@@ -123,6 +123,8 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
               name="max_players"
               value={gameData.max_players}
               onChange={handleChange}
+              min={1}
+              max={150}
               required
             />
           </div>
@@ -133,6 +135,8 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
               name="max_players_each_user_can_add"
               value={gameData.max_players_each_user_can_add}
               onChange={handleChange}
+              min={1}
+              max={150}
               required
             />
           </div>
@@ -143,6 +147,8 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
               name="num_of_teams"
               value={gameData.num_of_teams}
               onChange={handleChange}
+              min={1}
+              max={50}
               required
             />
           </div>
@@ -153,6 +159,8 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
               name="location"
               value={gameData.location}
               onChange={handleChange}
+              minLength={0} 
+              maxLength={100}
             />
           </div>
           <div className="form-group">
@@ -161,10 +169,12 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
               name="description"
               value={gameData.description}
               onChange={handleChange}
+              minLength={0} 
+              maxLength={1000}
             ></textarea>
           </div>
 
-          <button type="submit" className='submit-button'>{existingGameData ? 'Update Game' : 'Create Game'}</button>
+          <button type="submit" className='submit-button1'>{existingGameData ? 'Update Game Settings' : 'Create Game'}</button>
         </form>
       </div>
     </div>

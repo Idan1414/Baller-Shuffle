@@ -1,7 +1,6 @@
 class FootballTeam {
-  constructor(teamPlayers = [], teamId = generateUniqueId()) {
+  constructor(teamPlayers = []) {
     this.num_of_players = teamPlayers.length;
-    this.team_id = teamId;
     this.players = teamPlayers;
     this.team_overall = 0;
     this.team_defence = 0;

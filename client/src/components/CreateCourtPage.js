@@ -39,7 +39,7 @@ const CreateCourtPage = () => {
     console.log(courtSettings, userId);
     try {
       // Create the court
-      const response = await fetch(`http://localhost:5000/api/create_court/${userId}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/create_court/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ const CreateCourtPage = () => {
       const newCourt = await response.json(); // Successfully created court, proceed with updating the token
   
       // Call the /update-token endpoint to refresh the token
-      const updateTokenResponse = await fetch('http://localhost:5000/api/update-token', {
+      const updateTokenResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/update-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
