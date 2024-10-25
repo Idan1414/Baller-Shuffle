@@ -18,23 +18,29 @@ The local testing might not go so well because of the ongoing changes I am doing
 Here are some pictures of the App : 
 
 Login Page:
-![image](https://github.com/user-attachments/assets/ccd00dd9-bfc0-49e3-b748-fa99c52f3f7e)
+![image](https://github.com/user-attachments/assets/ba41afd8-0bd2-474b-a042-4f5b630457b6)
 
 
 MyCourts page:
-![image](https://github.com/user-attachments/assets/24fbeff8-7074-4c67-9d70-7ad3a19744b1)
+![image](https://github.com/user-attachments/assets/02ed7abe-b868-493c-9945-4d33cb344ae4)
 
 Court Page: presents the players with their overall ratings.
-![image](https://github.com/user-attachments/assets/43c39f5b-b669-46cd-b036-719dcebc3e55)
+![image](https://github.com/user-attachments/assets/fd5d048a-0d90-48a9-acb8-f9d3af5526db)
 
 
-Edit Player Page: 
-![image](https://github.com/user-attachments/assets/1043d7d9-4c88-4091-9eae-5b62cc21e18a)
+Create Player Page: 
+![image](https://github.com/user-attachments/assets/74b5e3f6-6d87-45d3-97ea-c45291282b91)
 
 
-Create Game page: choose the number of teams and all the friends that will be playing today.
-![image](https://github.com/user-attachments/assets/790394f3-4edd-42a4-8ecd-67147d250685)
+
+Create Game page: choose the number of teams,players and times for the game.
+![image](https://github.com/user-attachments/assets/f16b5d49-68ea-4847-a24b-49e2fbaff106)
+
+Game Page:
+![image](https://github.com/user-attachments/assets/f6962e83-b3d0-4aae-9f3e-53e8a57d3321)
 
 
-Random Teams Page : presents the teams. the user can drag and drop players in order to manually mix the teams or just click re-randomize.
-![image](https://github.com/user-attachments/assets/293535e2-88e5-4004-b44f-4a942d9c0a77)
+
+Random Teams Page : presents the teams. the user can click on 2 players to switch in order to manually mix the teams or just click re-randomize.
+![image](https://github.com/user-attachments/assets/22c0d8fb-e8e5-4e46-85ae-71c14ba1802a)
+
