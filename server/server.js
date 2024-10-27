@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
+const multer = require('multer'); 
+
 
 const app = express(); //initiate the express app
 
@@ -15,6 +17,26 @@ const jwtSecret = process.env.JWT_SECRET;
 
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+
+
+// Configure multer
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+
 
 
 //Wrapper for the db.query
@@ -32,6 +54,18 @@ const promiseQuery = (sql, params) => {
     });
   });
 }
+
+
+// Error handling middleware for multer
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File is too large. Max size is 5MB' });
+    }
+    return res.status(400).json({ message: error.message });
+  }
+  next(error);
+});
 
 //-----------------------------------------------------------------------------------------------
 
@@ -261,7 +295,7 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
       physical: p.physical,
       defence: p.defence,
       dribbling: p.dribbling,
-      header: p.header,
+      stamina: p.stamina,
       overall: p.overall,
       overallToMix: p.overallToMix,
       user_fk: p.user_fk,
@@ -407,9 +441,9 @@ app.get('/api/football_court_averages/:court_id/', authenticateToken, async (req
     AVG(fpa.dribbling) AS avgDribbling,
     MAX(fpa.dribbling) AS maxDribbling,
     MIN(fpa.dribbling) AS minDribbling,
-    AVG(fpa.header) AS avgHeader,
-    MAX(fpa.header) AS maxHeader,
-    MIN(fpa.header) AS minHeader,
+    AVG(fpa.stamina) AS avgStamina,
+    MAX(fpa.stamina) AS maxStamina,
+    MIN(fpa.stamina) AS minStamina,
     AVG(fpa.overall) AS avgOverall,
     MAX(fpa.overall) AS maxOverall,
     MIN(fpa.overall) AS minOverall
@@ -490,7 +524,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
 app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateToken, async (req, res) => {
   const court_Id = req.params.court_id;
   const creator_user_fk = req.params.creator_user_fk;
-  const { name, finishing, passing, speed, physical, defence, dribbling, header, overall } = req.body;
+  const { name, finishing, passing, speed, physical, defence, dribbling, stamina, overall } = req.body;
 
   try {
     // First query: Insert into "players" table
@@ -519,8 +553,8 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
 
     // Second query: Insert into "basketball_player_attributes" table
     await promiseQuery(
-      'INSERT INTO ballershuffleschema.football_player_attributes (playerId, finishing, passing, speed, physical, defence, dribbling, header, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [playerId, finishing, passing, speed, physical, defence, dribbling, header, overall, 0]
+      'INSERT INTO ballershuffleschema.football_player_attributes (playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, 0]
     );
 
     res.status(201).send('Player created successfully');
@@ -558,7 +592,7 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
       physical: p.physical,
       defence: p.defence,
       dribbling: p.dribbling,
-      header: p.header,
+      stamina: p.stamina,
       overall: p.overall,
       overallToMix: p.overallToMix,
     };
@@ -707,7 +741,7 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
       physical,
       defence,
       dribbling,
-      header,
+      stamina,
       overall,
       overallToMix
     } = req.body;
@@ -720,13 +754,13 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
 
     const updateQuery = ` UPDATE ballershuffleschema.football_player_attributes
       SET finishing = ?, passing = ?, speed = ?, physical = ?, defence = ?, 
-          dribbling = ?, header = ?, overall = ?, overallToMix = ?
+          dribbling = ?, stamina = ?, overall = ?, overallToMix = ?
       WHERE playerId = ?`;
 
 
 
     await promiseQuery(updateQuery,
-      [finishing, passing, speed, physical, defence, dribbling, header,
+      [finishing, passing, speed, physical, defence, dribbling, stamina,
         overall, overallToMix, playerId]);
 
     res.json({ message: 'Player updated successfully' });
@@ -735,6 +769,56 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
     res.status(500).send('Error updating player');
   }
 });
+
+
+
+// ------------------------------------------New separate endpoint for profile picture updates
+app.put('/api/update-player-picture/:player_id/:court_id', authenticateToken, upload.single('profileImage'), async (req, res) => {
+  try {
+    const playerId = req.params.player_id;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image provided' });
+    }
+
+    const updateQuery = `
+      UPDATE ballershuffleschema.players 
+      SET profile_image = ?
+      WHERE id = ?
+    `;
+
+    await promiseQuery(updateQuery, [req.file.buffer, playerId]);
+    
+    res.json({ message: 'Profile picture updated successfully' });
+  } catch (error) {
+    console.error('Error updating profile picture:', error);
+    res.status(500).send('Error updating profile picture');
+  }
+});
+
+// Optional: Endpoint to get the profile picture
+app.get('/api/player-picture/:player_id', authenticateToken, async (req, res) => {
+  try {
+    const playerId = req.params.player_id;
+    
+    const query = 'SELECT profile_image FROM ballershuffleschema.players WHERE id = ?';
+    const { results } = await promiseQuery(query, [playerId]);
+
+    if (!results[0] || !results[0].profile_image) {
+      return res.status(404).send('No profile picture found');
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'image/jpeg',
+      'Content-Length': results[0].profile_image.length
+    });
+    res.end(results[0].profile_image);
+  } catch (error) {
+    console.error('Error fetching profile picture:', error);
+    res.status(500).send('Error fetching profile picture');
+  }
+});
+
 
 
 //-----------------------------------------------------------------------------------------------
