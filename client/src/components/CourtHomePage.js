@@ -13,7 +13,9 @@ const CourtHomePage = () => {
   const [currCourtName, setCourtName] = useState('');
   const [currCourtType, setCourtType] = useState('');
   const [playersAPI, setPlayersAPI] = useState('');
+  const [imageCache, setImageCache] = useState({});
   const { search } = useLocation();
+  const [searchTerm, setSearchTerm] = useState('');
   const { courtId } = useParams();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(search);
@@ -86,9 +88,44 @@ const CourtHomePage = () => {
         },
       })
         .then((response) => response.json())
-        .then((data) => {
+        .then(async (data) => {
           const storedPlayers = data;
           setPlayers(storedPlayers);
+
+          // Fetch all images at once
+          const imagePromises = storedPlayers.map(async player => {
+            try {
+              const response = await fetch(
+                `http://${process.env.REACT_APP_DB_HOST}:5000/api/player-picture/${player.playerId}`,
+                {
+                  headers: {
+                    Authorization: token,
+                  },
+                }
+              );
+
+              if (response.ok) {
+                const blob = await response.blob();
+                return {
+                  playerId: player.playerId,
+                  url: URL.createObjectURL(blob)
+                };
+              }
+            } catch (error) {
+              console.error(`Error loading image for player ${player.playerId}:`, error);
+              return null;
+            }
+          });
+
+          const images = await Promise.all(imagePromises);
+          const newCache = {};
+          images.forEach(img => {
+            if (img) {
+              newCache[img.playerId] = img.url;
+            }
+          });
+          setImageCache(newCache);
+
           const myPlayer = storedPlayers.find((player) => player.user_fk == currUserId);
           if (myPlayer) {
             setMyCreatorId(myPlayer.creator_user_fk);
@@ -97,6 +134,52 @@ const CourtHomePage = () => {
         .catch((error) => console.error(error));
     }
   }, [playersAPI, courtId, token, currUserId]);
+
+
+  //Player Image component
+  const PlayerImage = ({ playerId, playerName }) => {
+    // Function to generate initials from player name
+    const getInitials = (name) => {
+      return name
+        ?.split(' ')
+        .slice(0, 2)
+        .map(word => word.charAt(0).toUpperCase())
+        .join('');
+    };
+
+    return (
+      <>
+        {imageCache[playerId] ? (
+          <img
+            src={imageCache[playerId]}
+            alt="Player profile"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#e2e8f0', // Light gray background
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: '#4a5568', // Dark gray text
+              borderRadius: '4px'
+            }}
+          >
+            {getInitials(playerName)}
+          </div>
+        )}
+      </>
+    );
+  };
+
+
+
+
 
   const handleUpdateCourtName = async () => {
     const newCourtName = prompt('Enter the new court name:', currCourtName);
@@ -199,48 +282,53 @@ const CourtHomePage = () => {
     }
   };
 
+  
+
   return (
     <div className="basketball-home-page-style">
-      <Link to={`/courts_page/${currUserId}`} className="back-home-button">
-        Back to MyCourts
-      </Link>
-      <img src="/HadarLOGO.png" alt="Baller Shuffle Logo" className='logo-image-home-page' />
-      <h1 className="HP-basketball-title">
-        {currCourtName}
-      </h1>
-      {isAdmin && (
-        <div class="admin-mode">
-          <h2>Admin Mode</h2>
-          <div className='admin-buttons-container'>
-            <button class="update-court-button" onClick={handleUpdateCourtName}>
-              Update Court Name
-            </button>
-            <button class="update-court-button" onClick={handleAddAdmin}>
-              Add Admin
-            </button>
-          </div>
-        </div>
-
-      )}
-
-      <div className="button-container">
-        {/*maybe STATISTICS button here*/}
-        {/* <Link
-          to={`/new-game/${courtId}?courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`}
-          className="basketball-create-game-button"
-        >
-          Create New Manual Game
-        </Link> */}
-
-        <Link
-          to={`/scheduled-games/${courtId}?userId=${currUserId}`}
-          className="basketball-scheduled-games-button"
-        >
-          Scheduled Games
+      <div className="court-header-section">
+        <Link to={`/courts_page/${currUserId}`} className="back-my-courts">
+        Back To MyCourts
         </Link>
+
+        <img src="/HadarLOGO.png" alt="Baller Shuffle Logo" className='logo-image-home-page' />
+
+        <h1 className="HP-title">
+          {currCourtName}
+        </h1>
+
+        {isAdmin && (
+          <div className="admin-mode">
+            <h2>Admin Mode</h2>
+            <div className='admin-buttons-container'>
+              <button className="update-court-button" onClick={handleUpdateCourtName}>
+                Update Court Name
+              </button>
+              <button className="update-court-button" onClick={handleAddAdmin}>
+                Add Admin
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="navigation-buttons">
+          <Link
+            to={`/scheduled-games/${courtId}?userId=${currUserId}`}
+            className="basketball-scheduled-games-button"
+          >
+            Games
+          </Link>
+          <Link
+            to={`/statistics/${courtId}?userId=${currUserId}`}
+            className="basketball-scheduled-games-button"
+          >
+            Leaders
+          </Link>
+        </div>
       </div>
 
       <h2 className="HP-registered-players2">Registered Players:</h2>
+
 
       <Link
         to={currCourtType === 'Football'
@@ -252,9 +340,22 @@ const CourtHomePage = () => {
         Add New Player
       </Link>
 
+
+      <div className="player-search-container">
+        <input
+          type="text"
+          placeholder="Search players..."
+          className="search-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       <div className="player-list-basketball">
         {players && players.length > 0 ? (
-          players.map((player) => {
+          players.filter((player) =>
+            player.name.toLowerCase().includes(searchTerm.toLowerCase())
+          ).map((player) => {
             // Determine the appropriate CSS class for the player
             let playerClass = '';
             if (player.user_fk == currUserId) {
@@ -285,42 +386,110 @@ const CourtHomePage = () => {
             ) : null;
 
             // Conditionally render the clickable link or a non-clickable div
+            // Inside your map function, update the playerContent:
             const playerContent = (
               <div
-                className={`player-cube-basketball ${playerClass}`}
+                className={`player-cube-basketball ${playerClass} ${player.num_of_mvps >= 5 ? 'golden-card' : ''
+                  }`}
                 onMouseEnter={() => setSelectedPlayer(player)}
                 onMouseLeave={() => setSelectedPlayer(null)}
               >
-                <div className="player-HP-name">{player.name}</div> {/* Apply the class here */}
-                <p>{overallAndDeletionDisplay}</p>
-                {renderMedal} {/* Add the medal next to the player's name */}
+                <div className="fifa-card-header">
+                  <span className="fifa-rating">
+                    {(playerClickable || overallAndDeletionDisplay) && player.overall != null ? player.overall : '??'}
+                  </span>
+                </div>
 
-                {overallAndDeletionDisplay && ( // Tooltip appears only if player is clickable
-                  currCourtType == 'Football' ? (
-                    <div className="tooltipsnew-basketball">
-                      <p className="player-info2">Finishing: {player.finishing}</p>
-                      <p className="player-info2">Passing: {player.passing}</p>
-                      <p className="player-info2">Speed: {player.speed}</p>
-                      <p className="player-info2">Physical: {player.physical}</p>
-                      <p className="player-info2">Defence: {player.defence}</p>
-                      <p className="player-info2">Dribbling: {player.dribbling}</p>
-                      <p className="player-info2">Header: {player.header}</p>
-                    </div>
+                <div className="fifa-player-image">
+                  <PlayerImage playerId={player.playerId} token={token} playerName={player.name} />
+                </div>
+
+                <div className="player-HP-name">{player.name}</div>
+
+                <div className="fifa-stats">
+                  {currCourtType === 'Football' ? (
+                    <>
+                      <div className="fifa-stat">
+                        <span>PAC</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.speed != null ? player.speed : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>SHO</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.finishing != null ? player.finishing : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>PAS</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.passing != null ? player.passing : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>DRI</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.dribbling != null ? player.dribbling : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>DEF</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.defence != null ? player.defence : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>PHY</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.physical != null ? player.physical : '??'}
+                        </span>
+                      </div>
+                    </>
                   ) : (
-                    <div className="tooltipsnew-basketball">
-                      <p className="player-info2">Height: {player.height}</p>
-                      <p className="player-info2">Scoring: {player.scoring}</p>
-                      <p className="player-info2">Passing: {player.passing}</p>
-                      <p className="player-info2">Speed: {player.speed}</p>
-                      <p className="player-info2">Physical: {player.physical}</p>
-                      <p className="player-info2">Defence: {player.defence}</p>
-                      <p className="player-info2">3PtShot: {player.threePtShot}</p>
-                      <p className="player-info2">Rebound: {player.rebound}</p>
-                      <p className="player-info2">BallHandle: {player.ballHandling}</p>
-                      <p className="player-info2">PostUp: {player.postUp}</p>
-                    </div>
-                  )
-                )}
+                    <>
+                      <div className="fifa-stat">
+                        <span>SCO</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.scoring != null ? player.scoring : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>3PT</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.threePtShot != null ? player.threePtShot : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>PAS</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.passing != null ? player.passing : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>HND</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.ballHandling != null ? player.ballHandling : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>DEF</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.defence != null ? player.defence : '??'}
+                        </span>
+                      </div>
+                      <div className="fifa-stat">
+                        <span>PHY</span>
+                        <span className="fifa-stat-value">
+                          {(playerClickable || overallAndDeletionDisplay) && player.physical != null ? player.physical : '??'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {renderMedal}
+
                 {selectedPlayer === player && overallAndDeletionDisplay && (
                   <div className="delete-player-button" onClick={(e) => handleDeletePlayer(e, player.playerId, player.user_fk)}>
                     🗑️

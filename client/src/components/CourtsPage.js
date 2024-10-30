@@ -144,16 +144,18 @@ const CourtsPage = () => {
   if (isLoading) {
     return (
       <div style={loadingStyles}>
-        <div className="loading-spinner"></div>
+        <div className="loading-spinner-cp"></div>
       </div>
     );
   }
 
   return (
     <div className="home-page-style">
-      <button onClick={handleLogout} className="logout-button">
-        Log Out
-      </button>
+      <div className="header-buttons-container">
+        <button onClick={handleLogout} className="logout-button">
+          Log out
+        </button>
+      </div>
       <img src="/HadarLOGO.png" alt="Baller Shuffle Logo" className='logo-image1' />
       <h1 className="courtsPage-title">My Courts</h1>
       <Link to={`/new-court/${userId}`} className="create-new-court-button">

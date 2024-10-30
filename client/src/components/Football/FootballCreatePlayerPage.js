@@ -24,26 +24,28 @@ const FootballCreatePlayerPage = () => {
 
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
-    finishing: 0,
-    passing: 0,
-    speed: 0,
-    physical: 0,
-    defence: 0,
-    dribbling: 0,
-    header: 0,
-    overall: 0,
-    overallToMix: 0
+    priority: 'A',
+    finishing: null,
+    passing: null,
+    speed: null,
+    physical: null,
+    defence: null,
+    dribbling: null,
+    stamina: null,
+    overall: null,
+    overallToMix: null
   });
 
   const [errors, setErrors] = useState({
     name: '',
+    priority: '',
     finishing: '',
     passing: '',
     speed: '',
     physical: '',
     defence: '',
     dribbling: '',
-    header: '',
+    stamina: '',
   });
 
 
@@ -114,6 +116,7 @@ const FootballCreatePlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
+
   const handleCreatePlayer = async () => {
     const nameError = validateName();
 
@@ -124,7 +127,7 @@ const FootballCreatePlayerPage = () => {
       physical: parseInt(playerAttributes.physical, 10),
       defence: parseInt(playerAttributes.defence, 10),
       dribbling: parseInt(playerAttributes.dribbling, 10),
-      header: parseInt(playerAttributes.header, 10),
+      stamina: parseInt(playerAttributes.stamina, 10),
     };
 
     const attributesErrors = {
@@ -134,15 +137,20 @@ const FootballCreatePlayerPage = () => {
       physical: validateNumber(numericalAttributes.physical, 0, 99, 'physical'),
       defence: validateNumber(numericalAttributes.defence, 0, 99, 'defence'),
       dribbling: validateNumber(numericalAttributes.dribbling, 0, 99, 'threePtShot'),
-      header: validateNumber(numericalAttributes.header, 0, 99, 'rebound'),
+      stamina: validateNumber(numericalAttributes.stamina, 0, 99, 'rebound'),
     };
+
+    const priorityError = validatePriority(playerAttributes.priority);
 
     setErrors({
       name: nameError,
+      priority: priorityError,
       ...attributesErrors,
     });
 
-    if (!nameError && !Object.values(attributesErrors).some((error) => error !== '')) {
+
+
+    if (!nameError && !priorityError && !Object.values(attributesErrors).some((error) => error !== '')) {
       const playerData = {
         ...playerAttributes,
         ...numericalAttributes,
@@ -161,9 +169,12 @@ const FootballCreatePlayerPage = () => {
 
         if (response.ok) {
           console.log('Player created successfully');
-          navigate(`/creation_success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&userId=${currUserId}`);
+          navigate(`/creation-success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&userId=${currUserId}`);
+        } else if (response.status === 409) {
+          alert('Player name already exists. Please choose a different name.');
         } else {
           console.error('Error creating player:', response.statusText);
+          alert(await response.text());
         }
       } catch (error) {
         console.error('Network error:', error);
@@ -179,14 +190,30 @@ const FootballCreatePlayerPage = () => {
       attributes.physical * 6 +
       attributes.defence * 6 +
       attributes.dribbling * 10 +
-      attributes.header * 3
+      attributes.stamina * 3
     const average = sum / 48;
     return Math.round(average);
+  };
+
+  const validatePriority = (priority) => {
+    const validPriorities = ['A', 'B', 'C'];
+    if (!validPriorities.includes(priority)) {
+      return 'Please select a valid priority (A, B, or C)';
+    }
+    return '';
   };
 
 
   return (
     <div className="create-player-page-style">
+      <div className="back-button-container">
+        <Link
+          to={`/court_home_page/${courtId}?userId=${currUserId}`}
+          className="back-home-button-home"
+        >
+          🏠
+        </Link>
+      </div>
       <h1 className="CP-title">Create New Player</h1>
       <div className="CP-content-container">
         <div className="CP-form-container">
@@ -204,7 +231,22 @@ const FootballCreatePlayerPage = () => {
               {errors.name && <p className="error-message">{errors.name}</p>}
             </div>
 
-            {/* Repeat similar input containers for other attributes */}
+            {/* Priority Dropdown */}
+            <div className="CP-input-container">
+              <label htmlFor="priority">Priority:</label>
+              <select
+                id="priority"
+                name="priority"
+                value={playerAttributes.priority}
+                onChange={handleInputChange}
+              >
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+              {errors.priority && <p className="error-message">{errors.priority}</p>}
+            </div>
+
             {/* Finishing */}
             <div className="CP-input-container">
               <label htmlFor="finishing">Finishing:</label>
@@ -295,19 +337,19 @@ const FootballCreatePlayerPage = () => {
               {errors.dribbling && <p className="error-message">{errors.dribbling}</p>}
             </div>
 
-            {/* Header */}
+            {/* stamina */}
             <div className="CP-input-container">
-              <label htmlFor="header">Header:</label>
+              <label htmlFor="stamina">Stamina:</label>
               <input
                 type="number"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                id="header"
-                name="header"
-                value={playerAttributes.header}
+                id="stamina"
+                name="stamina"
+                value={playerAttributes.stamina}
                 onChange={handleInputChange}
               />
-              {errors.header && <p className="error-message">{errors.header}</p>}
+              {errors.stamina && <p className="error-message">{errors.stamina}</p>}
             </div>
           </div>
 
@@ -363,10 +405,10 @@ const FootballCreatePlayerPage = () => {
                     <td>{averages.minDribbling}</td>
                   </tr>
                   <tr>
-                    <td>Header</td>
-                    <td>{averages.maxHeader}</td>
-                    <td>{averages.avgHeader.toFixed(2)}</td>
-                    <td>{averages.minHeader}</td>
+                    <td>Stamina</td>
+                    <td>{averages.maxStamina}</td>
+                    <td>{averages.avgStamina.toFixed(2)}</td>
+                    <td>{averages.minStamina}</td>
                   </tr>
                   <tr>
                     <td>COURT OVERALL</td>
@@ -383,12 +425,7 @@ const FootballCreatePlayerPage = () => {
               <button className="calc-save-button" onClick={handleCreatePlayer}>
                 Create and Calculate Overall
               </button>
-              <Link
-                to={`/court_home_page/${courtId}?userId=${currUserId}`}
-                className="back-home-button"
-              >
-                Back to Home
-              </Link>
+
             </div>
           </div>
 

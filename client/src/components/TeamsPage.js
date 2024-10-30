@@ -83,7 +83,7 @@ const TeamsPage = () => {
 
         // Create new team instances with swapped players
         const updatedTeams = [...teams];
-        
+
         // Store the current selected player info before clearing it
         const previousSelectedPlayer = selectedPlayer;
 
@@ -255,7 +255,7 @@ const TeamsPage = () => {
             <p>Speed: {team.team_speed}</p>
             <p>Physical: {team.team_physical}</p>
             <p>Dribbling: {team.team_dribbling}</p>
-            <p>Header: {team.team_header}</p>
+            <p>Stamina: {team.team_stamina}</p>
           </>
         );
       default:
@@ -265,8 +265,15 @@ const TeamsPage = () => {
   };
 
   return (
+    
     <div className="basketball-teams-page-style1">
+      <div className="tp-back-button-container">
+        <Link to={`/game/${gameId}/${courtId}?userId=${currUserId}`} className="tp-back-to-game">
+          Back to Game Page
+        </Link>
+      </div>
       <h1 className='TP-title1'>Fair Shuffled Teams</h1>
+
       <div className="teams-distribution-style1">
         {teams.map((team, index) => (
           <div key={index} className="team-container1">
@@ -299,9 +306,7 @@ const TeamsPage = () => {
           </button>
         </p>
         <p>
-          <Link to={`/game/${gameId}/${courtId}?userId=${currUserId}`} className="back-home-button">
-            Back to New Game
-          </Link>
+
         </p>
       </div>
     </div>

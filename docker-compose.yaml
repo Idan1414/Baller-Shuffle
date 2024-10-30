@@ -7,7 +7,7 @@ services:
     container_name: mysql_db
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: ballershuffleschema
@@ -19,7 +19,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,7 +30,7 @@ services:
     container_name: express_backend
     restart: unless-stopped
     ports:
-      - "5001:5000"
+      - "5000:5000"
     environment:
       NODE_ENV: development
       PORT: 5000
@@ -39,6 +39,8 @@ services:
       DB_USER: IdanSQL
       DB_PASSWORD: Idan27091999!
       DB_NAME: ballershuffleschema
+      CORS_ORIGIN: "http://localhost:3000"
+
     # volumes:
     #   - ./server:/usr/src/app
     #   - /usr/src/app/node_modules
@@ -51,17 +53,20 @@ services:
   frontend:
     build:
       dockerfile: client/Dockerfile
+      context: .
     container_name: react_frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
-      REACT_APP_API_URL: http://localhost:5000
-      WATCHPACK_POLLING: true
-    # volumes:
-    #   - ./client:/usr/src/app
-    #   - /usr/src/app/node_modules
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:5000
+      - WDS_SOCKET_PORT=0
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
     networks:
       - app_network
     depends_on:

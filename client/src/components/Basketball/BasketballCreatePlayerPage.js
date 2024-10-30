@@ -26,20 +26,22 @@ const BasketballCreatePlayerPage = () => {
 
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
-    scoring: 0,
-    passing: 0,
-    speed: 0,
-    physical: 0,
-    defence: 0,
-    threePtShot: 0,
-    rebound: 0,
-    ballHandling: 0,
-    postUp: 0,
+    priority: 'A',
+    scoring: null,
+    passing: null,
+    speed: null,
+    physical: null,
+    defence: null,
+    threePtShot: null,
+    rebound: null,
+    ballHandling: null,
+    postUp: null,
     height: 170,
   });
 
   const [errors, setErrors] = useState({
     name: '',
+    priority: '',
     height: '',
     scoring: '',
     passing: '',
@@ -135,6 +137,9 @@ const BasketballCreatePlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
+
+
+
   const handleCreatePlayer = async () => {
     const nameError = validateName();
     const heightError = validateNumber(playerAttributes.height, 50, 300, 'height');
@@ -164,13 +169,18 @@ const BasketballCreatePlayerPage = () => {
       postUp: validateNumber(numericalAttributes.postUp, 0, 99, 'postUp'),
     };
 
+
+    const priorityError = validatePriority(playerAttributes.priority);
+
     setErrors({
       name: nameError,
       height: heightError,
+      priority: priorityError,
       ...attributesErrors,
     });
 
-    if (!nameError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
+
+    if (!nameError && !priorityError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
       const playerData = {
         ...playerAttributes,
         ...numericalAttributes,
@@ -190,7 +200,7 @@ const BasketballCreatePlayerPage = () => {
 
         if (response.ok) {
           console.log('Player created successfully');
-          navigate(`/creation_success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`);
+          navigate(`/creation-success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`);
         } else {
           console.error('Error creating player:', response.statusText);
         }
@@ -217,12 +227,28 @@ const BasketballCreatePlayerPage = () => {
     return Math.round(average);
   };
 
-
+  const validatePriority = (priority) => {
+    const validPriorities = ['A', 'B', 'C'];
+    if (!validPriorities.includes(priority)) {
+      return 'Please select a valid priority (A, B, or C)';
+    }
+    return '';
+  };
 
   return (
     <div className="create-player-page-style">
+      <div className="back-button-container">
+        <Link
+          to={`/court_home_page/${courtId}?userId=${currUserId}`}
+          className="back-home-button-home"
+        >
+          🏠
+        </Link>
+      </div>
       <h1 className="CP-title">Create New Player</h1>
+      
       <div className="CP-content-container">
+
         <div className="CP-form-container">
           {/* Player Creation Form */}
           <div className="CP-input-wrapper">
@@ -254,7 +280,23 @@ const BasketballCreatePlayerPage = () => {
               {errors.height && <p className="error-message">{errors.height}</p>}
             </div>
 
-            {/* Repeat similar input containers for other attributes */}
+            {/* Priority Dropdown */}
+            <div className="CP-input-container">
+              <label htmlFor="priority">Priority:</label>
+              <select
+                id="priority"
+                name="priority"
+                value={playerAttributes.priority}
+                onChange={handleInputChange}
+              >
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+              {errors.priority && <p className="error-message">{errors.priority}</p>}
+            </div>
+
+
             {/* Scoring */}
             <div className="CP-input-container">
               <label htmlFor="scoring">Scoring :</label>
@@ -476,12 +518,7 @@ const BasketballCreatePlayerPage = () => {
               <button className="calc-save-button" onClick={handleCreatePlayer}>
                 Create and Calculate Overall
               </button>
-              <Link
-                to={`/court_home_page/${courtId}?userId=${currUserId}`}
-                className="back-home-button"
-              >
-                Back to Home
-              </Link>
+
             </div>
           </div>
 

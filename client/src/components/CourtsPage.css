@@ -3,12 +3,14 @@
 
 html {
   height: 100%;
+  
   /* Make sure the html element covers the full height */
 }
 
 body {
   margin: 0;
   height: 100%;
+  
   /* Make sure the body covers the full height */
   background-size: cover;
   /* Cover the entire viewport */
@@ -39,10 +41,22 @@ body {
   align-items: center;
   justify-content: flex-start;
   /* Adjusted to align content at the top */
-  animation: fadeIn 0.8s ease-in-out;
-  /* Apply fadeIn animation */
+  opacity: 0;
+  animation: floatIn 0.6s ease-out 0.2s;
+  animation-fill-mode: forwards;
 }
 
+/* Float in animation keyframes - already exists but shown for context */
+@keyframes floatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 /*--------------------TITLE------------------ */
 
 @import url('https://fonts.googleapis.com/css?family=Permanent+Marker&display=swap');
@@ -53,14 +67,13 @@ body {
   /* Extra bold */
   font-size: 3rem;
   /* Larger font size for more impact */
-  background: -webkit-linear-gradient(45deg, #f06, #aef);
   /* Gradient text */
-  -webkit-background-clip: text;
   text-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px gold, 0 0 40px #FFD8B1, 0 0 10px rgb(0, 94, 255), 0 0 10px rgb(0, 94, 255), 0 0 10px #f06;
   /* Glowing effect */
   margin-top: 55px;
   margin-bottom: 30px;
   position: relative;
+  animation: fadeIn 0.3s ease-in-out forwards;
   display: block !important;
   /* Ensure it's a block element */
 }
@@ -75,6 +88,7 @@ body {
   /* The following line adds a shadow that creates a border effect */
   margin: 20px 0;
   margin-top: -88px;
+  animation: fadeIn 0.3s ease-in-out forwards;
 }
 
 
@@ -91,33 +105,43 @@ body {
   text-decoration: none;
   font-weight: 500;
   position: relative;
-  box-shadow: 
-    0 8px 15px rgba(50, 50, 93, 0.2),   /* Increased depth shadow */
-    0 4px 6px rgba(0, 0, 0, 0.15),      /* Darker middle shadow */
-    0 1px 3px rgba(0, 0, 0, 0.1),       /* Close shadow for definition */
-    inset 0 2px 2px rgba(255, 255, 255, 1); /* Stronger inner highlight */
+  box-shadow:
+    0 8px 15px rgba(50, 50, 93, 0.2),
+    /* Increased depth shadow */
+    0 4px 6px rgba(0, 0, 0, 0.15),
+    /* Darker middle shadow */
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    /* Close shadow for definition */
+    inset 0 2px 2px rgba(255, 255, 255, 1);
+  /* Stronger inner highlight */
   transform: translateY(0);
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
   text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .create-new-court-button:hover {
   background: linear-gradient(145deg, #ffffff, #f0f0f0);
-  transform: translateY(-3px);  /* Increased lift */
-  box-shadow: 
-    0 15px 25px rgba(50, 50, 93, 0.25),  /* Larger hover shadow */
-    0 8px 10px rgba(0, 0, 0, 0.2),       /* Deeper middle shadow */
-    0 4px 6px rgba(0, 0, 0, 0.1),        /* Close shadow */
+  transform: translateY(-3px);
+  /* Increased lift */
+  box-shadow:
+    0 15px 25px rgba(50, 50, 93, 0.25),
+    /* Larger hover shadow */
+    0 8px 10px rgba(0, 0, 0, 0.2),
+    /* Deeper middle shadow */
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    /* Close shadow */
     inset 0 2px 2px rgba(255, 255, 255, 1);
 }
 
 .create-new-court-button:active {
-  transform: translateY(2px);  /* More pronounced press */
+  transform: translateY(2px);
+  /* More pronounced press */
   background: linear-gradient(145deg, #e6e6e6, #ffffff);
-  box-shadow: 
+  box-shadow:
     0 4px 8px rgba(50, 50, 93, 0.2),
     0 2px 4px rgba(0, 0, 0, 0.15),
-    inset 0 2px 4px rgba(0, 0, 0, 0.1),  /* Deeper inner shadow when pressed */
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    /* Deeper inner shadow when pressed */
     inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -163,7 +187,7 @@ body {
 .CourtsPage-cube.pastelOrange {
   background-image: url('/public/BasketBallWallpaper.jpg');
   /* Add the basketball court background */
-  transition: transform 0.2s ease,background-color 0.3s;
+  transition: transform 0.2s ease, background-color 0.3s;
   /* Transition for the background color */
   font-family: 'Exo 2', Arial;
 
@@ -172,7 +196,7 @@ body {
 .CourtsPage-cube.pastelGreen {
   background-image: url('/public/FootBallWallpaper.jpg');
   /* Add the basketball court background */
-  transition: transform 0.2s ease,background-color 0.3s;
+  transition: transform 0.2s ease, background-color 0.3s;
   font-family: 'Exo 2', Arial;
 
   /* Transition for the background color */
@@ -274,6 +298,7 @@ body {
   .player-cube {
     width: 100%;
   }
+
   .CourtsPage-cube {
     width: 140px;
     position: relative;
@@ -282,12 +307,13 @@ body {
   }
 
   /* Adjust loading spinner size for mobile */
-  .loading-spinner {
+  .loading-spinner-cp {
     width: 40px;
     height: 40px;
     border: 4px solid #f3f3f3;
     border-top: 4px solid #c4af63;
   }
+
   .CourtsPage-cube p {
     font-size: 17px;
     font-family: 'Exo 2', Arial;
@@ -327,59 +353,61 @@ body {
   padding: 10px;
 }
 
+.header-buttons-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 15px;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
 .logout-button {
-  position: absolute;
-  /* Position the button relative to its first positioned ancestor */
-  top: 20px;
-  /* Distance from the top */
-  left: 20px;
-  /* Distance from the left */
-  padding: 10px 20px;
-  /* Padding inside the button */
-  font-size: 1rem;
-  /* Text size */
-  color: #000000;
-  /* Text color */
-  background-color: #eff5f9;
-  /* Button background color */
-  border: none;
-  /* Remove border */
-  border-radius: 5px;
-  /* Rounded corners */
-  cursor: pointer;
-  /* Cursor changes to pointer to indicate it's clickable */
-  transition: background-color 0.3s ease;
-  /* Smooth transition for background color */
   font-family: 'Exo 2', Arial;
-  /* Font family */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  /* Subtle shadow for depth */
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: #eae4e4;
+  background: linear-gradient(145deg, #1b141492, #a45151ae);
+  border: rgba(123, 31, 26, 0.589);
+  border-radius: 55px;
+  cursor: pointer;
+  transition: all 0.3s ease;
   text-decoration: none;
-  /* Remove underline from text */
+  box-shadow: 0 2px 4px rgba(192, 34, 34, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
 }
 
 .logout-button:hover {
-  background-color: #c5502c;
-  /* Darker shade on hover for feedback */
+  transform: scale(1.05);
+  background: linear-gradient(145deg, #892626ab, #dd4444);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.logout-button:focus {
-  outline: none;
-  /* Remove outline on focus for cleaner look */
+.logout-button:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 
 .logo-image1 {
   width: 400px;
   /* Adjust the size as needed */
-  margin-bottom:35px;
+  margin-bottom: 35px;
 
   /* Reduce bottom margin to bring it closer */
-  margin-top: 30px;
+  margin-top: -40px;
   margin-left: -20px;
+  filter: drop-shadow(0 0 10px rgba(135, 206, 250, 0.3));
+  transition: transform 0.3s ease;
 }
 
-.loading-spinner {
+.loading-spinner-cp {
   width: 50px;
   height: 50px;
   border: 5px solid #f3f3f3;
@@ -389,8 +417,13 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Add this to prevent content flash */

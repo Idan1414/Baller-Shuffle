@@ -25,19 +25,18 @@ body {
 
 }
 
+
 .EP-edit-player-page-style {
-  overflow-x: hidden;
-  /* Hide horizontal scroll */
-  overflow-y: hidden;
-  min-height: 100vh;
-  /* Set minimum height to 100% of the viewport */
+  overflow: hidden;
+  padding-bottom: 90px;
   display: flex;
+  min-height: 100vh;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  /* Adjusted to align content at the top */
-  animation: fadeIn 0.2s ease-in-out;
-  /* Apply fadeIn animation */
+  animation: fadeIn 0.3s ease-in-out;
+  width: 98%;
+  margin: 0 auto;
 
 }
 
@@ -62,6 +61,7 @@ body {
 .EP-content-container {
 
   display: flex;
+  align-items: center;
   /* Enable flexbox for the content container */
   justify-content: space-between;
   /* Space out child elements */
@@ -69,20 +69,15 @@ body {
 }
 
 /*--------------------INPUT CONTAINER------------------ */
-.EP-input-wrapper {
-  flex: 1;
-  /* Allow this div to take remaining space */
-  margin-right: 10px;
-  /* Space between inputs and the averages table */
-  flex: 0 0 30%; /* Adjust to a fixed width or percentage */
-}
 
 .EP-input-container {
-  display: flex; /* Enable flexbox */
-  align-items: center; /* Align items vertically centered */
-  margin-bottom: 0px; /* Space below each input container */
+  display: flex;
+  /* Enable flexbox */
+  align-items: center;
+  /* Align items vertically centered */
+  margin-bottom: 0px;
+  /* Space below each input container */
   padding: 1px;
-
 }
 
 .EP-input-container label {
@@ -102,14 +97,16 @@ body {
   font-size: 1.2rem;
   padding: 10px;
   margin-bottom: 10px;
-  border: 2px solid rgba(108, 209, 237, 0.7) !important; /* Lighter blue border */
+  border: 2px solid rgba(111, 134, 214, 0.7) !important;
   border-radius: 22px !important;
-  color: rgb(108, 209, 237) !important; /* Light blue text */ 
-  background-color: rgba(0, 0, 50, 0.6) !important; /* Ensure background is bluish and transparent */
-  text-shadow: 0 0 3px rgba(108, 209, 237, 0.8), 0 0 5px rgba(108, 209, 237, 0.5) ; /* Glowing text shadow */
-  box-shadow: 0 0 5px rgba(108, 209, 237, 0.6), 0 0 25px rgba(108, 209, 237, 0.4); /* Glowing effect around input */
-  outline: none; /* Remove default outline */
-  transition: box-shadow 0.3s ease, background-color 0.3s ease !important; /* Smooth hover effect */
+  color: #48c6ef !important;
+  background-color: rgba(30, 60, 114, 0.2) !important;
+  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
+    0 0 5px rgba(111, 134, 214, 0.5);
+  box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
+    inset 0 0 20px rgba(135, 206, 250, 0.2);
+  outline: none;
+  transition: all 0.3s ease !important;
   flex: 1;
 }
 
@@ -142,13 +139,13 @@ body {
 /*--------------------CALCULATION BUTTON------------------ */
 
 .EP-calc-save-button {
-  font-family: 'Exo 2',  sans-serif;
-  margin-top: 8px;
+  font-family: 'Exo 2', sans-serif;
+  margin-top: 20px;
   /* Adjusted margin to provide space below the title */
   margin-right: 16px;
   padding: 20px 40px;
   /* Adjusted padding for a larger clickable area */
-  background-color: rgba(141, 230, 227, 0.781);
+  background: linear-gradient(145deg, #48c6ef 0%, #6f86d6 100%);
   /* Initial background color */
   color: #161005;
   /* Text color */
@@ -157,25 +154,29 @@ body {
   border-radius: 22px;
   /* Rounded corners */
   cursor: pointer;
-  transition: transform 0.2s , background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, background-color 0.2s, color 0.2s, box-shadow 0.2s;
   /* Smooth transition effect */
   text-decoration: none;
   /* Remove underline */
   font-size: 1.1rem;
   /* Adjust font size */
+  display: block;
+  margin: 20px auto;
 }
 
 .EP-calc-save-button:hover {
   color: rgb(0, 0, 0);
-  transform: scale(1.05); /* Scale on hover */
-  box-shadow: 0 0 10px rgb(80, 231, 193), 0 0 10px rgb(255, 254, 249);
+  transform: scale(1.05);
+  /* Scale on hover */
+  box-shadow: 0 8px 25px rgba(135, 206, 250, 0.4),
+    inset 0 0 30px rgba(135, 206, 250, 0.3);
   /* Stronger glow on hover */
   /* Hover text color */
 }
 
 .EP-calc-save-button:active {
-  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
-  transform: scale(0.95); /* Scale on hover */
+  transform: scale(0.95);
+  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.15);
   /* Add a subtle box shadow for a 3D effect */
 }
 
@@ -215,6 +216,7 @@ body {
 }
 
 .EP-button-container {
+  font-family: 'Exo 2', sans-serif;
   display: flex;
   /* Use flexbox for layout */
   flex-direction: column;
@@ -236,9 +238,10 @@ body {
   padding: 10px 20px; /* Padding */
   text-align: center; /* Centered text */
   text-decoration: none; /* Remove underline */
-  display: inline-block; /* Inline-block for spacing */
   font-size: 16px; /* Font size */
-  margin: 4px 2px; /* Margin */
+  display: block;
+  margin: 20px auto; /* This centers the button horizontally */
+  width: fit-content;
   cursor: pointer; /* Pointer cursor */
   border-radius: 4px; /* Rounded corners */
   transition: background-color 0.3s, transform 0.3s; /* Transition for hover effect */
@@ -251,25 +254,47 @@ body {
 
 /* Assign popup */
 .EP-assign-popup {
-  position: fixed; /* Fixed position */
-  top: 50%; /* Center vertically */
-  left: 50%; /* Center horizontally */
-  transform: translate(-50%, -50%); /* Adjust for true center */
-  background-color: #f9f9f9; /* Softer white background */
-  border: 1px solid #ddd; /* Light grey border */
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); /* Deeper shadow for better contrast */
-  z-index: 1000; /* Ensure it is on top */
-  width: 320px; /* Adjust width */
-  padding: 20px; /* Padding */
-  border-radius: 10px; /* Rounded corners */
-  animation: floatIn 0.5s ease-out; /* Smooth float-in animation */
-  opacity: 0; /* Start hidden */
+  position: fixed; /* Keep this fixed */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #161005;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  width: 320px;
+  padding: 20px;
+  border-radius: 10px;
+  animation: assignPopupFadeIn 0.5s ease-out;
 }
 
 .EP-assign-popup.active {
   display: block;
   opacity: 1; /* Make it visible */
   background-color: #161005;
+}
+
+@keyframes assignPopupFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.EP-assign-popup.active {
+  display: block;
+  opacity: 1;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .EP-assign-popup {
+    width: 80%;
+  }
 }
 
 .EP-assign-popup h3 {
@@ -412,4 +437,453 @@ body {
 .EP-success-popup.hide {
   animation: popupFadeOut 0.5s ease forwards;
   visibility: hidden;
+}
+
+
+
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+}
+
+.image-preview {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(111, 134, 214, 0.7);
+  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.15),
+              inset 0 0 20px rgba(135, 206, 250, 0.2);
+}
+
+.image-input {
+  font-family: 'Exo 2', sans-serif;
+  width: 100%;
+  padding: 10px;
+  background: rgba(30, 60, 114, 0.2);
+  border: 2px solid rgba(111, 134, 214, 0.7);
+  border-radius: 12px;
+  color: #48c6ef;
+  cursor: pointer;
+}
+
+.image-input::-webkit-file-upload-button {
+  background: linear-gradient(145deg, #48c6ef 0%, #6f86d6 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 8px 16px;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.image-input::-webkit-file-upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.3);
+}
+
+
+.EP-input-container select {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 100;
+  font-size: 1.2rem;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 2px solid rgba(111, 134, 214, 0.7) !important;
+  border-radius: 22px !important;
+  color: #48c6ef !important;
+  background-color: rgba(30, 60, 114, 0.2) !important;
+  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
+    0 0 5px rgba(111, 134, 214, 0.5);
+  box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
+    inset 0 0 20px rgba(135, 206, 250, 0.2);
+  outline: none;
+  transition: all 0.3s ease !important;
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5em;
+  padding-right: 1.5em;
+}
+
+.EP-input-container select:focus {
+  box-shadow: 0 0 25px rgba(108, 209, 237, 0.8), 0 0 40px rgba(108, 209, 237, 0.5) !important;
+  border: 2px solid rgba(108, 209, 237, 1) !important;
+  caret-color: rgb(108, 209, 237) !important;
+}
+
+
+.player-profile {
+  overflow: hidden;
+  padding-bottom: 180px;
+  position: relative;
+  padding-top: 20px; /* Add some padding to make space for the back button */
+  width: 99%;
+  margin: 0 auto;
+  animation: fadeIn 0.2s ease-in-out;
+  /* Apply fadeIn animation */
+}
+
+/* Header Styles */
+.profile-header {
+  width: 100%;
+  padding: 60px 16px 32px;
+  text-align: center;
+  position: relative;
+  margin-left: -19px;
+}
+
+.back-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, #48c5ef9a 0%, #6f86d6 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(72, 197, 239, 0.3);
+}
+
+.profile-name {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: white;
+}
+
+.profile-image-container {
+  width: 128px;
+  height: 128px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: none;
+}
+
+.profile-image-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #48c5ef 0%, #6f86d6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: white;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  margin-bottom: 24px;
+}
+
+.tab-button {
+  font-family: 'Exo 2',sans-serif;
+  padding: 12px 24px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tab-button.active {
+  background: linear-gradient(90deg, #48c5ef9a 0%, #6f86d6 100%);
+  color: white;
+}
+
+.tab-button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Tab Content */
+.tab-content {
+  padding: 0 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Statistics Section */
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-label-ep {
+  color: rgba(255, 255, 255, 0.895);
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+}
+
+/* Games Section */
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-date {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.game-location {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.mvp-badge {
+  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+  color: black;
+  padding: 4px 12px;
+  border-radius: 25px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Edit Form Section */
+.edit-form {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: #48c5ef;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(72, 197, 239, 0.3);
+}
+
+.update-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #48c5ef9a 0%, #6f86d6 100%);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.update-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(72, 197, 239, 0.3);
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Error Messages */
+.error-message {
+  color: #ff4444;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .profile-header {
+    padding-top: 40px;
+  }
+  
+  .profile-name {
+    font-size: 1.5rem;
+  }
+  
+  .profile-image-container {
+    width: 96px;
+    height: 96px;
+  }
+  
+  .tab-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .statistics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat-value {
+    font-size: 1.2rem;
+  }
+}
+
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  color: white;
+  font-size: 1.5rem;
+  padding: 20px;
+  background: rgba(72, 198, 239, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(72, 198, 239, 0.5);
+}
+
+.games-list,
+.statistics-grid,
+.edit-form {
+  animation: floatInFromTop 0.3s ease-out;
+}
+
+@keyframes floatInFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+.ep-back-button-container {
+  position: absolute;
+  top: 20px;
+  left: -15px;
+  z-index: 1000;
+  animation: floatIn 0.6s ease-out 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.ep-back-home-button-home {
+  font-family: 'Exo 2', sans-serif;
+  padding: 10px 20px;
+  background-color: #3c3737c3;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.ep-back-home-button-home:hover {
+  background-color: #918989;
+}
+
+@keyframes floatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  .ep-back-button-container {
+    top: -10px;
+    left: -1px;
+  }
+}
+
+.no-games{
+  color: white;
+  align-self: center;
 }

@@ -14,7 +14,7 @@ body {
   background-attachment: fixed; /* Fix the background to the viewport */
   background-repeat: no-repeat; /* Do not repeat the background */
   overflow-x: hidden; /* Hide horizontal scroll */
-  font-family: 'Arial', sans-serif;
+  font-family: 'Exo 2', sans-serif;
 }
 
 .PS-page-style {
@@ -30,8 +30,9 @@ body {
 
 /*--------------------TITLE------------------ */
 .PS-title1{
-  font-family: 'Arial', sans-serif;
+  font-family: 'Exo 2', sans-serif;
   font-weight: 700;
+  text-align: center;
   font-size: 4rem;
   color: rgba(130, 235, 130, 0.718);
   text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);

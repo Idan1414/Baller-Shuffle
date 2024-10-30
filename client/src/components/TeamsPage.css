@@ -262,6 +262,7 @@ body {
 
 
 .those-are-the-teams-button1 {
+  font-family: 'Exo 2', sans-serif;
   margin-top: auto;
   margin-bottom: 10px;
   margin-left: 10px;
@@ -338,5 +339,389 @@ body {
     color: #faf9f5;
     font-size: smaller;
 
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700&display=swap');
+
+html {
+  height: 100%;
+  /* Make sure the html element covers the full height */
+}
+
+body {
+  margin: 0;
+  height: 100%;
+
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  font-family: 'Exo 2', sans-serif;
+}
+
+/*--------------------BackGround------------------ */
+
+.basketball-teams-page-style1 {
+  overflow-x: hidden;
+  /* Hide horizontal scroll */
+  overflow-y: hidden;
+  /* Faded black to grey gradient */
+  min-height: 100vh;
+  /* Set minimum height to 100% of the viewport */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  /* Adjusted to align content at the top */
+  flex-wrap: wrap;
+  /* Allow teams to wrap to the next line if needed */
+  animation: fadeIn 1s ease-in-out;
+  /* Apply fadeIn animation */
+}
+
+/*--------------------Teams Distribution style------------------ */
+/* Update the teams distribution style for better centering */
+.teams-distribution-style1 {
+  background: linear-gradient(to bottom, #fae494bd, #867c4acb);
+  min-height: 100vh;
+  display: flex;
+  /* Changed to flex from inline-flex */
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  /* Added to center teams */
+  min-height: auto;
+  flex-wrap: wrap;
+  animation: fadeIn 2s ease-in-out;
+  border: 2px solid #666;
+  margin-top: flex;
+  padding: 1px;
+  border-radius: 22px;
+  margin-bottom: 0.3px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 50%;
+  /* Added to control overall width */
+}
+
+
+/* Animation for fade-in effect */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+    /* Slight downward movement */
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    /* Final position */
+  }
+}
+
+
+.teams-distribution-style1 p {
+  color: white;
+  margin: 3px 0;
+  font-size: 1.3rem;
+  text-shadow: 1px 1px 0 #161005;
+}
+
+
+/*--------------------TITLE------------------ */
+
+.TP-title1 {
+  font-family: 'Exo 2', sans-serif;
+  /* Using Exo 2 font */
+  font-weight: 700;
+  /* Bold */
+  font-size: 3rem;
+  /* Increased font size for emphasis */
+  color: #c7b45fde;
+  /* Faded white-orange color */
+  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  /* Adding a text shadow for a 3D effect */
+  margin: 20px 0 10px;
+  margin-top: 70px;
+  /* Adjusted margin to provide space */
+}
+
+/*--------------------TEAM CONTAINER------------------ */
+
+.team-container1 {
+  display: flex;
+  border-radius: 22px;
+  flex-direction: column;
+  /* Display children elements in a row */
+  align-items: row;
+  /* This line is not needed */
+  margin: 20px;
+  /* Add margin between teams */
+  border: 2px solid #666;
+  padding: 15px;
+  /* Adjusted padding for spacing around the text */
+
+}
+
+
+
+
+
+
+/*--------------------TEAM PLAYERS------------------ */
+
+.team-players1 {
+  display: flex;
+  flex-direction: column;
+  /* Display players in a column */
+  align-items: center;
+}
+
+/*--------------------PLAYER + SWAPPING------------------ */
+
+/* Update the player styles */
+.player1 {
+  background-color: #f7f7ef4d !important;
+  padding: 10px;
+  margin: 2px;
+  text-align: center;
+  color: #302d22 !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.player1 p {
+  color: #302d22 !important;
+  text-shadow: none;
+
+}
+
+.player1:hover {
+  background-color: #d3ae0ade;
+  box-shadow: 0 0 23px rgba(26, 25, 23, 0.991);
+  cursor: pointer;
+}
+
+.player1.selected-player {
+  background-color: #d3ae0a;
+  box-shadow: 0 0 23px rgba(211, 174, 10, 0.8);
+  border: 2px solid #fff;
+  transform: scale(1.02);
+  transition: all 0.1s ease;
+}
+
+.player1.swapping {
+  animation: swapHighlight 0.8s ease-in-out;
+}
+
+.player1.sliding-out {
+  animation: slideOut 0.8s ease-out forwards;
+}
+
+.player1.sliding-in {
+  animation: slideIn 0.8s ease-in forwards;
+}
+
+
+@keyframes swapHighlight {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(211, 174, 10, 0);
+  }
+
+  20% {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(211, 174, 10, 0.8);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(211, 174, 10, 0);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(-100px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+/*--------------------RE SHUFFLE BUTTON------------------ */
+.re-shuffle-button1 {
+  font-family: 'Exo 2', sans-serif;
+  margin-top: auto;
+  margin-bottom: 10px;
+  padding: 10px 10px;
+  font-weight: 700;
+  /* Bold */
+  font-size: 2rem;
+  /* Increased font size for emphasis */
+  background-color: #c7b45fde;
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-decoration: none;
+}
+
+.re-shuffle-button1:hover {
+  background-color: #c9bb4cc5;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
+  color: rgb(0, 0, 0);
+}
+
+.re-shuffle-button1:active {
+  transform: translateY(4px);
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+.those-are-the-teams-button1 {
+  margin-top: auto;
+  margin-bottom: 10px;
+  margin-left: 10px;
+  padding: 10px 10px;
+  font-weight: 700;
+  /* Bold */
+  font-size: 2rem;
+  /* Increased font size for emphasis */
+  background-color: #85c75fde;
+  color: #161005;
+  border: 2px solid #ffffffbe;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  text-decoration: none;
+}
+
+.those-are-the-teams-button1:hover {
+  background-color: #85c75fde;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 23px rgba(246, 244, 244, 0.991);
+  color: rgb(0, 0, 0);
+}
+
+.those-are-the-teams-button1:active {
+  transform: translateY(4px);
+  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Global media query for small screens */
+@media (max-width: 425px) {
+
+  body {
+    background-size: contain;
+    /* Adjust background size to fit better on small screens */
+    padding: 0;
+  }
+
+  .basketball-teams-page-style1 {
+    padding: 10px;
+    min-height: 100vh;
+    justify-content: flex-start;
+  }
+
+  .teams-distribution-style1 {
+    width: 95%;
+    margin: 10px auto;
+    /* Changed to auto for horizontal centering */
+    padding: 10px;
+    border-radius: 15px;
+    transition: none;
+    justify-content: center;
+    /* Ensure centering on mobile */
+  }
+
+
+
+  .TP-title1 {
+    font-size: 2rem;
+    margin-top: 40px;
+    /* Reduce font size and margin for better fit */
+  }
+
+  .team-container1 {
+    width: 24%;
+    margin: 5px;
+    padding: 5px;
+    /* Reduce padding and margins */
+    border-radius: 12px;
+  }
+
+  .team-container1 p {
+    color: #faf9f5;
+    font-size: smaller;
+
+  }
+}
+
+.tp-back-button-container {
+  position: relative;
+  top: 20px;
+  left: -300px;
+  z-index: 1000;
+  animation: floatIn 0.6s ease-out 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.tp-back-to-game {
+  font-family: 'Exo 2', sans-serif;
+  padding: 10px 20px;
+  background-color: #3c3737c3;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+}
+
+.tp-back-to-game:hover {
+  background-color: #918989;
+}
+
+@keyframes floatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  .tp-back-button-container {
+    top: 20px;
+    left: -110px;
   }
 }

@@ -94,14 +94,17 @@ const ScheduledGamesPage = () => {
 
   return (
     <div className="scheduled-games-page">
-      <h1 className="scheduled-games-title">{currCourtName} - Scheduled Games</h1>
+      <div className="sgp-back-button-container">
+        <Link to={`/court_home_page/${courtId}?userId=${currUserId}`} className="back-home-button-home">
+          🏠
+        </Link>
+      </div>
+      <h1 className="scheduled-games-title">{currCourtName} - Games</h1>
       <div className="button-container">
         <button className="create-game-button" onClick={() => setModalVisible(true)}>
           Create New Scheduled Game
         </button>
-        <Link to={`/court_home_page/${courtId}?userId=${currUserId}`} className="back-home-button">
-          Back to Home
-        </Link>
+
       </div>
       {modalVisible && (
         <CreateGameModal

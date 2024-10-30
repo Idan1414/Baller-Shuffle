@@ -26,16 +26,16 @@ body {
 }
 
 .create-player-page-style {
-  overflow-x: hidden;
-  /* Hide horizontal scroll */
-  overflow-y: hidden;
-  padding-bottom: 180px; /* Extra space for the tooltip */
-  /* Set minimum height to 100% of the viewport */
+  overflow: hidden;
+  padding-bottom: 180px;
+  position: relative;
+  padding-top: 20px; /* Add some padding to make space for the back button */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  /* Adjusted to align content at the top */
+  width: 99%;
+  margin: 0 auto;
   animation: fadeIn 0.2s ease-in-out;
   /* Apply fadeIn animation */
 
@@ -49,12 +49,13 @@ body {
   font-weight: 700;
   /* Bold */
   font-size: 3rem;
+  margin-top: 10px;
   /* Increased font size for emphasis */
   color: rgb(251, 254, 255);
   /* Faded white-orange color */
   text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
   /* Adding a text shadow for a 3D effect */
-  margin: 20px 0;
+  margin: 10px 0;
   /* Adjusted margin to provide space */
 }
 
@@ -74,13 +75,17 @@ body {
   /* Allow this div to take remaining space */
   margin-right: 10px;
   /* Space between inputs and the averages table */
-  flex: 0 0 30%; /* Adjust to a fixed width or percentage */
+  flex: 0 0 30%;
+  /* Adjust to a fixed width or percentage */
 }
 
 .CP-input-container {
-  display: flex; /* Enable flexbox */
-  align-items: center; /* Align items vertically centered */
-  margin-bottom: 0px; /* Space below each input container */
+  display: flex;
+  /* Enable flexbox */
+  align-items: center;
+  /* Align items vertically centered */
+  margin-bottom: 0px;
+  /* Space below each input container */
   padding: 1px;
 
 }
@@ -92,32 +97,37 @@ body {
   color: rgb(255, 255, 255);
   text-shadow: 0 0 1px white;
   margin-bottom: 5px;
-  margin-right: 7px; /* Space between label and input */
-  min-width: 100px; /* Optional: Set a minimum width for consistent spacing */
+  margin-right: 7px;
+  /* Space between label and input */
+  min-width: 100px;
+  /* Optional: Set a minimum width for consistent spacing */
 }
 
+/* Input styling with new colors */
 .CP-input-container input {
   font-family: 'Exo 2', sans-serif;
   font-weight: 100;
   font-size: 1.2rem;
   padding: 10px;
   margin-bottom: 10px;
-  border: 2px solid rgba(108, 209, 237, 0.7) !important; /* Lighter blue border */
+  border: 2px solid rgba(111, 134, 214, 0.7) !important;
   border-radius: 22px !important;
-  color: rgb(108, 209, 237) !important; /* Light blue text */ 
-  background-color: rgba(0, 0, 50, 0.6) !important; /* Ensure background is bluish and transparent */
-  text-shadow: 0 0 3px rgba(108, 209, 237, 0.8), 0 0 5px rgba(108, 209, 237, 0.5) ; /* Glowing text shadow */
-  box-shadow: 0 0 5px rgba(108, 209, 237, 0.6), 0 0 25px rgba(108, 209, 237, 0.4); /* Glowing effect around input */
-  outline: none; /* Remove default outline */
-  transition: box-shadow 0.3s ease, background-color 0.3s ease !important; /* Smooth hover effect */
+  color: #48c6ef !important;
+  background-color: rgba(30, 60, 114, 0.2) !important;
+  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
+    0 0 5px rgba(111, 134, 214, 0.5);
+  box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
+    inset 0 0 20px rgba(135, 206, 250, 0.2);
+  outline: none;
+  transition: all 0.3s ease !important;
   flex: 1;
-
 }
 
 .CP-input-container input:focus {
-  box-shadow: 0 0 25px rgba(108, 209, 237, 0.8), 0 0 40px rgba(108, 209, 237, 0.5)!important; /* Stronger glow on focus */
-  border: 2px solid rgba(108, 209, 237, 1) !important; /* Brighter blue border */
-  caret-color: rgb(108, 209, 237) !important; /* Light blue caret */
+  box-shadow: 0 0 25px rgba(72, 198, 239, 0.4),
+    inset 0 0 30px rgba(111, 134, 214, 0.3) !important;
+  border: 2px solid rgba(72, 198, 239, 0.8) !important;
+  caret-color: #48c6ef !important;
 }
 
 
@@ -135,13 +145,13 @@ body {
 /*--------------------CALCULATION BUTTON------------------ */
 
 .calc-save-button {
-  font-family: 'Exo 2',  sans-serif;
+  font-family: 'Exo 2', sans-serif;
   margin-top: 80px;
   /* Adjusted margin to provide space below the title */
   margin-right: 16px;
   padding: 20px 40px;
   /* Adjusted padding for a larger clickable area */
-  background-color: rgba(141, 230, 227, 0.781);
+  background: linear-gradient(145deg, #48c6ef 0%, #6f86d6 100%);
   /* Initial background color */
   color: #161005;
   /* Text color */
@@ -150,7 +160,7 @@ body {
   border-radius: 22px;
   /* Rounded corners */
   cursor: pointer;
-  transition: transform 0.2s , background-color 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, background-color 0.2s, color 0.2s, box-shadow 0.2s;
   /* Smooth transition effect */
   text-decoration: none;
   /* Remove underline */
@@ -160,44 +170,20 @@ body {
 
 .calc-save-button:hover {
   color: rgb(0, 0, 0);
-  transform: scale(1.05); /* Scale on hover */
-  box-shadow: 0 0 10px rgb(80, 231, 193), 0 0 10px rgb(255, 254, 249);
+  transform: scale(1.05);
+  /* Scale on hover */
+  box-shadow: 0 8px 25px rgba(135, 206, 250, 0.4),
+    inset 0 0 30px rgba(135, 206, 250, 0.3);
   /* Stronger glow on hover */
   /* Hover text color */
 }
 
 .calc-save-button:active {
-  box-shadow: 12px 12px 12px rgba(0, 0, 0, 0.3);
-  transform: scale(0.95); /* Scale on hover */
+  transform: scale(0.95);
+  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.15);
   /* Add a subtle box shadow for a 3D effect */
 }
 
-
-.NPG-back-home-button {
-  font-family: 'Exo 2',Arial, Helvetica, sans-serif;
-  margin-top: 17px;
-  padding: 20px 20px;
-  margin-top: 32px;
-  /* Adjusted margin to provide space below the title */
-  margin-right: 16px;
-  background-color: #fefefe;
-  color: #161005;
-  border: 2px solid #ffffffbe;
-  border-radius: 55px;
-  cursor: pointer;
-  width: 15%;
-  text-align: center;
-  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
-  text-decoration: none;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); /* Initial glow effect */
-}
-
-.NPG-back-home-button:hover {
-  background-color: #fefef7e6;
-  color: rgb(0, 0, 0);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
-  /* Stronger glow on hover */
-}
 
 
 .CP-form-container {
@@ -239,50 +225,49 @@ body {
 }
 
 
+/* Table styling with new colors */
 .averages-table {
-
   border-collapse: collapse;
-  /* Remove space between borders */
-  background-color: rgba(136, 141, 142, 0.571);
-  /* Table background color */
+  background: linear-gradient(145deg, rgba(30, 60, 114, 0.3), rgba(42, 82, 152, 0.3));
   margin-top: 12px;
-  /* Space between title and table */
   margin-left: 55px;
-
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.15);
 }
 
-
-
 .averages-table th {
-  background-color: lightblue;
-  /* Background color for the table header */
+  background: linear-gradient(90deg, #48c6ef 0%, #6f86d6 100%);
+  color: white;
   font-size: 1rem;
-  /* Adjust font size for headers */
-  padding: 8px;
-  /* Padding for table cells */
-  border: 1px solid rgb(244, 244, 243);
-  /* Border color for cells */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  /* Shadow effect for headers */
+  padding: 12px;
+  border: 1px solid rgba(135, 206, 250, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .averages-table td {
-  color: whitesmoke;
-  text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  text-shadow: 0 0 4px rgba(72, 198, 239, 0.5);
   text-align: center;
-  background-color: rgba(134, 208, 213, 0.863);
-  /* Transparent white for table rows */
+  background-color: rgba(30, 60, 114, 0.4);
   font-size: 0.9rem;
-  /* Adjust font size for table data */
-  padding: 8px;
-  /* Padding for table cells */
-  border: 1px solid #e0e4e6;
-  /* Border color for cells */
+  padding: 10px;
+  border: 1px solid rgba(135, 206, 250, 0.1);
 }
 
+.averages-table tr:hover td {
+  background-color: rgba(72, 198, 239, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+
 .averages-table tr:nth-child(even) td {
-  background-color: rgba(144, 244, 247, 0.416);
-  /* Alternate row background color */
+  background-color: rgba(42, 82, 152, 0.4);
+}
+
+.averages-table tr:hover:nth-child(even) td {
+  background-color: rgba(72, 198, 239, 0.2);
+  transition: background-color 0.3s ease;
 }
 
 /* Responsive adjustments */
@@ -295,6 +280,7 @@ body {
     font-size: 0.8rem;
     /* Adjust font size */
   }
+
 }
 
 
@@ -305,6 +291,7 @@ body {
     opacity: 0;
     transform: translate(-50%, -40%);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, -50%);
@@ -316,6 +303,7 @@ body {
     opacity: 1;
     transform: translate(-50%, -50%);
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, -60%);
@@ -324,44 +312,65 @@ body {
 
 /* Assign popup */
 .assign-popup {
-  position: fixed; /* Fixed position */
-  top: 50%; /* Center vertically */
-  left: 50%; /* Center horizontally */
-  transform: translate(-50%, -50%); /* Adjust for true center */
-  background-color: #f9f9f9; /* Softer white background */
-  border: 1px solid #ddd; /* Light grey border */
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); /* Deeper shadow for better contrast */
-  z-index: 1000; /* Ensure it is on top */
-  width: 320px; /* Adjust width */
-  padding: 20px; /* Padding */
-  border-radius: 10px; /* Rounded corners */
-  animation: floatIn 0.5s ease-out; /* Smooth float-in animation */
-  opacity: 0; /* Start hidden */
+  position: fixed;
+  /* Fixed position */
+  top: 50%;
+  /* Center vertically */
+  left: 50%;
+  /* Center horizontally */
+  transform: translate(-50%, -50%);
+  /* Adjust for true center */
+  background-color: #f9f9f9;
+  /* Softer white background */
+  border: 1px solid #ddd;
+  /* Light grey border */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  /* Deeper shadow for better contrast */
+  z-index: 1000;
+  /* Ensure it is on top */
+  width: 320px;
+  /* Adjust width */
+  padding: 20px;
+  /* Padding */
+  border-radius: 10px;
+  /* Rounded corners */
+  animation: floatIn 0.5s ease-out;
+  /* Smooth float-in animation */
+  opacity: 0;
+  /* Start hidden */
 }
 
 .assign-popup.active {
   display: block;
-  opacity: 1; /* Make it visible */
+  opacity: 1;
+  /* Make it visible */
   background-color: #161005;
 }
 
 .assign-popup h3 {
-  margin-bottom: 15px; /* Space below heading */
+  margin-bottom: 15px;
+  /* Space below heading */
   font-size: 1.2em;
-  color: #444; /* Darker grey for the heading */
-  text-align: center; /* Centered text */
+  color: #444;
+  /* Darker grey for the heading */
+  text-align: center;
+  /* Centered text */
 }
 
 .assign-popup.active input {
-  width: 100%; /* Full width */
+  width: 100%;
+  /* Full width */
   padding: 8px;
   margin: 10px 0;
   background-color: transparent;
   color: #fdfcfc;
-  border: 1px solid #ccc; /* Light border */
-  border-radius: 4px; /* Rounded corners */
+  border: 1px solid #ccc;
+  /* Light border */
+  border-radius: 4px;
+  /* Rounded corners */
   font-size: 0.9em;
-  box-sizing: border-box; /* Ensure padding doesn't affect width */
+  box-sizing: border-box;
+  /* Ensure padding doesn't affect width */
 }
 
 .assign-popup .assign-button,
@@ -372,48 +381,66 @@ body {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  /* Smooth transitions */
 }
 
 .assign-popup .assign-button {
-  background-color: #4CAF50; /* Primary green */
+  background-color: #4CAF50;
+  /* Primary green */
   color: white;
   margin-top: 10px;
 }
 
 .assign-popup .assign-button:hover {
-  background-color: #45a049; /* Darker green */
-  transform: scale(1.05); /* Scale on hover */
+  background-color: #45a049;
+  /* Darker green */
+  transform: scale(1.05);
+  /* Scale on hover */
 }
 
 .assign-popup .close-button {
-  background-color: #f44336; /* Red close button */
+  background-color: #f44336;
+  /* Red close button */
   color: white;
   margin-top: 10px;
 }
 
 .assign-popup .close-button:hover {
-  background-color: #d32f2f; /* Darker red on hover */
-  transform: scale(1.05); /* Scale on hover */
+  background-color: #d32f2f;
+  /* Darker red on hover */
+  transform: scale(1.05);
+  /* Scale on hover */
 }
 
 .error-message {
-  color: #f44336; /* Red for errors */
+  color: #f44336;
+  /* Red for errors */
   font-size: 0.9em;
-  margin-top: 5px; /* Space above message */
-  text-align: center; /* Centered error message */
+  margin-top: 5px;
+  /* Space above message */
+  text-align: center;
+  /* Centered error message */
 }
 
 .error-message-averages {
-  color: #ffffff; /* Red for errors */
+  color: #ffffff;
+  /* Red for errors */
   font-size: 0.9em;
-  margin-top: 5px; /* Space above message */
-  text-align: center; /* Centered error message */
+  margin-top: 5px;
+  /* Space above message */
+  text-align: center;
+  /* Centered error message */
 }
 
 
 /* Mobile-specific styles (below 600px) */
 @media screen and (max-width: 768px) {
+  .create-player-page-style {
+    width: 95%;
+  
+  }
+  
   .content-container {
     flex-direction: column;
     align-items: center;
@@ -436,7 +463,7 @@ body {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
-    margin-bottom:0px;
+    margin-bottom: 0px;
   }
 
   .CP-input-container label {
@@ -482,7 +509,7 @@ body {
   .CP-title {
     font-size: 2rem;
     margin: 0 0;
-    margin-top: 50px;
+    margin-top: 30px;
   }
 }
 
@@ -493,6 +520,7 @@ body {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -505,6 +533,7 @@ body {
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.9);
@@ -518,9 +547,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  margin: auto; /* Automatically centers in the middle */
-  width: 80%; /* Adjust width to content */
-  height: 80%; /* Adjust height to content */
+  margin: auto;
+  /* Automatically centers in the middle */
+  width: 80%;
+  /* Adjust width to content */
+  height: 80%;
+  /* Adjust height to content */
   background-color: #4CAF50;
   color: white;
   padding: 20px 50px;
@@ -529,7 +561,8 @@ body {
   text-align: center;
   z-index: 1000;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  opacity: 0; /* Start hidden */
+  opacity: 0;
+  /* Start hidden */
   visibility: hidden;
   transition: opacity 0.5s ease, visibility 0.5s ease, transform 0.5s ease;
 }
@@ -549,4 +582,84 @@ body {
 .success-popup.hide {
   animation: popupFadeOut 0.5s ease forwards;
   visibility: hidden;
+}
+
+
+.CP-input-container select {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 100;
+  font-size: 1.2rem;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 2px solid rgba(111, 134, 214, 0.7) !important;
+  border-radius: 22px !important;
+  color: #48c6ef !important;
+  background-color: rgba(30, 60, 114, 0.2) !important;
+  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
+    0 0 5px rgba(111, 134, 214, 0.5);
+  box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
+    inset 0 0 20px rgba(135, 206, 250, 0.2);
+  outline: none;
+  transition: all 0.3s ease !important;
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5em;
+  padding-right: 1.5em;
+}
+
+.CP-input-container select:focus {
+  box-shadow: 0 0 25px rgba(108, 209, 237, 0.8), 0 0 40px rgba(108, 209, 237, 0.5) !important;
+  border: 2px solid rgba(108, 209, 237, 1) !important;
+  caret-color: rgb(108, 209, 237) !important;
+}
+
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 73px;
+  z-index: 1000;
+  animation: floatIn 0.6s ease-out 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.back-home-button-home {
+  font-family: 'Exo 2', sans-serif;
+  padding: 10px 20px;
+  background-color: #3c3737c3;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.back-home-button-home:hover {
+  background-color: #918989;
+}
+
+@keyframes floatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  .back-button-container {
+    top: -10px;
+    left: -34px;
+  }
 }
