@@ -42,6 +42,7 @@
 }
 
 .create-game-button {
+  font-family: 'Exo 2',sans-serif;
   margin-top: 17px;
   font-weight: 100;
   padding: 20px 20px;
@@ -273,8 +274,21 @@
 
 
 @media (max-width: 768px) {
+
+}
+
+/* iPhone-specific styles */
+@media only screen and (max-width: 765px) {
   .sgp-back-button-container {
     top: -45px;
-    left: -50px;
+    left: -120px;
+  }
+}
+
+/* iPad-specific styles */
+@media only screen and (min-width: 768px) and (max-width: 1324px) {
+  .spg-back-button-container {
+    top: -22px;
+    left: -204px;
   }
 }

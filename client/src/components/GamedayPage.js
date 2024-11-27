@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import BasketballTeam from './Basketball/BasketballTeam.js';
 import FootballTeam from './Football/FootballTeam.js';
-import CreateGameModal from './CreateGameModal';
-import './GamePage.css';
+import CreateGameModal from './CreateGameModal.js';
+import GamedayStats from './GamedayStats';
+import './GamedayPage.css';
 import './BackHomeButton.css';
 
 
@@ -35,7 +36,7 @@ const PlayerCube = ({ player, isSelected, onClick, currUserId }) => {
 };
 
 
-const GamePage = () => {
+const GamedayPage = () => {
   const navigate = useNavigate();
   const { gameId, courtId } = useParams();
   const [game, setGame] = useState(null);
@@ -62,19 +63,16 @@ const GamePage = () => {
   const [currCourtName, setCourtName] = useState('');
   const [currCourtType, setCourtType] = useState('');
   const currUserId = searchParams.get('userId');
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [selectedPlayerForStats, setSelectedPlayerForStats] = useState(null);
-  const [gameStats, setGameStats] = useState([]);
-  const [showPlayerSummaryModal, setShowPlayerSummaryModal] = useState(false);
-  const [selectedPlayerSummary, setSelectedPlayerSummary] = useState(null);
-  // Stopwatch and 24-second shot clock states
-  const [stopwatchDuration, setStopwatchDuration] = useState(600);
-  const [stopwatchRunning, setStopwatchRunning] = useState(false);
-  const [shotClockDuration, setShotClockDuration] = useState(24);
-  const [shotClockRunning, setShotClockRunning] = useState(false);
-  const [configuredMinutes, setConfiguredMinutes] = useState(10); // Default to 10 minutes
-  const stopwatchInterval = useRef(null);
-  const shotClockInterval = useRef(null);
+
+
+  //Match creation states 
+  const [showMatchCreation, setShowMatchCreation] = useState(false);
+  const [team1Players, setTeam1Players] = useState([]);
+  const [team2Players, setTeam2Players] = useState([]);
+  const [selectedPlayerForMatch, setSelectedPlayerForMatch] = useState(null);
+  const [selectingForTeam, setSelectingForTeam] = useState(null);
+  const [matches, setMatches] = useState([]);
+
 
 
   const token = localStorage.getItem('token');
@@ -206,32 +204,7 @@ const GamePage = () => {
     }
   }, [courtId, currCourtType, token]);
 
-  //Fetching Game Stats
 
-  useEffect(() => {
-    const fetchGameStats = async () => {
-      try {
-        const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/game-stats/${gameId}`,
-          {
-            headers: {
-              'Authorization': token,
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setGameStats(data);
-        }
-      } catch (error) {
-        console.error('Error fetching game stats:', error);
-      }
-    };
-
-    if (gameId) {
-      fetchGameStats();
-    }
-  }, [gameId, showStatsModal]); // Re-fetch when modal closes
 
   //Fetching Teams if they were already Shuffled
   const fetchGameTeams = async () => {
@@ -252,6 +225,32 @@ const GamePage = () => {
       console.error('Error fetching teams:', error);
     }
   };
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const response = await fetch(
+          `http://${process.env.REACT_APP_DB_HOST}:5000/api/gameday_matches/${gameId}`,
+          {
+            headers: {
+              'Authorization': token
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch matches');
+        }
+
+        const data = await response.json();
+        setMatches(data);
+      } catch (error) {
+        console.error('Error fetching matches:', error);
+      }
+    };
+
+    fetchMatches();
+  }, [gameId, token]);
 
   useEffect(() => {
     fetchGameTeams();
@@ -627,74 +626,7 @@ const GamePage = () => {
 
 
 
-  const handleAddStat = async (playerId, statType) => {
-    try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/add-player-stat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token
-        },
-        body: JSON.stringify({
-          creatorUserId: currUserId,
-          playerId: playerId,
-          gameId: gameId,
-          stat: statType
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to add stat');
-      }
-
-      setShowStatsModal(false);
-      setSelectedPlayerForStats(null);
-    } catch (error) {
-      console.error('Error adding stat:', error);
-      alert('Failed to add stat. Please try again.');
-    }
-  };
-
-
-  const handleDeleteStat = async (statId) => {
-    if (!window.confirm('Are you sure you want to delete this stat?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete-stat/${statId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': token,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setGameStats(prevStats => prevStats.filter(stat => stat.id !== statId));
-      }
-    } catch (error) {
-      console.error('Error deleting stat:', error);
-    }
-  };
-
-  // Add this function to get stat description
-  const getStatDescription = (statType) => {
-    switch (statType) {
-      case 1: return 'Win 🏆';
-      case 2: return '2 Pointer ✌️';
-      case 3: return '3 Pointer 🎯';
-      case 4: return 'Assist 🤝'; //basketball
-      case 5: return 'Block 🛡️';
-      case 6: return 'Steal 🧤';
-      case 7: return 'Goal ⚽';
-      case 8: return 'Assist 🎯'; //football
-      case 9: return 'Miss 🤦‍♂️';
-      default: return 'Unknown';
-    }
-  };
 
 
 
@@ -761,105 +693,6 @@ const GamePage = () => {
   }
 
 
-  // Add this function to calculate player stats
-  const calculatePlayerGameSummary = (playerName) => {
-    const playerStats = gameStats.filter(stat => stat.player_name === playerName);
-
-    if (currCourtType === 'Football') {
-      return {
-        goals: playerStats.filter(stat => stat.stat === 7).length,
-        assists: playerStats.filter(stat => stat.stat === 8).length,
-        embarrassingMisses: playerStats.filter(stat => stat.stat === 9).length,
-        wins: playerStats.filter(stat => stat.stat === 1).length,
-        playerName
-      };
-    } else {
-      return {
-        points: (
-          playerStats.filter(stat => stat.stat === 2).length * 2 +
-          playerStats.filter(stat => stat.stat === 3).length * 3
-        ),
-        twoPointers: playerStats.filter(stat => stat.stat === 2).length,
-        threePointers: playerStats.filter(stat => stat.stat === 3).length,
-        assists: playerStats.filter(stat => stat.stat === 4).length,
-        blocks: playerStats.filter(stat => stat.stat === 5).length,
-        steals: playerStats.filter(stat => stat.stat === 6).length,
-        wins: playerStats.filter(stat => stat.stat === 1).length,
-        playerName
-      };
-    }
-  };
-
-  // Add click handler for player name
-  const handlePlayerNameClick = (playerName) => {
-    const summary = calculatePlayerGameSummary(playerName);
-    setSelectedPlayerSummary(summary);
-    setShowPlayerSummaryModal(true);
-  };
-
-  const formatTime = (duration) => {
-    const minutes = Math.max(0, Math.floor(duration / 60));
-    const seconds = duration % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const startStopwatch = () => {
-    setStopwatchRunning(true);
-    stopwatchInterval.current = setInterval(() => {
-      setStopwatchDuration((prevDuration) => prevDuration - 1);
-    }, 1000);
-  };
-
-  const stopStopwatch = () => {
-    setStopwatchRunning(false);
-    setShotClockRunning(false);
-    clearInterval(stopwatchInterval.current);
-    clearInterval(shotClockInterval.current);
-  };
-
-  const resetStopwatch = () => {
-    stopStopwatch();
-    setStopwatchDuration(configuredMinutes * 60);
-    if (currCourtType === 'Basketball') {
-      setShotClockDuration(24);
-    }
-  };
-
-  const startShotClock = () => {
-    setShotClockRunning(true);
-    shotClockInterval.current = setInterval(() => {
-      setShotClockDuration((prevDuration) => prevDuration - 1);
-    }, 1000);
-  };
-
-  const stopShotClock = () => {
-    setShotClockRunning(false);
-    clearInterval(shotClockInterval.current);
-  };
-
-  const resetShotClock24 = () => {
-    setShotClockDuration(24);
-  };
-
-  const resetShotClock14 = () => {
-    setShotClockDuration(14);
-  };
-
-
-  const handleConfiguredMinutesChange = (e) => {
-    const newMinutes = parseInt(e.target.value, 10);
-    if (!isNaN(newMinutes) && newMinutes >= 0 && newMinutes <= 1000) {
-      resetStopwatch();
-      setConfiguredMinutes(newMinutes);
-      resetStopwatch();
-    }
-  };
-
-  useEffect(() => {
-    if (stopwatchDuration === 0 || (currCourtType === 'Basketball' && shotClockDuration === 0)) {
-      stopShotClock();
-    }
-  }, [stopwatchDuration, shotClockDuration, currCourtType]);
   // Split registered players into main and reserve lists
   const maxPlayers = game ? game.max_players : 0;
   const mainPlayers = registeredPlayers.slice(0, maxPlayers);
@@ -867,6 +700,91 @@ const GamePage = () => {
 
 
 
+
+  // Handlers for match creation
+  const handleTeamColumnClick = (teamNumber) => {
+    setSelectingForTeam(selectingForTeam === teamNumber ? null : teamNumber);
+    setSelectedPlayerForMatch(null);
+  };
+
+  const handlePlayerSelect = (player) => {
+    if (!selectingForTeam) return;
+
+    const targetTeam = selectingForTeam === 1 ? team1Players : team2Players;
+    const otherTeam = selectingForTeam === 1 ? team2Players : team1Players;
+
+    handleAddToTeam(player, selectingForTeam);
+  };
+
+  const handleAddToTeam = (player, teamNumber) => {
+    if (teamNumber === 1) {
+      setTeam1Players(prev => [...prev, player]);
+    } else {
+      setTeam2Players(prev => [...prev, player]);
+    }
+  };
+
+  const handleRemoveFromTeam = (player, teamNumber) => {
+    if (teamNumber === 1) {
+      setTeam1Players(prev => prev.filter(p => p.playerId !== player.playerId));
+    } else {
+      setTeam2Players(prev => prev.filter(p => p.playerId !== player.playerId));
+    }
+  };
+
+  const isTeamsValid = () => {
+    return team1Players.length >= 1 && // Minimum 1 players per team
+      team2Players.length >= 1 &&
+      team1Players.length === team2Players.length; // Teams must be equal
+  };
+
+  const handleCreateMatch = async () => {
+    try {
+      const response = await fetch(
+        `http://${process.env.REACT_APP_DB_HOST}:5000/api/create_match/${gameId}/${currUserId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify({
+            team1_players: team1Players.map(p => p.playerId),
+            team2_players: team2Players.map(p => p.playerId)
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Failed to create match');
+      }
+
+      const match = await response.json();
+      // Navigate to the new match page
+      navigate(`/match/${match.match_id}/${courtId}?userId=${currUserId}`);
+    } catch (error) {
+      console.error('Error creating match:', error);
+      alert('Failed to create match. Please try again.');
+    }
+  };
+
+  // Add this to your existing handlers
+  const handleSelectShuffledTeams = (team1Index, team2Index) => {
+    // Convert the gameTeams player_ids to full player objects
+    const getPlayersForTeam = (teamIndex) => {
+      const teamPlayerIds = gameTeams[teamIndex].player_ids;
+      return mainPlayers.filter(player =>
+        teamPlayerIds.includes(player.playerId)
+      );
+    };
+
+    // Set the teams
+    setTeam1Players(getPlayersForTeam(team1Index));
+    setTeam2Players(getPlayersForTeam(team2Index));
+
+    // Clear any manual selection state
+    setSelectedPlayerForMatch(null);
+    setSelectingForTeam(null);
+  };
 
 
 
@@ -895,7 +813,7 @@ const GamePage = () => {
               </button>
             )}
           </div>
-          <h1 className="game-title">Game Details</h1>
+          <h1 className="game-title">Gameday Details</h1>
           <div className="gp-button-container">
 
 
@@ -924,7 +842,7 @@ const GamePage = () => {
             )}
 
             {!isMvpHasBeenRevealed && (isAdmin || isCourtCreator) && (
-              <button className="gp-create-game-button" onClick={() => setEditModalOpen(true)}>
+              <button className="gp-edit-game-button" onClick={() => setEditModalOpen(true)}>
                 Edit Game Settings
               </button>
             )}
@@ -1063,18 +981,9 @@ const GamePage = () => {
             <div className="player-items-container">
               {mainPlayers.length > 0 ? (
                 mainPlayers.map((player, index) => (
-                  <div key={player.playerId}
-                    className={player.approved ? "approved-player-item" : "player-item"}
-                    onClick={() => {
-                      const isCurrentUserMainPlayer = mainPlayers.some(mainPlayer => mainPlayer.playerUserId == currUserId);
-
-                      if (isTheGameStartedAlready() && !isMvpHasBeenRevealed && !has24PassedSinceGameStarted() && isCurrentUserMainPlayer) {
-                        setSelectedPlayerForStats(player);
-                        setShowStatsModal(true);
-                      } else if (isTheGameStartedAlready() && !isCurrentUserMainPlayer) {
-                        alert("Only registered main players can add stats!");
-                      }
-                    }}
+                  <div
+                    key={player.playerId}
+                    className={player.approved ? "approved-player-item" : "player-item"} // Add this line
                   >
                     {(player.registered_by == currUserId || player.playerUserId == currUserId) && !isTheGameStartedAlready() && (
                       <>
@@ -1107,64 +1016,6 @@ const GamePage = () => {
                 <p>No main players registered.</p>
               )}
             </div>
-
-            {/* Modal for stats */}
-            <Modal isOpen={showStatsModal} onClose={() => setShowStatsModal(false)}>
-              <div className="stats-modal-header">
-                <h2 className="stats-modal-title">Add Stat for {selectedPlayerForStats?.playerName}</h2>
-              </div>
-              <div className="stats-modal-body">
-                <div className="stats-buttons-grid">
-                  {currCourtType === 'Football' ? (
-                    <>
-                      <button className="stat-button goal-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 7)}>
-                        <span className="stat-icon">⚽</span>
-                        <span className="stat-text">Goal</span>
-                      </button>
-                      <button className="stat-button assist-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 8)}>
-                        <span className="stat-icon">🎯</span>
-                        <span className="stat-text">Assist</span>
-                      </button>
-                      <button className="stat-button miss-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 9)}>
-                        <span className="stat-icon">🤦‍♂️</span>
-                        <span className="stat-text">Embarrassing Miss</span>
-                      </button>
-                      <button className="stat-button win-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 1)}>
-                        <span className="stat-icon">🏆</span>
-                        <span className="stat-text">Win</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="stat-button points-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 2)}>
-                        <span className="stat-icon">✌️</span>
-                        <span className="stat-text">2 Pointer</span>
-                      </button>
-                      <button className="stat-button points-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 3)}>
-                        <span className="stat-icon">🎯</span>
-                        <span className="stat-text">3 Pointer</span>
-                      </button>
-                      <button className="stat-button assist-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 4)}>
-                        <span className="stat-icon">🤝</span>
-                        <span className="stat-text">Assist</span>
-                      </button>
-                      <button className="stat-button defense-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 5)}>
-                        <span className="stat-icon">🛡️</span>
-                        <span className="stat-text">Block</span>
-                      </button>
-                      <button className="stat-button defense-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 6)}>
-                        <span className="stat-icon">🔄</span>
-                        <span className="stat-text">Steal</span>
-                      </button>
-                      <button className="stat-button win-stat" onClick={() => handleAddStat(selectedPlayerForStats?.playerId, 1)}>
-                        <span className="stat-icon">🏆</span>
-                        <span className="stat-text">Win</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Modal>
 
 
             <div className="reserve-players">
@@ -1209,187 +1060,163 @@ const GamePage = () => {
                 )}
               </div>
             </div>
-            {/*Stopwatch and shotClock*/}
-            <div className="stopwatch-container">
-              <div className="stopwatch-timer">
-                <span className="stopwatch-time">{formatTime(stopwatchDuration)}</span>
-                {currCourtType === 'Basketball' && (
-                  <span className="shot-clock-time" style={{ color: shotClockDuration <= 5 ? 'red' : 'white' }}>
-                    {formatTime(shotClockDuration)}
-                  </span>
-                )}
-              </div>
-              <div className="stopwatch-controls">
-                {!stopwatchRunning ? (
-                  <button className="stopwatch-button" onClick={startStopwatch}>
-                    Start
-                  </button>
-                ) : (
-                  <button className="stopwatch-button" onClick={stopStopwatch}>
-                    Stop
-                  </button>
-                )}
-                <button className="stopwatch-button" onClick={resetStopwatch}>
-                  Reset
-                </button>
-                <input
-                  type="number"
-                  className="stopwatch-config"
-                  min="0"
-                  max="1000"
-                  value={configuredMinutes}
-                  onChange={handleConfiguredMinutesChange}
-                />
-                <span className="stopwatch-config-label">Minutes</span>
-                {currCourtType === 'Basketball' && (
-                  <>
-                    {!shotClockRunning ? (
-                      <button className="shot-clock-button" onClick={startShotClock}>
-                        Start 24s
-                      </button>
-                    ) : (
-                      <button className="shot-clock-button" onClick={stopShotClock}>
-                        Stop 24s
-                      </button>
-                    )}
-                    <button className="shot-clock-button" onClick={() => resetShotClock24()}>
-                      Reset 24s
-                    </button>
-                    <button className="shot-clock-button" onClick={() => resetShotClock14()}>
-                      Reset 14s
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          <Modal isOpen={showPlayerSummaryModal} onClose={() => setShowPlayerSummaryModal(false)}>
-            <div className="stats-modal-header">
-              <h2 className="stats-modal-title">
-                {selectedPlayerSummary?.playerName}'s Game Summary
-              </h2>
-            </div>
-            <div className="stats-modal-body">
-              {selectedPlayerSummary && (
-                <div className="stats-summary-grid">
-                  {currCourtType === 'Football' ? (
-                    <>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">⚽</span>
-                        <span className="stat-label"> Goals : </span>
-                        <span className="stat-value">{selectedPlayerSummary.goals}</span>
+            {/*LIST OF MATCHES SECTION*/}
+            {matches.length > 0 && (
+              <div className="matches-list">
+                <h3 className="matches-list-title">Match History</h3>
+                <div className="matches-container">
+                  {matches.map((match) => (
+                    <Link
+                      key={match.match_id}
+                      to={`/match/${match.match_id}/${courtId}?userId=${currUserId}`}
+                      className={`match-item ${match.match_status === 'completed' ? 'completed' : ''}`}
+                    >
+                      <div className="match-time">
+                        {new Date(match.created_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        })}
                       </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🎯</span>
-                        <span className="stat-label"> Assists : </span>
-                        <span className="stat-value">{selectedPlayerSummary.assists}</span>
+                      <div className="match-score">
+                        {match.team1_score} - {match.team2_score}
                       </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🤦‍♂️</span>
-                        <span className="stat-label"> Misses : </span>
-                        <span className="stat-value">{selectedPlayerSummary.embarrassingMisses}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🏆</span>
-                        <span className="stat-label"> Wins : </span>
-                        <span className="stat-value">{selectedPlayerSummary.wins}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🏀</span>
-                        <span className="stat-label"> Total Points : </span>
-                        <span className="stat-value">{selectedPlayerSummary.points}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">✌️</span>
-                        <span className="stat-label"> Two Pointers : </span>
-                        <span className="stat-value">{selectedPlayerSummary.twoPointers}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🎯</span>
-                        <span className="stat-label"> Three Pointers : </span>
-                        <span className="stat-value">{selectedPlayerSummary.threePointers}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🤝</span>
-                        <span className="stat-label"> Assists : </span>
-                        <span className="stat-value">{selectedPlayerSummary.assists}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🛡️</span>
-                        <span className="stat-label"> Blocks : </span>
-                        <span className="stat-value">{selectedPlayerSummary.blocks}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🧤</span>
-                        <span className="stat-label"> Steals : </span>
-                        <span className="stat-value">{selectedPlayerSummary.steals}</span>
-                      </div>
-                      <div className="stat-summary-item">
-                        <span className="stat-icon">🏆</span>
-                        <span className="stat-label"> Wins : </span>
-                        <span className="stat-value">{selectedPlayerSummary.wins}</span>
-                      </div>
-                    </>
-                  )}
+                    </Link>
+                  ))}
                 </div>
-              )}
-            </div>
-          </Modal>
-          <div className="game-stats-section">
-            <h3 className="game-stats-title">Game Statistics</h3>
-            <div className="stats-table-container">
-              {gameStats.length > 0 ? (
-                <table className="stats-table">
-                  <thead>
-                    <tr>
-                      <th className="time-column">Time</th>
-                      <th className="player-column">Player</th>
-                      <th className="stat-column">Stat</th>
-                      <th className="delete-column">Delete</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gameStats.map(stat => (
-                      <tr key={stat.id}>
-                        <td className="time-column">
-                          {new Date(stat.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </td>
-                        <td className="player-column">
-                          <span
-                            className="player-name"
-                            onClick={() => handlePlayerNameClick(stat.player_name)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {stat.player_name}
-                          </span>                        </td>
-                        <td className="stat-column">
-                          <span className="stat-name">{getStatDescription(stat.stat)}</span>
-                        </td>
-                        <td className="delete-column">
-                          {(stat.created_by === parseInt(currUserId) || isCourtCreator) && !isMvpHasBeenRevealed && (
+              </div>
+            )}
+            {/*ADD MATCH SECTION*/}
+            {isTheGameStartedAlready() && !isMvpHasBeenRevealed && (
+              <div className="add-match-section">
+                <button
+                  className="add-match-button"
+                  onClick={() => setShowMatchCreation(prev => !prev)}
+                >
+                  {showMatchCreation ? "Cancel New Match" : "Add New Match"}
+                </button>
+
+                <div className={`match-creation-panel ${showMatchCreation ? 'open' : ''}`}>
+                  {/* Pre-shuffled teams section */}
+                  {gameTeams && gameTeams.length > 0 && (
+                    <div className="shuffled-teams-section">
+                      <h3 className="section-header">Quick Select Pre-shuffled Teams</h3>
+                      <div className="team-combinations">
+                        {gameTeams.map((_, i) => (
+                          gameTeams.slice(i + 1).map((_, j) => (
                             <button
-                              className="delete-button"
-                              onClick={() => handleDeleteStat(stat.id)}
+                              key={`${i}-${j}`}
+                              className="team-combo-button"
+                              onClick={() => handleSelectShuffledTeams(i, i + j + 1)}
                             >
-                              X
+                              Team {i + 1} vs Team {i + j + 2}
                             </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p>No stats recorded yet</p>
-              )}
-            </div>
+                          ))
+                        ))}
+                      </div>
+                      <div className="section-divider">
+                        <span>OR</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual team selection section */}
+                  <h3 className="section-header">Create Custom Teams</h3>
+                  <div className="team-selection-container">
+                    <div
+                      className={`team-column ${selectingForTeam === 1 ? 'selecting' : ''}`}
+                      onClick={() => handleTeamColumnClick(1)}
+                    >
+                      <h3 className="team-header">
+                        Team 1
+                        {selectingForTeam === 1 && <span className="selecting-indicator">← Selecting</span>}
+                      </h3>
+                      <div className="team-players">
+                        {team1Players.map(player => (
+                          <div
+                            key={player.playerId}
+                            className="player-item-selectable team1"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering team column click
+                              handleRemoveFromTeam(player, 1);
+                            }}
+                          >
+                            {player.playerName} <span className="remove-player">×</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div
+                      className={`team-column ${selectingForTeam === 2 ? 'selecting' : ''}`}
+                      onClick={() => handleTeamColumnClick(2)}
+                    >
+                      <h3 className="team-header">
+                        Team 2
+                        {selectingForTeam === 2 && <span className="selecting-indicator">← Selecting</span>}
+                      </h3>
+                      <div className="team-players">
+                        {team2Players.map(player => (
+                          <div
+                            key={player.playerId}
+                            className="player-item-selectable team2"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering team column click
+                              handleRemoveFromTeam(player, 2);
+                            }}
+                          >
+                            {player.playerName} <span className="remove-player">×</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="player-selection">
+                    <h3>
+                      {selectingForTeam ?
+                        `Select players for Team ${selectingForTeam}` :
+                        'Click on a team above to start selecting players'
+                      }
+                    </h3>
+                    <div className="player-items-container">
+                      {[...mainPlayers]
+                        .filter(player =>
+                          !team1Players.find(p => p.playerId === player.playerId) &&
+                          !team2Players.find(p => p.playerId === player.playerId)
+                        )
+                        .sort((a, b) => a.playerName.localeCompare(b.playerName))
+                        .map(player => (
+                          <div
+                            key={player.playerId}
+                            className={`player-item-selectable ${!selectingForTeam ? 'disabled' : selectedPlayerForMatch === player ? 'selected' : ''}`}
+                            onClick={() => handlePlayerSelect(player)}
+                          >
+                            {player.playerName}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  <button
+                    className="teams-ready-button"
+                    disabled={!isTeamsValid()}
+                    onClick={handleCreateMatch}
+                  >
+                    Teams Ready
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+          {mainPlayers.length > 0 && (
+            <GamedayStats
+              matchPlayers={mainPlayers}
+              currCourtType={currCourtType}
+              gameId={gameId}
+              token={token}
+            />
+          )}
         </>
       ) : (
         <p>Loading game details...</p>
@@ -1398,4 +1225,4 @@ const GamePage = () => {
   );
 };
 
-export default GamePage;
+export default GamedayPage;

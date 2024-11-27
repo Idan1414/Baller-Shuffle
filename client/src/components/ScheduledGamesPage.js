@@ -99,10 +99,10 @@ const ScheduledGamesPage = () => {
           🏠
         </Link>
       </div>
-      <h1 className="scheduled-games-title">{currCourtName} - Games</h1>
+      <h1 className="scheduled-games-title">{currCourtName} - Gamedays</h1>
       <div className="button-container">
         <button className="create-game-button" onClick={() => setModalVisible(true)}>
-          Create New Scheduled Game
+          Create New Gameday
         </button>
 
       </div>

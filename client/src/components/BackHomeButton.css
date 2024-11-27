@@ -25,29 +25,31 @@
 }
 
 
-/* Media queries */
-@media screen and (max-width: 700px) {
-  .back-home-button-home {
-    margin: 1px 0 0 1px;
-    font-size: 0.8rem;
-    padding: 6px 12px;
-    left: 45px;
 
-  }
 
-}
 
 /* Media queries */
-@media screen and (max-width: 1300px) {
+@media screen and (max-width: 768px) {
+  .back-home-button-home1 {
+    top: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+}
+
+@media screen and (max-width: 480px) {
   .back-home-button-home {
-    margin: 1px 0 0 1px;
+    top: 35px;
+    margin-left: 40px;
+    left: 20%;
+    transform: translateX(-50%);
     font-size: 0.8rem;
     padding: 6px 12px;
-    left: 45px;
-
   }
-
 }
+
 
 /* Back to Mycourts styles */
 .back-my-courts {
@@ -63,7 +65,7 @@
   font-weight: 200;
   padding: 10px 20px;
   font-size: 1rem;
-  border: 2px solid #ffffffbe;
+  border: 1px solid #ffffffbe;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease !important;

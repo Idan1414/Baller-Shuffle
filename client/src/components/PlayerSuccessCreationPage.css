@@ -51,7 +51,7 @@ body {
 .back-home-button {
   margin-top: 3px;
   padding: 10px 10px;
-  background-color: rgba(237, 177, 14, 0.775);
+  background-color: rgba(254, 254, 254, 0.775);
   color: #161005;
   border: 2px solid #ffffffbe;
   border-radius: 55px;
@@ -61,7 +61,7 @@ body {
 }
 
 .back-home-button:hover {
-  background-color: #be8837c5;
+  background-color: #f3f0ecc5;
   color: rgb(0, 0, 0);
 }
 

@@ -725,3 +725,11 @@ body {
     left: -110px;
   }
 }
+
+/* iPad-specific styles */
+@media only screen and (min-width: 768px) and (max-width: 1324px) {
+  .teams-distribution-style1 {
+    width: 80%;
+    /* Added to control overall width */
+  }
+}

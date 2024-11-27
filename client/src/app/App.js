@@ -14,8 +14,9 @@ import CourtsPage from '../components/CourtsPage';
 import CreateCourtPage from '../components/CreateCourtPage';
 import AuthForm from '../components/AuthForm';
 import ScheduledGamesPage from '../components/ScheduledGamesPage';
-import GamePage from '../components/GamePage';
 import StatisticsPage from '../components/StatisticsPage';
+import GamedayPage from '../components/GamedayPage';
+import MatchPage from '../components/MatchPage';
 
 
 
@@ -44,8 +45,10 @@ function App() {
         <Route path="/teams/:gameId/:courtId" element={<TeamsPage />} />
         <Route path="/new-court/:userId" element={<CreateCourtPage />} />
         <Route path="/scheduled-games/:courtId" element={<ScheduledGamesPage />} />
-        <Route path="/game/:gameId/:courtId" element={<GamePage />} />
+        <Route path="/game/:gameId/:courtId" element={<GamedayPage />} />
         <Route path="/statistics/:courtId" element={<StatisticsPage />} />
+        <Route path="/match/:matchId/:courtId" element={<MatchPage />} />
+
 
 
 

@@ -402,7 +402,7 @@ body {
 
   /* Reduce bottom margin to bring it closer */
   margin-top: -40px;
-  margin-left: -20px;
+  margin-left: 10px;
   filter: drop-shadow(0 0 10px rgba(135, 206, 250, 0.3));
   transition: transform 0.3s ease;
 }

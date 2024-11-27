@@ -8,7 +8,8 @@ const FootballEditPlayerPage = () => {
   const navigate = useNavigate();
   const { id, courtId } = useParams();
   const { search } = useLocation();
-
+  const [currCourtType, setCourtType] = useState('');
+  const [currCourtName, setCourtName] = useState('');
   const [activeTab, setActiveTab] = useState('statistics');
   const [playerStats, setPlayerStats] = useState(null);
   const [playerGames, setPlayerGames] = useState([]);
@@ -25,7 +26,9 @@ const FootballEditPlayerPage = () => {
   const [emailError, setEmailError] = useState(false);
   const [userAssingedAlreadyError, setUserAssingedAlreadyError] = useState(false);
   const [player_user_fk_exists, setUserFkExsits] = useState(false);
+  const [playerUserFk, setUserFk] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const searchParams = new URLSearchParams(search);
   const currUserId = searchParams.get('userId');
@@ -43,6 +46,7 @@ const FootballEditPlayerPage = () => {
     name: '',
     profile_image: null,
     priority: '',
+    creator_user_fk: null,
     finishing: 0,
     passing: 0,
     speed: 0,
@@ -67,6 +71,7 @@ const FootballEditPlayerPage = () => {
     assignError: '',
   });
 
+  // Authentication and navigation check
   useEffect(() => {
     if (!token || decodedToken.userId !== parseInt(currUserId, 10)) {
       navigate('/');
@@ -79,6 +84,7 @@ const FootballEditPlayerPage = () => {
     }
   }, [token, userIdFromUrl]);
 
+  // Fetch court info
   useEffect(() => {
     setIsLoading(prev => ({ ...prev, courtInfo: true }));
     fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
@@ -87,6 +93,10 @@ const FootballEditPlayerPage = () => {
       },
     })
       .then((response) => response.json())
+      .then((data) => {
+        setCourtType(data[0].courtType);
+        setCourtName(data[0].courtName);
+      })
       .catch((error) => {
         console.error('Error fetching court info :', error);
       }).finally(() => {
@@ -94,9 +104,24 @@ const FootballEditPlayerPage = () => {
       });
   }, [courtId, token]);
 
+  // Check if user is admin
   useEffect(() => {
-    const userIdFromUrl = new URLSearchParams(search).get('userId');
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_admin/${currUserId}/${courtId}`, {
+      headers: {
+        Authorization: token,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setIsAdmin(data.isAdmin);
+      })
+      .catch((error) => {
+        console.error('Error fetching admin status:', error);
+      });
+  }, [currUserId, courtId, token]);
 
+  // Fetch player data
+  useEffect(() => {
     if (!token || decodedToken.userId !== parseInt(userIdFromUrl, 10)) {
       navigate('/');
       return;
@@ -117,6 +142,7 @@ const FootballEditPlayerPage = () => {
       });
   }, [courtId, id]);
 
+  // Fetch player picture
   useEffect(() => {
     if (id && token) {
       fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/player-picture/${id}`, {
@@ -140,6 +166,35 @@ const FootballEditPlayerPage = () => {
     }
   }, [id, token]);
 
+  // Check if player is assigned
+  useEffect(() => {
+    const checkUserFk = () => {
+      fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_player_assinged/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token
+        }
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error('Error fetching user_fk: ' + response.statusText);
+          }
+        })
+        .then((data) => {
+          setUserFkExsits(data.userFkExists);
+          setUserFk(data.user_fk);
+        })
+        .catch((error) => {
+          console.error('Error fetching user_fk:', error);
+        });
+    };
+
+    checkUserFk();
+  }, [id, token]);
+
+  // Fetch player stats
   useEffect(() => {
     const fetchPlayerStats = async () => {
       setIsLoading(prev => ({ ...prev, stats: true }));
@@ -192,10 +247,10 @@ const FootballEditPlayerPage = () => {
     }
   }, [id, courtId, token]);
 
+  // Fetch player games
   useEffect(() => {
     const fetchPlayerGames = async () => {
       setIsLoading(prev => ({ ...prev, games: true }));
-
       try {
         const response = await fetch(
           `http://${process.env.REACT_APP_DB_HOST}:5000/api/player-games/${id}/${courtId}`,
@@ -212,7 +267,7 @@ const FootballEditPlayerPage = () => {
         setPlayerGames(data);
       } catch (error) {
         console.error('Error fetching player games:', error);
-        setPlayerGames([]); // Set empty array if fetch fails
+        setPlayerGames([]);
       } finally {
         setIsLoading(prev => ({ ...prev, games: false }));
       }
@@ -223,33 +278,7 @@ const FootballEditPlayerPage = () => {
     }
   }, [id, courtId, token]);
 
-
-  useEffect(() => {
-    const checkUserFk = () => {
-      fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_player_assinged/${id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': token
-        }
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          } else {
-            throw new Error('Error fetching user_fk: ' + response.statusText);
-          }
-        })
-        .then((data) => {
-          setUserFkExsits(data.userFkExists);
-        })
-        .catch((error) => {
-          console.error('Error fetching user_fk:', error);
-        });
-    };
-
-    checkUserFk();
-  }, [id, token]);
-
+  // Cleanup for image URLs
   useEffect(() => {
     return () => {
       if (imageUrl) {
@@ -350,7 +379,6 @@ const FootballEditPlayerPage = () => {
       defence: parseInt(playerAttributes.defence, 10),
       physical: parseInt(playerAttributes.physical, 10),
       stamina: parseInt(playerAttributes.stamina, 10)
-
     };
 
     const attributesErrors = {
@@ -360,7 +388,7 @@ const FootballEditPlayerPage = () => {
       dribbling: validateNumber(numericalAttributes.dribbling, 0, 99, 'dribbling'),
       defence: validateNumber(numericalAttributes.defence, 0, 99, 'defence'),
       physical: validateNumber(numericalAttributes.physical, 0, 99, 'physical'),
-      stamina: validateNumber(numericalAttributes.physical, 0, 99, 'stamina')
+      stamina: validateNumber(numericalAttributes.stamina, 0, 99, 'stamina')
     };
 
     setErrors({
@@ -388,8 +416,7 @@ const FootballEditPlayerPage = () => {
           if (response.ok) {
             navigate(`/edit-success/${courtId}?overall=${updatedPlayer.overall}&name=${encodeURIComponent(updatedPlayer.name)}&userId=${currUserId}`);
           } else if (response.status === 409) {
-            // 409 Conflict error, player name already exists
-            alert('Player name already exists. Please choose a different name.');
+            alert("This name already exists in this court, please choose another name");
           } else {
             console.error('Failed to update player');
           }
@@ -397,7 +424,6 @@ const FootballEditPlayerPage = () => {
         .catch(error => console.error('Error:', error));
     }
   };
-
 
   const handleAssignPlayer = (player_id, email, court_id) => {
     fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/assign_player/${player_id}/${email}/${court_id}`, {
@@ -433,6 +459,37 @@ const FootballEditPlayerPage = () => {
       });
   };
 
+  const handleDeletePlayer = async (id, playerUserFk) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this player?');
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete_player/${id}/${courtId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        alert('Player deleted successfully');
+        if (playerUserFk == currUserId) {
+          navigate(`/courts_page/${currUserId}`);
+        } else {
+          navigate(`/court_home_page/${courtId}?userId=${currUserId}`);
+        }
+      } else {
+        alert('Failed to delete player');
+      }
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      alert('Error deleting player');
+    }
+  };
 
   const StatCard = ({ label, value }) => (
     <div className="stat-card">
@@ -457,15 +514,7 @@ const FootballEditPlayerPage = () => {
     <>
       {isPageLoading && <LoadingSpinner />}
       <div className="player-profile">
-
-      <div className="ep-back-button-container">
-        <Link
-          to={`/court_home_page/${courtId}?userId=${currUserId}`}
-          className="back-home-button-home"
-        >
-          🏠
-        </Link>
-      </div>
+        {/* Success Pop-up */}
         {showSuccessPopup && (
           <div className={`EP-success-popup ${showSuccessPopup ? 'show' : 'hide'}`}>
             Now {email} will see this court in his Courts Page
@@ -473,32 +522,41 @@ const FootballEditPlayerPage = () => {
         )}
 
         <div className="profile-header">
+          <div className="button-header-container">
+            <div className="ep-back-button-container">
+              <Link
+                to={`/court_home_page/${courtId}?userId=${currUserId}`}
+                className="ep-back-home-button-new"
+              >
+                🏠
+              </Link>
+            </div>
+
+            {(isAdmin || playerUserFk == currUserId || playerAttributes.creator_user_fk == currUserId) && (
+              <button
+                className="delete-player-button"
+                onClick={() => handleDeletePlayer(id, playerUserFk)}
+              >
+                Delete Player
+              </button>
+            )}
+          </div>
+          
           <h1 className="profile-name">{playerAttributes.name}</h1>
           <div className="profile-image-container">
             {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Profile"
-                className="profile-image"
-              />
+              <img src={previewUrl} alt="Profile" className="profile-image" />
             ) : imageUrl ? (
-              <img
-                src={imageUrl}
-                alt="Profile"
-                className="profile-image"
-              />
+              <img src={imageUrl} alt="Profile" className="profile-image" />
             ) : (
               <div className="profile-image-placeholder">
-                {playerAttributes.name?.split(' ')
-                  .slice(0, 2)
-                  .map(word => `${word.charAt(0).toUpperCase()} `)
-                  .join('')}
+                {playerAttributes.name?.split(' ').slice(0, 2).map(word => `${word.charAt(0).toUpperCase()} `).join('')}
               </div>
             )}
           </div>
         </div>
 
-        {!player_user_fk_exists && (
+        {!player_user_fk_exists && (isAdmin || playerAttributes.creator_user_fk == currUserId)  && (
           <button className="EP-assign-button" onClick={() => setIsAssignPopupOpen(true)}>
             Assign Player to a user
           </button>
@@ -551,32 +609,36 @@ const FootballEditPlayerPage = () => {
           >
             Games
           </button>
-          <button
-            className={`tab-button ${activeTab === 'attributes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attributes')}
-          >
-            Edit Card
-          </button>
+          {(isAdmin || playerUserFk == currUserId || playerAttributes.creator_user_fk == currUserId) ? (
+            <button
+              className={`tab-button ${activeTab === 'attributes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('attributes')}
+            >
+              Edit Card
+            </button>
+          ) : (
+            <button
+              className="tab-button disabled"
+              disabled
+              title="Only admins, player owners, or player creators can see attributes"
+            >
+              Edit Card
+            </button>
+          )}
         </div>
 
         <div className="tab-content">
           {activeTab === 'statistics' && (
             <div className="statistics-grid">
-              {isPageLoading ? (
-                <div className="loading">Loading statistics...</div>
-              ) : (
-                <>
-                  <StatCard label="🎮 Games Played" value={playerStats?.total_games_played || 0} />
-                  <StatCard label="⚽ Total Goals" value={playerStats?.total_goals || 0} />
-                  <StatCard label="🎯 Total Assists" value={playerStats?.total_assists || 0} />
-                  <StatCard label="📊 Goals Per Game" value={playerStats?.gpg || "0.0"} />
-                  <StatCard label="📊 Assists Per Game" value={playerStats?.apg || "0.0"} />
-                  <StatCard label="🤦‍♂️ Total Misses" value={playerStats?.total_misses || 0} />
-                  <StatCard label="📊 Misses Per Game" value={playerStats?.mpg || "0.0"} />
-                  <StatCard label="🏆 Wins" value={playerStats?.wins || 0} />
-                  <StatCard label="⭐ MVPs" value={playerStats?.mvps || 0} />
-                </>
-              )}
+              <StatCard label="🎮 Games Played" value={playerStats?.total_games_played || 0} />
+              <StatCard label="⚽ Total Goals" value={playerStats?.total_goals || 0} />
+              <StatCard label="🎯 Total Assists" value={playerStats?.total_assists || 0} />
+              <StatCard label="📊 Goals Per Game" value={playerStats?.gpg || "0.0"} />
+              <StatCard label="📊 Assists Per Game" value={playerStats?.apg || "0.0"} />
+              <StatCard label="🤦‍♂️ Total Misses" value={playerStats?.total_misses || 0} />
+              <StatCard label="📊 Misses Per Game" value={playerStats?.mpg || "0.0"} />
+              <StatCard label="🏆 Wins" value={playerStats?.wins || 0} />
+              <StatCard label="⭐ MVPs" value={playerStats?.mvps || 0} />
             </div>
           )}
 
@@ -608,22 +670,11 @@ const FootballEditPlayerPage = () => {
               )}
             </div>
           )}
+
           {activeTab === 'attributes' && (
             <div className="edit-form">
               <div className="EP-input-container">
-                <label htmlFor="name">Name :</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={playerAttributes.name}
-                  onChange={handleInputChange}
-                />
-                {errors.name && <p className="error-message">{errors.name}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label>Profile Picture :</label>
+                <label>Profile Picture:</label>
                 <div className="image-upload-container">
                   {previewUrl && (
                     <img
@@ -641,120 +692,99 @@ const FootballEditPlayerPage = () => {
                 </div>
               </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="priority">Priority :</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={playerAttributes.priority}
-                  onChange={handleInputChange}
-                >
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </select>
-                {errors.priority && <p className="error-message">{errors.priority}</p>}
-              </div>
+              {(isAdmin || playerAttributes.creator_user_fk == currUserId) ? (
+                <>
+                  <div className="EP-input-container">
+                    <label htmlFor="name">Name :</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={playerAttributes.name}
+                      onChange={handleInputChange}
+                    />
+                    {errors.name && <p className="error-message">{errors.name}</p>}
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="speed">Speed :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="speed"
-                  name="speed"
-                  value={playerAttributes.speed}
-                  onChange={handleInputChange}
-                />
-                {errors.speed && <p className="EP-error-message">{errors.speed}</p>}
-              </div>
+                  <div className="EP-input-container">
+                    <label htmlFor="priority">Priority:</label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={playerAttributes.priority}
+                      onChange={handleInputChange}
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </select>
+                    {errors.priority && <p className="error-message">{errors.priority}</p>}
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="finishing">Finishing :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="finishing"
-                  name="finishing"
-                  value={playerAttributes.finishing}
-                  onChange={handleInputChange}
-                />
-                {errors.finishing && <p className="EP-error-message">{errors.finishing}</p>}
-              </div>
+                  {['speed', 'finishing', 'passing', 'dribbling', 'defence', 'physical', 'stamina'].map(attr => (
+                    <div key={attr} className="EP-input-container">
+                      <label htmlFor={attr}>{attr.charAt(0).toUpperCase() + attr.slice(1)} :</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        id={attr}
+                        name={attr}
+                        value={playerAttributes[attr]}
+                        onChange={handleInputChange}
+                      />
+                      {errors[attr] && <p className="EP-error-message">{errors[attr]}</p>}
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="EP-input-container">
+                    <label htmlFor="name">Name :</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={playerAttributes.name}
+                      disabled
+                      className="disabled-input"
+                    />
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="passing">Passing :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="passing"
-                  name="passing"
-                  value={playerAttributes.passing}
-                  onChange={handleInputChange}
-                />
-                {errors.passing && <p className="EP-error-message">{errors.passing}</p>}
-              </div>
+                  <div className="EP-input-container">
+                    <label htmlFor="priority">Priority:</label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={playerAttributes.priority}
+                      disabled
+                      className="disabled-input"
+                    >
+                      <option value={playerAttributes.priority}>{playerAttributes.priority}</option>
+                    </select>
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="dribbling">Dribbling :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="dribbling"
-                  name="dribbling"
-                  value={playerAttributes.dribbling}
-                  onChange={handleInputChange}
-                />
-                {errors.dribbling && <p className="EP-error-message">{errors.dribbling}</p>}
-              </div>
+                  {['speed', 'finishing', 'passing', 'dribbling', 'defence', 'physical', 'stamina'].map(attr => (
+                    <div key={attr} className="EP-input-container">
+                      <label htmlFor={attr}>{attr.charAt(0).toUpperCase() + attr.slice(1)} :</label>
+                      <input
+                        type="number"
+                        id={attr}
+                        name={attr}
+                        value={playerAttributes[attr]}
+                        disabled
+                        className="disabled-input"
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
 
-              <div className="EP-input-container">
-                <label htmlFor="defence">Defence :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="defence"
-                  name="defence"
-                  value={playerAttributes.defence}
-                  onChange={handleInputChange}
-                />
-                {errors.defence && <p className="EP-error-message">{errors.defence}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="physical">Physical :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="physical"
-                  name="physical"
-                  value={playerAttributes.physical}
-                  onChange={handleInputChange}
-                />
-                {errors.physical && <p className="EP-error-message">{errors.physical}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="stamina">Stamina :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="stamina"
-                  name="stamina"
-                  value={playerAttributes.stamina}
-                  onChange={handleInputChange}
-                />
-                {errors.stamina && <p className="EP-error-message">{errors.stamina}</p>}
-              </div>
-
-              <button className='EP-calc-save-button' onClick={() => handleUpdatePlayer()}>Update Player</button>
+              {(isAdmin || playerAttributes.creator_user_fk == currUserId || previewUrl) && (
+                <button className='EP-calc-save-button' onClick={() => handleUpdatePlayer()}>
+                  Update Player
+                </button>
+              )}
             </div>
           )}
         </div>

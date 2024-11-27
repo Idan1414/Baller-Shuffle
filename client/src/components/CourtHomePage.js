@@ -20,6 +20,9 @@ const CourtHomePage = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(search);
   const currUserId = searchParams.get('userId');
+  const [isBugReportOpen, setBugReportOpen] = useState(false);
+  const [bugReportMessage, setBugReportMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const token = localStorage.getItem('token');
   let decodedToken;
@@ -206,40 +209,40 @@ const CourtHomePage = () => {
     }
   };
 
-  const handleDeletePlayer = async (event, playerId, playerUserFk) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const handleBugReportSubmit = async () => {
+    if (!bugReportMessage.trim()) {
+      alert('Please enter a message');
+      return;
+    }
 
-    const confirmDelete = window.confirm('Are you sure you want to delete this player?');
-    if (!confirmDelete) return;
-
+    setIsSubmitting(true);
     try {
-      const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete_player/${playerId}/${courtId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: token,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/bug-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+        body: JSON.stringify({
+          userId: currUserId,
+          message: bugReportMessage,
+        }),
+      });
 
       if (response.ok) {
-        setPlayers(players.filter((player) => player.playerId !== playerId)); // Remove the player from the state
-        alert('Player deleted successfully');
-        if (playerUserFk == currUserId) {
-          navigate(`/courts_page/${currUserId}`)
-        }
+        alert('Thank you for your report!');
+        setBugReportMessage('');
+        setBugReportOpen(false);
       } else {
-        alert('Failed to delete player');
+        alert('Failed to submit report. Please try again.');
       }
     } catch (error) {
-      console.error('Error deleting player:', error);
-      alert('Error deleting player');
+      console.error('Error submitting report:', error);
+      alert('Error submitting report. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
 
   const handleAddAdmin = async () => {
     const selectedName = prompt(`Select a player to add as admin: (Only if he is assigned to a user)`);
@@ -282,13 +285,23 @@ const CourtHomePage = () => {
     }
   };
 
-  
+
 
   return (
     <div className="basketball-home-page-style">
       <div className="court-header-section">
-        <Link to={`/courts_page/${currUserId}`} className="back-my-courts">
-        Back To MyCourts
+        <div className="bug-report-button-container">
+          <button
+            className="bug-report-button"
+            onClick={() => setBugReportOpen(true)}
+            title="Report a bug or make a suggestion"
+          >
+            ✉️
+          </button>
+        </div>
+        <Link to={`/courts_page/${currUserId}`} className="back-my-courts"
+        >
+          Back To MyCourts
         </Link>
 
         <img src="/HadarLOGO.png" alt="Baller Shuffle Logo" className='logo-image-home-page' />
@@ -301,7 +314,7 @@ const CourtHomePage = () => {
           <div className="admin-mode">
             <h2>Admin Mode</h2>
             <div className='admin-buttons-container'>
-              <button className="update-court-button" onClick={handleUpdateCourtName}>
+              <button className="update-court-button" onClick={handleUpdateCourtName} >
                 Update Court Name
               </button>
               <button className="update-court-button" onClick={handleAddAdmin}>
@@ -316,7 +329,7 @@ const CourtHomePage = () => {
             to={`/scheduled-games/${courtId}?userId=${currUserId}`}
             className="basketball-scheduled-games-button"
           >
-            Games
+            Gamedays
           </Link>
           <Link
             to={`/statistics/${courtId}?userId=${currUserId}`}
@@ -326,8 +339,40 @@ const CourtHomePage = () => {
           </Link>
         </div>
       </div>
+      {/*Bug report modal*/}
+      {isBugReportOpen && (
+        <div className="bug-report-modal-overlay">
+          <div className="bug-report-modal">
+            <h2>Submit Bug Report or Suggestion</h2>
+            <textarea
+              value={bugReportMessage}
+              onChange={(e) => {
+                if (e.target.value.length <= 500) {
+                  setBugReportMessage(e.target.value);
+                }
+              }}
+              placeholder="Describe the bug or suggestion (max 500 characters)"
+              maxLength={500}
+            />
+            <div className="char-count">
+              {bugReportMessage.length}/500
+            </div>
+            <div className="bug-report-modal-buttons">
+              <button
+                onClick={handleBugReportSubmit}
+                disabled={isSubmitting || !bugReportMessage.trim()}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </button>
+              <button onClick={() => setBugReportOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <h2 className="HP-registered-players2">Registered Players:</h2>
+      <h2 className="HP-registered-players2">Players Deck:</h2>
 
 
       <Link
@@ -337,7 +382,7 @@ const CourtHomePage = () => {
         }
         className="create-player-button-basketball"
       >
-        Add New Player
+        Add New Player Card
       </Link>
 
 
@@ -351,172 +396,178 @@ const CourtHomePage = () => {
         />
       </div>
 
+
       <div className="player-list-basketball">
         {players && players.length > 0 ? (
-          players.filter((player) =>
-            player.name.toLowerCase().includes(searchTerm.toLowerCase())
-          ).map((player) => {
-            // Determine the appropriate CSS class for the player
-            let playerClass = '';
-            if (player.user_fk == currUserId) {
-              playerClass = 'player-cube-basketball--my-player';
-            } else {
-              playerClass = 'player-cube-basketball';
-            }
+          players
+            .filter((player) =>
+              player.name.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .sort((a, b) => {
+              // Sort by user_fk matching currUserId first
+              if (a.user_fk == currUserId && b.user_fk != currUserId) return -1;
+              if (b.user_fk == currUserId && a.user_fk != currUserId) return 1;
+              // Then sort alphabetically by name
+              return a.name.localeCompare(b.name);
+            })
+            .map((player, index) => {
+              // Determine the appropriate CSS class for the player
+              let playerClass = player.user_fk == currUserId
+                ? 'player-cube-basketball--my-player'
+                : 'player-cube-basketball';
+      
+              if (index % 4 === 0) {
+                playerClass += ' heart-corner';
+              } else if ((index) % 3 === 0) {
+                playerClass += ' spade-corner';
+              } else if ((index) % 2 === 0) {
+                playerClass += ' diamond-corner';
+              } else{
+                playerClass += ' club-corner';
+              }
+
+              //A user can see and delete only his player and the players he created
+              const overallDisplay =
+                player.user_fk == currUserId ||
+                  player.creator_user_fk == currUserId ||
+                  isAdmin
+                  ? player.overall
+                  : '';
 
 
-            //A user can see and delete only his player and the players he created
-            const overallAndDeletionDisplay =
-              player.user_fk == currUserId ||
-                player.creator_user_fk == currUserId ||
-                isAdmin
-                ? player.overall
-                : '';
+              //A user can edit only the players he created
 
+              const renderMedal = player.num_of_mvps != null && player.num_of_mvps > 0 ? (
+                <span className="medal">
+                  <span className="medal-number">{player.num_of_mvps}</span>
+                  <span className="ribbon"></span> {/* First Ribbon */}
+                  <span className="ribbon second-ribbon"></span> {/* Second Ribbon */}
+                </span>
+              ) : null;
 
-            //A user can edit only the players he created
-            const playerClickable = player.creator_user_fk == currUserId || isAdmin
-
-            const renderMedal = player.num_of_mvps != null ? (
-              <span className="medal">
-                <span className="medal-number">{player.num_of_mvps}</span>
-                <span className="ribbon"></span> {/* First Ribbon */}
-                <span className="ribbon second-ribbon"></span> {/* Second Ribbon */}
-              </span>
-            ) : null;
-
-            // Conditionally render the clickable link or a non-clickable div
-            // Inside your map function, update the playerContent:
-            const playerContent = (
-              <div
-                className={`player-cube-basketball ${playerClass} ${player.num_of_mvps >= 5 ? 'golden-card' : ''
-                  }`}
-                onMouseEnter={() => setSelectedPlayer(player)}
-                onMouseLeave={() => setSelectedPlayer(null)}
-              >
-                <div className="fifa-card-header">
-                  <span className="fifa-rating">
-                    {(playerClickable || overallAndDeletionDisplay) && player.overall != null ? player.overall : '??'}
-                  </span>
-                </div>
-
-                <div className="fifa-player-image">
-                  <PlayerImage playerId={player.playerId} token={token} playerName={player.name} />
-                </div>
-
-                <div className="player-HP-name">{player.name}</div>
-
-                <div className="fifa-stats">
-                  {currCourtType === 'Football' ? (
-                    <>
-                      <div className="fifa-stat">
-                        <span>PAC</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.speed != null ? player.speed : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>SHO</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.finishing != null ? player.finishing : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>PAS</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.passing != null ? player.passing : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>DRI</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.dribbling != null ? player.dribbling : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>DEF</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.defence != null ? player.defence : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>PHY</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.physical != null ? player.physical : '??'}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="fifa-stat">
-                        <span>SCO</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.scoring != null ? player.scoring : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>3PT</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.threePtShot != null ? player.threePtShot : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>PAS</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.passing != null ? player.passing : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>HND</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.ballHandling != null ? player.ballHandling : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>DEF</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.defence != null ? player.defence : '??'}
-                        </span>
-                      </div>
-                      <div className="fifa-stat">
-                        <span>PHY</span>
-                        <span className="fifa-stat-value">
-                          {(playerClickable || overallAndDeletionDisplay) && player.physical != null ? player.physical : '??'}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {renderMedal}
-
-                {selectedPlayer === player && overallAndDeletionDisplay && (
-                  <div className="delete-player-button" onClick={(e) => handleDeletePlayer(e, player.playerId, player.user_fk)}>
-                    🗑️
+              // Conditionally render the clickable link or a non-clickable div
+              // Inside your map function, update the playerContent:
+              const playerContent = (
+                <div
+                  className={`player-cube-basketball ${playerClass} ${player.num_of_mvps >= 5 ? 'golden-card' : ''
+                    }`}
+                  onMouseEnter={() => setSelectedPlayer(player)}
+                  onMouseLeave={() => setSelectedPlayer(null)}
+                >
+                  <div className="fifa-card-header">
+                    <span className="fifa-rating">
+                      {overallDisplay && player.overall != null ? player.overall : '??'}
+                    </span>
                   </div>
-                )}
-              </div>
-            );
+
+                  <div className="fifa-player-image">
+                    <PlayerImage playerId={player.playerId} token={token} playerName={player.name} />
+                  </div>
+
+                  <div className="player-HP-name">{player.name}</div>
+
+                  <div className="fifa-stats">
+                    {currCourtType === 'Football' ? (
+                      <>
+                        <div className="fifa-stat">
+                          <span>PAC</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.speed != null ? player.speed : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>SHO</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.finishing != null ? player.finishing : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>PAS</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.passing != null ? player.passing : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>DRI</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.dribbling != null ? player.dribbling : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>DEF</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.defence != null ? player.defence : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>PHY</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.physical != null ? player.physical : '??'}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="fifa-stat">
+                          <span>SCO</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.scoring != null ? player.scoring : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>3PT</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.threePtShot != null ? player.threePtShot : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>PAS</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.passing != null ? player.passing : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>HND</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.ballHandling != null ? player.ballHandling : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>DEF</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.defence != null ? player.defence : '??'}
+                          </span>
+                        </div>
+                        <div className="fifa-stat">
+                          <span>PHY</span>
+                          <span className="fifa-stat-value">
+                            {(overallDisplay) && player.physical != null ? player.physical : '??'}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {renderMedal}
+
+                </div>
+              );
 
 
 
-            return playerClickable ? (
-              <Link
-                key={player.playerId}
-                to={currCourtType === 'Football'
-                  ? `/player-football/${player.playerId}/${courtId}?userId=${currUserId}`
-                  : `/player/${player.playerId}/${courtId}?userId=${currUserId}`
-                }
-                className="player-link2"
-              >
-                {playerContent}
-              </Link>
-            ) : (
-              <div key={player.playerId} className="player-link2">
-                {playerContent}
-              </div>
-            );
-          })
+              return (
+                <Link
+                  key={player.playerId}
+                  to={currCourtType === 'Football'
+                    ? `/player-football/${player.playerId}/${courtId}?userId=${currUserId}`
+                    : `/player/${player.playerId}/${courtId}?userId=${currUserId}`
+                  }
+                  className="player-link2"
+                >
+                  {playerContent}
+                </Link>
+              );
+            })
         ) : (
           <div style={{ color: 'white' }}>No players in this court yet. Add the first one!</div> // This handles the case when there are no players
         )}

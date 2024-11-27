@@ -81,13 +81,16 @@ body {
 
 .CP-input-container {
   display: flex;
-  /* Enable flexbox */
-  align-items: center;
-  /* Align items vertically centered */
-  margin-bottom: 0px;
-  /* Space below each input container */
-  padding: 1px;
+  flex-direction: column;
+  margin-bottom: 15px;
+  position: relative;
+  width: 100%;
 
+}
+
+.input-label-wrapper {
+  display: flex;
+  align-items: center;
 }
 
 .CP-input-container label {
@@ -96,20 +99,17 @@ body {
   font-size: 1.2rem;
   color: rgb(255, 255, 255);
   text-shadow: 0 0 1px white;
-  margin-bottom: 5px;
   margin-right: 7px;
-  /* Space between label and input */
   min-width: 100px;
-  /* Optional: Set a minimum width for consistent spacing */
 }
 
 /* Input styling with new colors */
-.CP-input-container input {
+.CP-input-container input,
+.CP-input-container select {
   font-family: 'Exo 2', sans-serif;
   font-weight: 100;
   font-size: 1.2rem;
   padding: 10px;
-  margin-bottom: 10px;
   border: 2px solid rgba(111, 134, 214, 0.7) !important;
   border-radius: 22px !important;
   color: #48c6ef !important;
@@ -133,7 +133,10 @@ body {
 
 .error-message {
   color: red;
+  font-size: 0.8rem;
   margin-top: 5px;
+  margin-left: 107px; /* Align with input (100px label width + 7px margin) */
+  text-align: left;
 }
 
 .error-message-averages {
@@ -270,6 +273,35 @@ body {
   transition: background-color 0.3s ease;
 }
 
+
+@media screen and (max-width: 768px) {
+  .CP-input-container {
+    margin-bottom: 10px;
+  }
+
+  .input-label-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .CP-input-container label {
+    margin-bottom: 5px;
+    margin-right: 0;
+  }
+
+  .CP-input-container input,
+  .CP-input-container select {
+    width: 100%;
+    font-size: 1rem;
+    padding: 8px;
+  }
+
+  .error-message {
+    font-size: 0.7rem;
+    margin-left: 0;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
 
@@ -282,6 +314,9 @@ body {
   }
 
 }
+
+
+
 
 
 /* Assign buttons in Edit page */
@@ -585,32 +620,6 @@ body {
 }
 
 
-.CP-input-container select {
-  font-family: 'Exo 2', sans-serif;
-  font-weight: 100;
-  font-size: 1.2rem;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 2px solid rgba(111, 134, 214, 0.7) !important;
-  border-radius: 22px !important;
-  color: #48c6ef !important;
-  background-color: rgba(30, 60, 114, 0.2) !important;
-  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
-    0 0 5px rgba(111, 134, 214, 0.5);
-  box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
-    inset 0 0 20px rgba(135, 206, 250, 0.2);
-  outline: none;
-  transition: all 0.3s ease !important;
-  flex: 1;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1.5em;
-  padding-right: 1.5em;
-}
 
 .CP-input-container select:focus {
   box-shadow: 0 0 25px rgba(108, 209, 237, 0.8), 0 0 40px rgba(108, 209, 237, 0.5) !important;
@@ -656,10 +665,18 @@ body {
 }
 
 
-
-@media (max-width: 768px) {
+/* iPhone-specific styles */
+@media only screen and (max-width: 765px) {
   .back-button-container {
-    top: -10px;
+    top: -27px;
     left: -34px;
+  }
+}
+
+/* iPad-specific styles */
+@media only screen and (min-width: 768px) and (max-width: 1324px) {
+  .back-button-container {
+    top: -22px;
+    left: -204px;
   }
 }

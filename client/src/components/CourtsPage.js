@@ -177,7 +177,7 @@ const CourtsPage = () => {
               )}
             </div>
           </Link>
-        )) : <p>You are not belong to any court, ask your friends to create a player for you and assign your Email</p>}
+        )) : <p>You don't belong to any court, ask your friends to create a player for you and assign your Email</p>}
 
       </div>
 

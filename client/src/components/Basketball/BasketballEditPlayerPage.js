@@ -27,7 +27,10 @@ const EditPlayerPage = () => {
   const [emailError, setEmailError] = useState(false);
   const [userAssingedAlreadyError, setUserAssingedAlreadyError] = useState(false);
   const [player_user_fk_exists, setUserFkExsits] = useState(false);
+  const [playerUserFk, setUserFk] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
 
   const searchParams = new URLSearchParams(search);
   const currUserId = searchParams.get('userId');
@@ -43,8 +46,9 @@ const EditPlayerPage = () => {
   const [playerAttributes, setPlayerAttributes] = useState({
     playerId: 0,
     name: '',
-    profile_image: null,  // Add this line
+    profile_image: null,
     priority: '',
+    creator_user_fk: null,
     scoring: 0,
     passing: 0,
     speed: 0,
@@ -207,6 +211,22 @@ const EditPlayerPage = () => {
   }, [id, courtId, token]);
 
 
+
+  // Check if the user is an admin
+  fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_admin/${currUserId}/${courtId}`, {
+    headers: {
+      Authorization: token,
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      setIsAdmin(data.isAdmin); // Set admin status from response
+    })
+    .catch((error) => {
+      console.error('Error fetching admin status:', error);
+    });
+
+
   useEffect(() => {
     const fetchPlayerGames = async () => {
       setIsLoading(prev => ({ ...prev, games: true }));
@@ -256,6 +276,7 @@ const EditPlayerPage = () => {
         })
         .then((data) => {
           setUserFkExsits(data.userFkExists);
+          setUserFk(data.user_fk)
         })
         .catch((error) => {
           console.error('Error fetching user_fk:', error);
@@ -412,8 +433,11 @@ const EditPlayerPage = () => {
         .then(response => {
           if (response.ok) {
             navigate(`/edit-success/${courtId}?overall=${updatedPlayer.overall}&name=${encodeURIComponent(updatedPlayer.name)}&userId=${currUserId}`);
+          } else if (response.status === 409) {
+            alert("This name already exists in this court, please choose another name");
           } else {
             console.error('Failed to update player');
+
           }
         })
         .catch(error => console.error('Error:', error));
@@ -465,6 +489,39 @@ const EditPlayerPage = () => {
     </div>
   );
 
+  const handleDeletePlayer = async (id, playerUserFk) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this player?');
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete_player/${id}/${courtId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        alert('Player deleted successfully');
+        if (playerUserFk == currUserId) {
+          navigate(`/courts_page/${currUserId}`);
+        } else {
+          navigate(`/court_home_page/${courtId}?userId=${currUserId}`);
+        }
+      } else {
+        alert('Failed to delete player');
+      }
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      alert('Error deleting player');
+    }
+  };
+
+
   const LoadingSpinner = () => (
     <div className="loading-container">
       <div className="loading-spinner">Loading...</div>
@@ -486,14 +543,25 @@ const EditPlayerPage = () => {
         )}
 
         <div className="profile-header">
-        <div className="ep-back-button-container">
-        <Link
-          to={`/court_home_page/${courtId}?userId=${currUserId}`}
-          className="back-home-button-home"
-        >
-          🏠
-        </Link>
-      </div>
+          <div className="button-header-container">
+            <div className="ep-back-button-container">
+              <Link
+                to={`/court_home_page/${courtId}?userId=${currUserId}`}
+                className="ep-back-home-button-new"
+              >
+                🏠
+              </Link>
+            </div>
+
+            {(isAdmin || playerUserFk == currUserId || playerAttributes.creator_user_fk == currUserId) && (
+              <button
+                className="delete-player-button"
+                onClick={() => handleDeletePlayer(id, playerUserFk)}
+              >
+                Delete Player
+              </button>
+            )}
+          </div>
           <h1 className="profile-name">{playerAttributes.name}</h1>
           <div className="profile-image-container">
             {previewUrl ? (
@@ -508,7 +576,7 @@ const EditPlayerPage = () => {
           </div>
         </div>
 
-        {!player_user_fk_exists && (
+        {!player_user_fk_exists && (isAdmin || playerAttributes.creator_user_fk == currUserId)  && (
           <button className="EP-assign-button" onClick={() => setIsAssignPopupOpen(true)}>
             Assign Player to a user
           </button>
@@ -565,12 +633,22 @@ const EditPlayerPage = () => {
           >
             Games
           </button>
-          <button
-            className={`tab-button ${activeTab === 'attributes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attributes')}
-          >
-            Edit Card
-          </button>
+          {(isAdmin || playerUserFk == currUserId || playerAttributes.creator_user_fk == currUserId) ? (
+            <button
+              className={`tab-button ${activeTab === 'attributes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('attributes')}
+            >
+              Edit Card
+            </button>
+          ) : (
+            <button
+              className="tab-button disabled"
+              disabled
+              title="Only admins, player owners, or player creators can see attributes"
+            >
+              Edit Card
+            </button>
+          )}
         </div>
 
         <div className="tab-content">
@@ -635,17 +713,6 @@ const EditPlayerPage = () => {
           {activeTab === 'attributes' && (
             <div className="edit-form">
               <div className="EP-input-container">
-                <label htmlFor="name">Name :</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={playerAttributes.name}
-                  onChange={handleInputChange}
-                />
-                {errors.name && <p className="error-message">{errors.name}</p>}
-              </div>
-              <div className="EP-input-container">
                 <label>Profile Picture:</label>
                 <div className="image-upload-container">
                   {previewUrl && (
@@ -664,164 +731,107 @@ const EditPlayerPage = () => {
                 </div>
               </div>
 
-              {/* Priority Dropdown */}
-              <div className="EP-input-container">
-                <label htmlFor="priority">Priority:</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={playerAttributes.priority}
-                  onChange={handleInputChange}
-                >
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </select>
-                {errors.priority && <p className="error-message">{errors.priority}</p>}
-              </div>
+              {/* All other inputs wrapped in a condition */}
+              {(isAdmin || playerAttributes.creator_user_fk == currUserId) ? (
+                // Original form inputs for admins and creators
+                <>
+                  <div className="EP-input-container">
+                    <label htmlFor="name">Name :</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={playerAttributes.name}
+                      onChange={handleInputChange}
+                    />
+                    {errors.name && <p className="error-message">{errors.name}</p>}
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="height">Height (cm) :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="height"
-                  name="height"
-                  value={playerAttributes.height}
-                  onChange={handleInputChange}
-                />
-                {errors.height && <p className="EP-error-message">{errors.height}</p>}
-              </div>
+                  {/* Priority Dropdown */}
+                  <div className="EP-input-container">
+                    <label htmlFor="priority">Priority:</label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={playerAttributes.priority}
+                      onChange={handleInputChange}
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </select>
+                    {errors.priority && <p className="error-message">{errors.priority}</p>}
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="scoring">Scoring :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="scoring"
-                  name="scoring"
-                  value={playerAttributes.scoring}
-                  onChange={handleInputChange}
-                />
-                {errors.scoring && <p className="EP-error-message">{errors.scoring}</p>}
-              </div>
+                  {/* All other numeric inputs */}
+                  {['height', 'scoring', 'passing', 'speed', 'physical', 'defence',
+                    'threePtShot', 'rebound', 'ballHandling', 'postUp'].map(attr => (
+                      <div key={attr} className="EP-input-container">
+                        <label htmlFor={attr}>{attr.charAt(0).toUpperCase() + attr.slice(1)} :</label>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          id={attr}
+                          name={attr}
+                          value={playerAttributes[attr]}
+                          onChange={handleInputChange}
+                        />
+                        {errors[attr] && <p className="EP-error-message">{errors[attr]}</p>}
+                      </div>
+                    ))}
+                </>
+              ) : (
+                // Disabled inputs for player owners
+                <>
+                  <div className="EP-input-container">
+                    <label htmlFor="name">Name :</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={playerAttributes.name}
+                      disabled
+                      className="disabled-input"
+                    />
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="passing">Passing :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="passing"
-                  name="passing"
-                  value={playerAttributes.passing}
-                  onChange={handleInputChange}
-                />
-                {errors.passing && <p className="EP-error-message">{errors.passing}</p>}
-              </div>
+                  <div className="EP-input-container">
+                    <label htmlFor="priority">Priority:</label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={playerAttributes.priority}
+                      disabled
+                      className="disabled-input"
+                    >
+                      <option value={playerAttributes.priority}>{playerAttributes.priority}</option>
+                    </select>
+                  </div>
 
-              <div className="EP-input-container">
-                <label htmlFor="speed">Speed :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="speed"
-                  name="speed"
-                  value={playerAttributes.speed}
-                  onChange={handleInputChange}
-                />
-                {errors.speed && <p className="EP-error-message">{errors.speed}</p>}
-              </div>
+                  {['height', 'scoring', 'passing', 'speed', 'physical', 'defence',
+                    'threePtShot', 'rebound', 'ballHandling', 'postUp'].map(attr => (
+                      <div key={attr} className="EP-input-container">
+                        <label htmlFor={attr}>{attr.charAt(0).toUpperCase() + attr.slice(1)} :</label>
+                        <input
+                          type="number"
+                          id={attr}
+                          name={attr}
+                          value={playerAttributes[attr]}
+                          disabled
+                          className="disabled-input"
+                        />
+                      </div>
+                    ))}
+                </>
+              )}
 
-              <div className="EP-input-container">
-                <label htmlFor="physical">Physical :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="physical"
-                  name="physical"
-                  value={playerAttributes.physical}
-                  onChange={handleInputChange}
-                />
-                {errors.physical && <p className="EP-error-message">{errors.physical}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="defence">Defence :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="defence"
-                  name="defence"
-                  value={playerAttributes.defence}
-                  onChange={handleInputChange}
-                />
-                {errors.defence && <p className="EP-error-message">{errors.defence}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="threePtShot">3 PT Shot :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="threePtShot"
-                  name="threePtShot"
-                  value={playerAttributes.threePtShot}
-                  onChange={handleInputChange}
-                />
-                {errors.threePtShot && <p className="EP-error-message">{errors.threePtShot}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="rebound">Rebound :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="rebound"
-                  name="rebound"
-                  value={playerAttributes.rebound}
-                  onChange={handleInputChange}
-                />
-                {errors.rebound && <p className="EP-error-message">{errors.rebound}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="ballHandling">Ball Handling :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="ballHandling"
-                  name="ballHandling"
-                  value={playerAttributes.ballHandling}
-                  onChange={handleInputChange}
-                />
-                {errors.ballHandling && <p className="EP-error-message">{errors.ballHandling}</p>}
-              </div>
-
-              <div className="EP-input-container">
-                <label htmlFor="postUp">Post Up :</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  id="postUp"
-                  name="postUp"
-                  value={playerAttributes.postUp}
-                  onChange={handleInputChange}
-                />
-                {errors.postUp && <p className="EP-error-message">{errors.postUp}</p>}
-              </div>
-
-              <button className='EP-calc-save-button' onClick={() => handleUpdatePlayer()}>Update Player</button>
-
+              {/* Update button shown only for admins/creators, or if the image was changed */}
+              {(isAdmin || playerAttributes.creator_user_fk == currUserId || previewUrl) && (
+                <button className='EP-calc-save-button' onClick={() => handleUpdatePlayer()}>
+                  Update Player
+                </button>
+              )}
             </div>
           )}
         </div>

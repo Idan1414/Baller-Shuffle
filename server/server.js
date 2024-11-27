@@ -20,7 +20,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 
 
-// Configure multer
+// Configure multer for profile images
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
@@ -207,7 +207,39 @@ app.post('/api/update-token', async (req, res) => {
   }
 });
 
+//-----------------------------------------------------------------------------------------------
 
+
+// Create bug report endpoint
+app.post('/api/bug-report', authenticateToken, async (req, res) => {
+  try {
+    const { userId, message } = req.body;
+
+    // Get username from users table
+    const { results: userResults } = await promiseQuery(
+      'SELECT username FROM ballershuffleschema.users WHERE id = ?',
+      [userId]
+    );
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const username = userResults[0].username;
+
+    // Insert the bug report
+    await promiseQuery(
+      `INSERT INTO ballershuffleschema.bug_reports (user_id, username, message)
+       VALUES (?, ?, ?)`,
+      [userId, username, message]
+    );
+
+    res.status(201).json({ message: 'Bug report submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting bug report:', error);
+    res.status(500).json({ error: 'Failed to submit bug report' });
+  }
+});
 //-----------------------------------------------------------------------------------------------
 
 // Courts endpoint
@@ -316,7 +348,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT p.*, bpa.* FROM ballershuffleschema.players as p
+      `SELECT p.id as pId , p.*, bpa.* FROM ballershuffleschema.players as p
        LEFT JOIN basketball_player_attributes as bpa on p.id = bpa.playerId
        WHERE courtId = ?`,
       [courtId]
@@ -325,7 +357,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'No players found' });
     }
     const players = results.map(p => ({
-      playerId: p.playerId,
+      playerId: p.pId,
       name: p.name,
       num_of_mvps: p.num_of_mvps,
       scoring: p.scoring,
@@ -622,6 +654,7 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
       playerId: p.playerId,
       name: p.name,
       priority: p.priority,
+      creator_user_fk: p.creator_user_fk,
       finishing: p.finishing,
       passing: p.passing,
       speed: p.speed,
@@ -663,6 +696,7 @@ app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) 
       playerId: p.playerId,
       name: p.name,
       priority: p.priority,
+      creator_user_fk: p.creator_user_fk,
       scoring: p.scoring,
       passing: p.passing,
       speed: p.speed,
@@ -684,7 +718,33 @@ app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) 
 });
 
 
+//-----------------------------------------------------------------------------------------------
 
+
+// Get My Player ID endpoint
+app.get('/api/my-player/:user_id/:court_id', authenticateToken, async (req, res) => {
+  try {
+    const courtId = req.params.court_id;
+    const userId = req.params.user_id;
+ 
+    const { results } = await promiseQuery(
+      `SELECT p.id as playerId
+       FROM ballershuffleschema.players as p
+       WHERE p.courtId = ? AND p.user_fk = ?`,
+      [courtId, userId]
+    );
+ 
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No player found for this user in this court' });
+    }
+ 
+    res.json({ playerId: results[0].playerId });
+ 
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching player ID');
+  }
+ });
 
 //-----------------------------------------------------------------------------------------------
 
@@ -701,9 +761,13 @@ app.get('/api/is_player_assinged/:player_id', authenticateToken, async (req, res
     if (results.length === 0) {
       return res.status(404).json({ message: 'Player not found' });
     }
+    const userFk = results[0].user_fk;
+    const userFkExists = userFk !== null;
 
-    const userFkExists = results[0].user_fk !== null; // Check if user_fk is not -1 or null
-    res.json({ userFkExists }); // Sending the result as a JSON file to the client
+    res.json({
+      userFkExists,
+      user_fk: userFkExists ? userFk : null // Only include the value if it exists
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send('Error fetching user_fk for player');
@@ -713,6 +777,7 @@ app.get('/api/is_player_assinged/:player_id', authenticateToken, async (req, res
 
 //-----------------------------------------------------------------------------------------------
 
+// Update Player endpoint
 // Update Player endpoint
 app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req, res) => {
   try {
@@ -742,10 +807,10 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
       });
     }
 
-    // Check if name already exists in this court
+    // Check if name already exists in this court for a DIFFERENT player
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ?',
-      [name, courtId]
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? AND id != ?',
+      [name, courtId, playerId]
     );
 
     if (existingPlayer.length > 0) {
@@ -759,14 +824,11 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
 
     await delay(50);
 
-
     const updateQuery = ` UPDATE ballershuffleschema.basketball_player_attributes
       SET scoring = ?, passing = ?, speed = ?, physical = ?, defence = ?, 
           threePtShot = ?, rebound = ?, ballHandling = ?, postUp = ?, height = ?, 
           overall = ?, overallToMix = ?
       WHERE playerId = ?`;
-
-
 
     await promiseQuery(updateQuery,
       [scoring, passing, speed, physical, defence, threePtShot, rebound,
@@ -778,8 +840,6 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
     res.status(500).send('Error updating player');
   }
 });
-
-
 //-----------------------------------------------------------------------------------------------
 
 
@@ -812,8 +872,8 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
 
     // Check if name already exists in this court
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ?',
-      [name, courtId]
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? AND id != ?',
+      [name, courtId, playerId]
     );
 
     if (existingPlayer.length > 0) {
@@ -822,7 +882,7 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
       });
     }
 
-    
+
     const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ?`;
     await promiseQuery(updateNameAndPriority, [name, priority, playerId]);
 
@@ -982,18 +1042,27 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
     const playerId = req.params.player_id;
 
 
-    const { results: user_fk_of_player } = await promiseQuery(
-      `SELECT user_fk FROM ballershuffleschema.players 
+    // Get player info before updating
+    const { results: playerInfo } = await promiseQuery(
+      `SELECT name, user_fk FROM ballershuffleschema.players 
        WHERE id = ? AND courtId = ?`,
       [playerId, courtId]
     );
 
-    console.log("user fk of the player :", user_fk_of_player)
+    if (playerInfo.length === 0) {
+      return res.status(404).json({ message: 'Player not found' });
+    }
 
-    //Delete from registration games table:
+    const user_fk = playerInfo[0].user_fk;
+    const currentName = playerInfo[0].name;
+
+
+    // Update player name to indicate deletion
     await promiseQuery(
-      'DELETE FROM ballershuffleschema.registrations_to_game WHERE player_id = ?',
-      [playerId]
+      `UPDATE ballershuffleschema.players 
+           SET name = ?, user_fk = NULL ,courtId = NULL
+           WHERE id = ? AND courtId = ?`,
+      [`Deleted(${currentName})`, playerId, courtId]
     );
 
     // Delete from basketball_player_attributes table
@@ -1005,21 +1074,13 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
     await delay(50);
 
 
-
-    // Delete from players table
-    await promiseQuery(
-      'DELETE FROM ballershuffleschema.players WHERE id = ? AND courtId = ?',
-      [playerId, courtId]
-    );
-
-
-    if (user_fk_of_player) {
-      //Make sure to delete the court only if the player was assigned to a user
+    if (user_fk) {
+      // Remove only this court from user_user_courts
       await promiseQuery(
-        `DELETE FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?`,
-        [user_fk_of_player[0].user_fk, courtId]
+        `DELETE FROM ballershuffleschema.user_user_courts 
+         WHERE userId = ? AND courtId = ?`,
+        [user_fk, courtId]
       );
-
     }
 
     res.status(200).json({ message: 'Player deleted successfully' });
@@ -1791,82 +1852,200 @@ app.delete('/api/delete_game/:game_id', authenticateToken, async (req, res) => {
 });
 
 
-//----------------------------------------ADD STAT--------------------------------------
+// ADD STAT
 app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
-  const { creatorUserId, playerId, gameId, stat } = req.body;
+  const { creatorUserId, playerId, matchId, stat, gameday_id } = req.body;
 
   try {
-    // Verify the game exists and is in progress
-    const { results } = await promiseQuery(
-      'SELECT game_start_time FROM games WHERE game_id = ?',
-      [gameId]
-    );
+    // Start a transaction
+    await promiseQuery('START TRANSACTION');
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'Game not found' });
-    }
+    try {
+      // Insert the stat
+      const statResult = await promiseQuery(
+        'INSERT INTO ballershuffleschema.match_stats (match_id, gameday_id, player_id, stat_type, created_by) VALUES (?, ?, ?, ?, ?)',
+        [matchId, gameday_id, playerId, stat, creatorUserId]
+      );
 
-    const gameStartTime = new Date(results[0].game_start_time);
-    const now = new Date();
-    const hoursSinceStart = (now - gameStartTime) / (1000 * 60 * 60);
+      // Get player's team number
+      const teamResult = await promiseQuery(
+        'SELECT team_number FROM ballershuffleschema.match_players WHERE match_id = ? AND player_id = ?',
+        [matchId, playerId]
+      );
 
-    if (hoursSinceStart < 0 || hoursSinceStart > 24) {
-      return res.status(400).json({
-        error: 'Stats can only be added during the game period (from start time until 24 hours after)'
+      if (teamResult.results.length === 0) {
+        throw new Error('Player not found in match');
+      }
+
+      const teamNumber = teamResult.results[0].team_number;
+      let scoreToAdd = 0;
+
+      // Calculate score based on stat type
+      switch (stat) {
+        case 2: // 2 pointer
+          scoreToAdd = 2;
+          break;
+        case 3: // 3 pointer
+          scoreToAdd = 3;
+          break;
+        case 7: // Goal (football)
+          scoreToAdd = 1;
+          break;
+        default:
+          scoreToAdd = 0;
+      }
+
+      // Update team score if necessary
+      if (scoreToAdd > 0) {
+        const scoreField = teamNumber === 1 ? 'team1_score' : 'team2_score';
+        await promiseQuery(
+          `UPDATE ballershuffleschema.matches 
+           SET ${scoreField} = ${scoreField} + ? 
+           WHERE match_id = ?`,
+          [scoreToAdd, matchId]
+        );
+      }
+
+      // Get updated match data
+      const matchResult = await promiseQuery(
+        'SELECT team1_score, team2_score FROM ballershuffleschema.matches WHERE match_id = ?',
+        [matchId]
+      );
+
+      await promiseQuery('COMMIT');
+
+      res.status(201).json({
+        message: 'Stat added successfully',
+        statId: statResult.results.insertId,
+        team1Score: matchResult.results[0].team1_score,
+        team2Score: matchResult.results[0].team2_score
       });
+
+    } catch (error) {
+      await promiseQuery('ROLLBACK');
+      throw error;
     }
-
-    // Simple insert using your promiseQuery
-    await promiseQuery(
-      `INSERT INTO player_game_statistics (player_id, game_id, stat, created_by) 
-      VALUES (?, ?, ?, ?)`,
-      [playerId, gameId, stat, creatorUserId]
-    );
-
-    res.json({ success: true });
 
   } catch (error) {
-    console.error('Error adding player stat:', error);
-    res.status(500).json({ error: 'Failed to add player stat' });
+    console.error('Error adding stat:', error);
+    res.status(500).json({
+      error: 'Error adding stat'
+    });
   }
 });
 
-// GET STATS ENDPOINT------------------------------------------
-
-app.get('/api/game-stats/:gameId', authenticateToken, async (req, res) => {
+// GET STATS
+app.get('/api/match-stats/:matchId', authenticateToken, async (req, res) => {
   try {
     const { results } = await promiseQuery(
-      `SELECT ps.id, ps.player_id, ps.stat, ps.created_at, ps.created_by,
-              p.name as player_name, u.username as created_by_name
-       FROM player_game_statistics ps
-       JOIN players p ON ps.player_id = p.id
-       LEFT JOIN users u ON ps.created_by = u.id
-       WHERE ps.game_id = ?
-       ORDER BY ps.created_at DESC`,
-      [req.params.gameId]
+      `SELECT 
+        ms.match_stat_id as id,
+        ms.match_id,
+        ms.gameday_id as game_id,
+        ms.player_id,
+        ms.stat_type as stat,
+        ms.created_by,
+        ms.created_at,
+        p.name as player_name,
+        u.username as created_by_name
+      FROM ballershuffleschema.match_stats ms
+      JOIN ballershuffleschema.players p ON ms.player_id = p.id
+      LEFT JOIN ballershuffleschema.users u ON ms.created_by = u.id
+      WHERE ms.match_id = ?
+      ORDER BY ms.created_at DESC`,
+      [req.params.matchId]
     );
     res.json(results);
   } catch (error) {
-    console.error('Error fetching game stats:', error);
-    res.status(500).json({ error: 'Failed to fetch game stats' });
+    console.error('Error fetching match stats:', error);
+    res.status(500).json({ error: 'Failed to fetch match stats' });
   }
 });
 
-// --------------------------- delete stat endpoint
+// DELETE STAT
 app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
-  try {
-    await promiseQuery(
-      'DELETE FROM player_game_statistics WHERE id = ?',
-      [req.params.statId]
-    );
+  const statId = req.params.statId;
 
-    res.json({ success: true });
+  try {
+    // Start a transaction
+    await promiseQuery('START TRANSACTION');
+
+    try {
+      // Get stat details before deletion
+      const { results: statDetails } = await promiseQuery(
+        `SELECT ms.match_id, ms.stat_type, mp.team_number
+         FROM ballershuffleschema.match_stats ms
+         JOIN ballershuffleschema.match_players mp 
+         ON ms.player_id = mp.player_id AND ms.match_id = mp.match_id
+         WHERE ms.match_stat_id = ?`,
+        [statId]
+      );
+
+      if (statDetails.length === 0) {
+        throw new Error('Stat not found');
+      }
+
+      const { match_id, stat_type, team_number } = statDetails[0];
+      let scoreToSubtract = 0;
+
+      // Calculate score to subtract based on stat type
+      switch (stat_type) {
+        case 2: // 2 pointer
+          scoreToSubtract = 2;
+          break;
+        case 3: // 3 pointer
+          scoreToSubtract = 3;
+          break;
+        case 7: // Goal (football)
+          scoreToSubtract = 1;
+          break;
+        default:
+          scoreToSubtract = 0;
+      }
+
+      // Update team score if necessary
+      if (scoreToSubtract > 0) {
+        const scoreField = team_number === 1 ? 'team1_score' : 'team2_score';
+        await promiseQuery(
+          `UPDATE ballershuffleschema.matches 
+           SET ${scoreField} = GREATEST(${scoreField} - ?, 0)
+           WHERE match_id = ?`,
+          [scoreToSubtract, match_id]
+        );
+      }
+
+      // Delete the stat
+      await promiseQuery(
+        'DELETE FROM ballershuffleschema.match_stats WHERE match_stat_id = ?',
+        [statId]
+      );
+
+      // Get updated match data
+      const { results: matchResult } = await promiseQuery(
+        'SELECT team1_score, team2_score FROM ballershuffleschema.matches WHERE match_id = ?',
+        [match_id]
+      );
+
+      await promiseQuery('COMMIT');
+
+      res.json({
+        message: 'Stat deleted successfully',
+        team1Score: matchResult[0].team1_score,
+        team2Score: matchResult[0].team2_score
+      });
+
+    } catch (error) {
+      await promiseQuery('ROLLBACK');
+      throw error;
+    }
+
   } catch (error) {
     console.error('Error deleting stat:', error);
-    res.status(500).json({ error: 'Failed to delete stat' });
+    res.status(500).json({
+      error: 'Error deleting stat'
+    });
   }
 });
-
 
 // --------------------------Statistics endpoint that handles both basketball and football
 
@@ -1939,48 +2118,46 @@ app.post('/api/update-court-statistics/:gameId/:courtType', authenticateToken, a
       await promiseQuery(
         `INSERT INTO basketball_court_statistics (player_id, total_games_played, total_2pts, total_3pts, total_assists, total_steals, total_blocks, total_wins)
          SELECT
-           gpp.player_id,
+           bgs.player_id,
            1 AS total_games_played,
-           SUM(CASE WHEN pgs.stat = 2 THEN 1 ELSE 0 END) AS total_2pts,
-           SUM(CASE WHEN pgs.stat = 3 THEN 1 ELSE 0 END) AS total_3pts,
-           SUM(CASE WHEN pgs.stat = 4 THEN 1 ELSE 0 END) AS total_assists,
-           SUM(CASE WHEN pgs.stat = 6 THEN 1 ELSE 0 END) AS total_steals,
-           SUM(CASE WHEN pgs.stat = 5 THEN 1 ELSE 0 END) AS total_blocks,
-           SUM(CASE WHEN pgs.stat = 1 THEN 1 ELSE 0 END) AS total_wins
-         FROM game_players_played gpp
-         LEFT JOIN player_game_statistics pgs ON gpp.player_id = pgs.player_id AND gpp.game_id = pgs.game_id
-         WHERE gpp.game_id = ?
-         GROUP BY gpp.player_id
+           IFNULL(SUM(bgs.total_2pts_today), 0) AS total_2pts,
+           IFNULL(SUM(bgs.total_3pts_today), 0) AS total_3pts,
+           IFNULL(SUM(bgs.total_assists_today), 0) AS total_assists,
+           IFNULL(SUM(bgs.total_steals_today), 0) AS total_steals,
+           IFNULL(SUM(bgs.total_blocks_today), 0) AS total_blocks,
+           IFNULL(SUM(bgs.total_wins_today), 0) AS total_wins
+         FROM ballershuffleschema.basketball_gameday_stats bgs
+         WHERE bgs.gameday_id = ?
+         GROUP BY bgs.player_id
          ON DUPLICATE KEY UPDATE
            total_games_played = total_games_played + 1,
-           total_2pts = total_2pts + IFNULL(VALUES(total_2pts), 0),
-           total_3pts = total_3pts + IFNULL(VALUES(total_3pts), 0),
-           total_assists = total_assists + IFNULL(VALUES(total_assists), 0),
-           total_steals = total_steals + IFNULL(VALUES(total_steals), 0),
-           total_blocks = total_blocks + IFNULL(VALUES(total_blocks), 0),
-           total_wins = total_wins + IFNULL(VALUES(total_wins), 0)`,
+           total_2pts = total_2pts + VALUES(total_2pts),
+           total_3pts = total_3pts + VALUES(total_3pts),
+           total_assists = total_assists + VALUES(total_assists),
+           total_steals = total_steals + VALUES(total_steals),
+           total_blocks = total_blocks + VALUES(total_blocks),
+           total_wins = total_wins + VALUES(total_wins)`,
         [gameId]
       );
     } else {
       await promiseQuery(
-        `INSERT INTO football_court_statistics (player_id, total_games_played, total_goals, total_assists,total_misses, total_wins)
+        `INSERT INTO football_court_statistics (player_id, total_games_played, total_goals, total_assists, total_misses, total_wins)
          SELECT
-           gpp.player_id,
+           fgs.player_id,
            1 AS total_games_played,
-           SUM(CASE WHEN pgs.stat = 7 THEN 1 ELSE 0 END) AS total_goals,
-           SUM(CASE WHEN pgs.stat = 8 THEN 1 ELSE 0 END) AS total_assists,
-           SUM(CASE WHEN pgs.stat = 9 THEN 1 ELSE 0 END) AS total_misses,
-           SUM(CASE WHEN pgs.stat = 1 THEN 1 ELSE 0 END) AS total_wins
-         FROM game_players_played gpp
-         LEFT JOIN player_game_statistics pgs ON gpp.player_id = pgs.player_id AND gpp.game_id = pgs.game_id
-         WHERE gpp.game_id = ?
-         GROUP BY gpp.player_id
+           IFNULL(SUM(fgs.total_goals_today), 0) AS total_goals,
+           IFNULL(SUM(fgs.total_assists_today), 0) AS total_assists,
+           IFNULL(SUM(fgs.total_misses_today), 0) AS total_misses,
+           IFNULL(SUM(fgs.total_wins_today), 0) AS total_wins
+         FROM ballershuffleschema.football_gameday_stats fgs
+         WHERE fgs.gameday_id = ?
+         GROUP BY fgs.player_id
          ON DUPLICATE KEY UPDATE
            total_games_played = total_games_played + 1,
-           total_goals = total_goals + IFNULL(VALUES(total_goals), 0),
-           total_assists = total_assists + IFNULL(VALUES(total_assists), 0),
-           total_misses = total_misses + IFNULL(VALUES(total_misses), 0),
-           total_wins = total_wins + IFNULL(VALUES(total_wins), 0)`,
+           total_goals = total_goals + VALUES(total_goals),
+           total_assists = total_assists + VALUES(total_assists),
+           total_misses = total_misses + VALUES(total_misses),
+           total_wins = total_wins + VALUES(total_wins)`,
         [gameId]
       );
     }
@@ -1991,7 +2168,6 @@ app.post('/api/update-court-statistics/:gameId/:courtType', authenticateToken, a
     res.status(500).json({ error: 'Failed to update court statistics' });
   }
 });
-
 
 //-----------------------PLAYER STATS FOR EDIT PROFILE PAGE-------------------------------
 
@@ -2169,5 +2345,398 @@ app.get('/api/player-games/:playerId/:courtId', authenticateToken, async (req, r
   } catch (error) {
     console.error('Error fetching player games:', error);
     res.status(500).send('Error fetching games');
+  }
+});
+
+//Create a new Match API
+
+// Create Match Endpoint
+app.post('/api/create_match/:gameday_id/:created_by', authenticateToken, async (req, res) => {
+  const gameday_id = req.params.gameday_id;
+  const created_by = req.params.created_by;
+  const { team1_players, team2_players } = req.body;
+
+  try {
+    // Validate teams
+    if (!team1_players || !team2_players || team1_players.length === 0 || team2_players.length === 0) {
+      return res.status(400).json({
+        error: 'Both teams must have players'
+      });
+    }
+
+    if (team1_players.length !== team2_players.length) {
+      return res.status(400).json({
+        error: 'Teams must have equal number of players'
+      });
+    }
+
+    // First query: Insert into "matches" table
+    const insertMatchResult = await promiseQuery(
+      'INSERT INTO ballershuffleschema.matches (gameday_id, team1_score, team2_score, match_status, created_by) VALUES (?, 0, 0, "in_progress", ?)',
+      [gameday_id, created_by]
+    );
+
+    const match_id = insertMatchResult.results.insertId;
+
+    // Insert team 1 players
+    const team1Values = team1_players.map(playerId => [match_id, playerId, 1]);
+    await promiseQuery(
+      'INSERT INTO ballershuffleschema.match_players (match_id, player_id, team_number) VALUES ?',
+      [team1Values]
+    );
+
+    // Insert team 2 players
+    const team2Values = team2_players.map(playerId => [match_id, playerId, 2]);
+    await promiseQuery(
+      'INSERT INTO ballershuffleschema.match_players (match_id, player_id, team_number) VALUES ?',
+      [team2Values]
+    );
+
+    res.status(201).json({
+      message: 'Match created successfully',
+      match_id: match_id
+    });
+
+  } catch (error) {
+    console.error('Error creating match:', error);
+    res.status(500).json({
+      error: 'Error creating match'
+    });
+  }
+});
+
+
+// Get Match Players Endpoint
+app.get('/api/match_players/:match_id', authenticateToken, async (req, res) => {
+  const match_id = req.params.match_id;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+        mp.player_id,
+        mp.team_number,
+        p.name,
+        p.user_fk,
+        p.creator_user_fk,
+        CASE 
+          WHEN bpa.overall IS NOT NULL THEN bpa.overall
+          WHEN fpa.overall IS NOT NULL THEN fpa.overall
+          ELSE NULL
+        END as overall
+      FROM ballershuffleschema.match_players mp
+      JOIN ballershuffleschema.players p ON mp.player_id = p.id
+      LEFT JOIN ballershuffleschema.basketball_player_attributes bpa ON p.id = bpa.playerId
+      LEFT JOIN ballershuffleschema.football_player_attributes fpa ON p.id = fpa.playerId
+      WHERE mp.match_id = ?
+      ORDER BY mp.team_number, p.name`,
+      [match_id]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        error: 'No players found for this match'
+      });
+    }
+
+    res.json(results);
+
+  } catch (error) {
+    console.error('Error getting match players:', error);
+    res.status(500).json({
+      error: 'Error retrieving match players'
+    });
+  }
+});
+
+// Get Match Details Endpoint
+app.get('/api/match/:match_id', authenticateToken, async (req, res) => {
+  const match_id = req.params.match_id;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+        m.match_id,
+        m.gameday_id,
+        m.team1_score,
+        m.team2_score,
+        m.match_status,
+        m.created_by,
+        m.created_at,
+        m.completed_at,
+        g.game_start_time,
+        g.court_id,
+        c.courtType as court_type
+      FROM ballershuffleschema.matches m
+      JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
+      JOIN ballershuffleschema.courts c ON g.court_id = c.id
+      WHERE m.match_id = ?`,
+      [match_id]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        error: 'Match not found'
+      });
+    }
+
+    // Return the first (and should be only) result
+    res.json(results[0]);
+
+  } catch (error) {
+    console.error('Error getting match details:', error);
+    res.status(500).json({
+      error: 'Error retrieving match details'
+    });
+  }
+});
+
+
+// Get Matches for Gameday Endpoint
+app.get('/api/gameday_matches/:gameday_id', authenticateToken, async (req, res) => {
+  const gameday_id = req.params.gameday_id;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+        match_id,
+        team1_score,
+        team2_score,
+        match_status,
+        created_at,
+        completed_at
+      FROM ballershuffleschema.matches
+      WHERE gameday_id = ?
+      ORDER BY created_at DESC`,
+      [gameday_id]
+    );
+
+    res.json(results);
+
+  } catch (error) {
+    console.error('Error getting gameday matches:', error);
+    res.status(500).json({
+      error: 'Error retrieving gameday matches'
+    });
+  }
+});
+
+
+//END MATCH API
+app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
+  const matchId = req.params.matchId;
+  const { winningTeam } = req.body;
+
+  try {
+    await promiseQuery('START TRANSACTION');
+
+    try {
+      // First check if match is already completed
+      const { results: matchStatus } = await promiseQuery(
+        `SELECT match_status, gameday_id 
+         FROM ballershuffleschema.matches 
+         WHERE match_id = ?`,
+        [matchId]
+      );
+
+      if (matchStatus[0].match_status === 'completed') {
+        await promiseQuery('ROLLBACK');
+        return res.status(409).json({
+          message: 'Match is already completed'
+        });
+      }
+
+      const gameday_id = matchStatus[0].gameday_id;
+
+      // Update match status to completed
+      await promiseQuery(
+        `UPDATE ballershuffleschema.matches 
+         SET match_status = 'completed', 
+             completed_at = NOW() 
+         WHERE match_id = ?`,
+        [matchId]
+      );
+
+      // Get the match type
+      const { results: matchDetails } = await promiseQuery(
+        `SELECT c.courtType
+         FROM ballershuffleschema.matches m
+         JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
+         JOIN ballershuffleschema.courts c ON g.court_id = c.id
+         WHERE m.match_id = ?`,
+        [matchId]
+      );
+
+      const courtType = matchDetails[0].courtType;
+
+      if (courtType === 'Basketball') {
+        // Basketball stats update
+        await promiseQuery(
+          `INSERT INTO ballershuffleschema.basketball_gameday_stats 
+           (player_id, gameday_id, total_matches_today, total_2pts_today, total_3pts_today, 
+            total_assists_today, total_steals_today, total_blocks_today, total_wins_today)
+           SELECT 
+             mp.player_id,
+             ? as gameday_id,
+             1 AS total_matches_today,
+             SUM(CASE WHEN ms.stat_type = 2 THEN 1 ELSE 0 END) AS total_2pts_today,
+             SUM(CASE WHEN ms.stat_type = 3 THEN 1 ELSE 0 END) AS total_3pts_today,
+             SUM(CASE WHEN ms.stat_type = 4 THEN 1 ELSE 0 END) AS total_assists_today,
+             SUM(CASE WHEN ms.stat_type = 6 THEN 1 ELSE 0 END) AS total_steals_today,
+             SUM(CASE WHEN ms.stat_type = 5 THEN 1 ELSE 0 END) AS total_blocks_today,
+             CASE 
+               WHEN team_number = ? AND ? > 0 THEN 1 
+               ELSE 0 
+             END AS total_wins_today
+           FROM ballershuffleschema.match_players mp
+           LEFT JOIN ballershuffleschema.match_stats ms 
+             ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
+           WHERE mp.match_id = ?
+           GROUP BY mp.player_id, mp.team_number
+           ON DUPLICATE KEY UPDATE
+             total_matches_today = basketball_gameday_stats.total_matches_today + 1,
+             total_2pts_today = basketball_gameday_stats.total_2pts_today + VALUES(total_2pts_today),
+             total_3pts_today = basketball_gameday_stats.total_3pts_today + VALUES(total_3pts_today),
+             total_assists_today = basketball_gameday_stats.total_assists_today + VALUES(total_assists_today),
+             total_steals_today = basketball_gameday_stats.total_steals_today + VALUES(total_steals_today),
+             total_blocks_today = basketball_gameday_stats.total_blocks_today + VALUES(total_blocks_today),
+             total_wins_today = basketball_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
+          [gameday_id, winningTeam, winningTeam, matchId]
+        );
+      } else {
+        // Football stats update
+        await promiseQuery(
+          `INSERT INTO ballershuffleschema.football_gameday_stats 
+           (player_id, gameday_id, total_matches_today, total_goals_today, total_assists_today, 
+            total_misses_today, total_wins_today)
+           SELECT 
+             mp.player_id,
+             ? as gameday_id,
+             1 AS total_matches_today,
+             SUM(CASE WHEN ms.stat_type = 7 THEN 1 ELSE 0 END) AS total_goals_today,
+             SUM(CASE WHEN ms.stat_type = 8 THEN 1 ELSE 0 END) AS total_assists_today,
+             SUM(CASE WHEN ms.stat_type = 9 THEN 1 ELSE 0 END) AS total_misses_today,
+             CASE 
+               WHEN team_number = ? AND ? > 0 THEN 1 
+               ELSE 0 
+             END AS total_wins_today
+           FROM ballershuffleschema.match_players mp
+           LEFT JOIN ballershuffleschema.match_stats ms 
+             ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
+           WHERE mp.match_id = ?
+           GROUP BY mp.player_id, mp.team_number
+           ON DUPLICATE KEY UPDATE
+             total_matches_today = football_gameday_stats.total_matches_today + 1,
+             total_goals_today = football_gameday_stats.total_goals_today + VALUES(total_goals_today),
+             total_assists_today = football_gameday_stats.total_assists_today + VALUES(total_assists_today),
+             total_misses_today = football_gameday_stats.total_misses_today + VALUES(total_misses_today),
+             total_wins_today = football_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
+          [gameday_id, winningTeam, winningTeam, matchId]
+        );
+      }
+
+      await promiseQuery('COMMIT');
+
+      res.json({
+        message: 'Match ended successfully and statistics updated'
+      });
+
+    } catch (error) {
+      await promiseQuery('ROLLBACK');
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error ending match:', error);
+    res.status(500).json({
+      error: 'Error ending match'
+    });
+  }
+});
+
+
+
+// Get Basketball Gameday Stats API
+app.get('/api/basketball_gameday_stats/:gameId', authenticateToken, async (req, res) => {
+  const gameId = req.params.gameId;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+        bgs.player_id,
+        p.name as player_name,
+        bgs.total_matches_today,
+        bgs.total_2pts_today,
+        bgs.total_3pts_today,
+        bgs.total_assists_today,
+        bgs.total_steals_today,
+        bgs.total_blocks_today,
+        bgs.total_wins_today
+      FROM ballershuffleschema.basketball_gameday_stats bgs
+      JOIN ballershuffleschema.players p ON bgs.player_id = p.id
+      WHERE bgs.gameday_id = ?
+      ORDER BY (bgs.total_2pts_today * 2 + bgs.total_3pts_today * 3) DESC`,
+      [gameId]
+    );
+
+    if (results.length === 0) {
+      // If no stats found, return empty array instead of error
+      return res.json([]);
+    }
+
+    // Add calculated fields if needed
+    const statsWithCalculations = results.map(stat => ({
+      ...stat,
+      total_points: (stat.total_2pts_today * 2) + (stat.total_3pts_today * 3)
+    }));
+
+    res.json(statsWithCalculations);
+
+  } catch (error) {
+    console.error('Error fetching basketball gameday stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch basketball gameday statistics'
+    });
+  }
+});
+
+// Get Football Gameday Stats API
+app.get('/api/football_gameday_stats/:gameId', authenticateToken, async (req, res) => {
+  const gameId = req.params.gameId;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+        fgs.player_id,
+        p.name as player_name,
+        fgs.total_matches_today,
+        fgs.total_goals_today,
+        fgs.total_assists_today,
+        fgs.total_misses_today,
+        fgs.total_wins_today
+      FROM ballershuffleschema.football_gameday_stats fgs
+      JOIN ballershuffleschema.players p ON fgs.player_id = p.id
+      WHERE fgs.gameday_id = ?
+      ORDER BY fgs.total_goals_today DESC`,
+      [gameId]
+    );
+
+    if (results.length === 0) {
+      // If no stats found, return empty array instead of error
+      return res.json([]);
+    }
+
+    // Add any calculated fields if needed here
+    const statsWithCalculations = results.map(stat => ({
+      ...stat,
+      efficiency: stat.total_goals_today / (stat.total_goals_today + stat.total_misses_today || 1)
+    }));
+
+    res.json(statsWithCalculations);
+
+  } catch (error) {
+    console.error('Error fetching football gameday stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch football gameday statistics'
+    });
   }
 });

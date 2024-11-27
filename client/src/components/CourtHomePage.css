@@ -37,6 +37,7 @@ body {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -68,10 +69,11 @@ body {
 .logo-image-home-page:hover {
   transform: scale(1.05);
 }
+
 .HP-title {
   font-size: 3.5rem;
   font-weight: 700;
-  background: linear-gradient(145deg, #48c6ef 0%, #6f86d6 100%);
+  background: linear-gradient(145deg, #e4deded1 0%, #6c1616 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -79,6 +81,7 @@ body {
   margin: 1px 0;
   position: relative;
 }
+
 .HP-title::after {
   content: '';
   position: absolute;
@@ -87,7 +90,7 @@ body {
   transform: translateX(-50%);
   width: 60%;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #48c6ef, transparent);
+  background: linear-gradient(90deg, transparent, #e4deded1, transparent);
 }
 
 
@@ -107,49 +110,118 @@ body {
   width: 180px;
   height: 260px;
   position: relative;
-  background: linear-gradient(145deg, #48c5efb3 25%, #6f86d6 40%, #48c5efb5 50%);
+  background-color: #ffffff90;
+  /* White background */
   border-radius: 10px;
   padding: 0;
   overflow: visible;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid #48c5ef5e;
-  box-shadow: 0 4px 15px rgba(0, 149, 255, 0.15),
-    inset 0 0 50px rgba(135, 206, 250, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15),
+    inset 0 0 50px rgba(255, 255, 255, 0.2);
 }
 
+.player-cube-basketball:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  border-radius: 10px;
+  z-index: 1;
+}
+
+.player-cube-basketball.club-corner:after {
+  content: "♣️";
+  color: black;
+  position: absolute;
+  top: -10px;
+  right: 2px;
+  font-size: 40px;
+  z-index: 2;
+}
+
+.player-cube-basketball.heart-corner:after {
+  content: "♥️";
+  color: rgba(182, 17, 17, 0.968);
+  position: absolute;
+  top: -10px;
+  right: 2px;
+  font-size: 40px;
+  z-index: 2;
+}
+
+.player-cube-basketball.spade-corner:after {
+  content: "♠️";
+  color: black;
+  position: absolute;
+  top: -10px;
+  right: 2px;
+  font-size: 40px;
+  z-index: 2;
+}
+
+.player-cube-basketball.diamond-corner:after {
+  content: "◆";
+  color: rgba(182, 17, 17, 0.968);
+  position: absolute;
+  top: -10px;
+  right: 2px;
+  font-size: 40px;
+  z-index: 2;
+}
+
+
+.player-cube-basketball.diamond-corner .player-HP-name,
+.player-cube-basketball.heart-corner .player-HP-name,
+.player-cube-basketball.heart-corner .fifa-rating,
+.player-cube-basketball.diamond-corner .fifa-rating,
+.player-cube-basketball.heart-corner .fifa-stat,
+.player-cube-basketball.diamond-corner .fifa-stat,
+.player-cube-basketball.heart-corner .fifa-stat-value,
+.player-cube-basketball.diamond-corner .fifa-stat-value {
+  color: rgba(81, 22, 22, 0.857);
+}
+
+
 .player-cube-basketball--my-player {
-  background: linear-gradient(145deg, #6f86d6 0%, #48c5efb5 100%);
-  border: 1px solid rgba(135, 206, 250, 0.3);
-  box-shadow: 0 10px 40px rgb(143, 201, 239),
-              inset 0 0 50px rgba(253, 254, 255, 0.954);
+  background-color: #ffffff90;
+  box-shadow: 0 10px 40px rgba(147, 198, 234, 0.594),
+    inset 0 0 50px rgba(255, 255, 255, 0.954);
 }
 
 .player-cube-basketball:hover {
   transform: scale(1.05);
   box-shadow: 0 8px 25px rgba(240, 243, 244, 0.911),
-              inset 0 0 30px rgba(230, 234, 236, 0.84);
-  border-color: rgba(135, 206, 250, 0.6);
+    inset 0 0 30px rgba(230, 234, 236, 0.84);
+  border-color: rgba(255, 255, 255, 0.6);
   z-index: 2;
 }
 
-/* Player Card Components */
 .fifa-card-header {
   height: 30px;
   padding: 5px 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(90deg, #48c5ef9a 0%, #6f86d6 100%);
+  background: linear-gradient(90deg, #010101 0%, #e7f0f0 100%);
   color: #fff;
   border-radius: 10px 10px 0 0;
-  border-bottom: 1px solid rgba(112, 182, 225, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.296);
 }
+
+.player-cube-basketball.heart-corner .fifa-card-header,
+.player-cube-basketball.diamond-corner .fifa-card-header {
+  background: linear-gradient(90deg, #5d0f0fcf 0%, #e7f0f0 100%);
+}
+
 
 .fifa-rating {
   font-size: 18px;
   font-weight: bold;
   background: rgba(255, 255, 255, 0.9);
-  color: #6f86d6;
+  color: #010303;
   padding: 3px 8px;
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -159,21 +231,15 @@ body {
   width: 120px;
   height: 100px;
   margin: 8px auto;
-  background: #2c3e50;
+  background: #05060746;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #48c5ef9a;
-  box-shadow: 0 0 15px rgba(135, 206, 250, 0.3);
-}
-
-.fifa-player-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  border: 2px solid #00000023;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .player-HP-name {
-  color: #fff;
+  color: #000;
   text-align: center;
   font-size: 1em;
   font-weight: bold;
@@ -185,32 +251,72 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Stats Section */
 .fifa-stats {
   padding: 5px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   box-sizing: border-box;
-  background: rgba(41, 128, 185, 0.1);
+  background: rgba(47, 79, 79, 0.1);
 }
 
 .fifa-stat {
   display: flex;
   justify-content: space-between;
-  color: #fff;
+  color: #000;
   font-size: 0.85em;
   padding: 2px 5px;
-  background: rgba(41, 128, 185, 0.2);
+  background: rgba(47, 79, 79, 0.2);
   border-radius: 3px;
-  border: 1px solid rgba(123, 196, 242, 0.559);
+  border: 1px solid rgba(255, 255, 255, 0.559);
 }
 
 .fifa-stat-value {
   font-weight: bold;
-  color: #e2d3f4c1;
-  text-shadow: 0 0 5px rgba(116, 80, 169, 0.5);
+  color: #000000;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Golden Card Style (5+ MVPs) */
+.player-cube-basketball.golden-card {
+  background: linear-gradient(145deg, #8b7830a8 25%, #fdc931d5 40%, #e5c16f94 50%);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4),
+    inset 0 0 30px rgba(255, 223, 0, 0.3);
+}
+
+.golden-card .fifa-card-header {
+  background: linear-gradient(90deg, #ffd9003c 0%, #fdc93153 100%);
+}
+
+.golden-card .fifa-rating {
+  background: #ffffff;
+  color: #B8860B;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.golden-card .fifa-player-image {
+  border: 2px solid #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.golden-card .player-HP-name {
+  color: #4A3800;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+.golden-card .fifa-stat {
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.golden-card .fifa-stat span {
+  color: #4A3800;
+}
+
+.golden-card .fifa-stat-value {
+  color: #000000;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
 }
 
 /* Navigation */
@@ -226,7 +332,7 @@ body {
 .basketball-scheduled-games-button {
   font-size: 1.4rem;
   padding: 12px 30px;
-  background: linear-gradient(145deg, #48c6ef 0%, #6f86d6 100%);
+  background: linear-gradient(145deg, #e4deded1 10%, #6c1616 100%);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -236,14 +342,14 @@ body {
   font-weight: 500;
   margin-bottom: -30px;
   letter-spacing: 1px;
-  box-shadow: 
+  box-shadow:
     0 4px 15px rgba(0, 149, 255, 0.15),
     inset 0 0 20px rgba(135, 206, 250, 0.2);
 }
 
 .basketball-scheduled-games-button:hover {
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 8px 25px rgba(135, 206, 250, 0.4),
     inset 0 0 30px rgba(135, 206, 250, 0.3);
 }
@@ -306,7 +412,7 @@ body {
 .medal {
   position: absolute;
   top: 8px;
-  right: 40px;
+  right: 42%;
   width: 25px;
   height: 20px;
   z-index: 2;
@@ -391,56 +497,6 @@ body {
   margin: 20px 0;
 }
 
-/* Golden Card Style (5+ MVPs) */
-.player-cube-basketball.golden-card {
-  background: linear-gradient(145deg, #857830a8 25%, #fdb931d5 40%, #e5b86f94 50%);
-  border: 2px solid rgba(255, 215, 0, 0.6);
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4),
-              inset 0 0 30px rgba(255, 223, 0, 0.3);
-}
-
-.golden-card .fifa-card-header {
-  background: linear-gradient(90deg, #ffd9003c 0%, #fdb93153 100%);
-  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-}
-
-.golden-card .fifa-rating {
-  background: #ffffff;
-  color: #B8860B;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.golden-card .fifa-player-image {
-  border: 2px solid #FFD700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-}
-
-.golden-card .player-HP-name {
-  color: #4A3800;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
-}
-
-.golden-card .fifa-stat {
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  background: rgba(255, 215, 0, 0.1);
-}
-
-.golden-card .fifa-stat span {
-  color: #4A3800;
-}
-
-.golden-card .fifa-stat-value {
-  color: #000000;
-  text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
-}
-
-/* Hover effect for golden card */
-.golden-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6),
-              inset 0 0 50px rgba(255, 223, 0, 0.4);
-}
-
 .create-player-button-basketball {
   margin-top: 5px;
   padding: 10px;
@@ -461,6 +517,7 @@ body {
 .create-player-button-basketball:hover {
   box-shadow: 0 0 23px rgba(152, 195, 193, 0.991);
 }
+
 /* Navigation buttons container */
 .navigation-buttons {
   display: flex;
@@ -471,41 +528,7 @@ body {
   justify-content: center;
 }
 
-/* Responsive Styles */
-@media screen and (max-width: 600px) {
-  .HP-basketball-title {
-    font-size: 3rem;
-    padding-top: 10px;
-  }
 
-  .medal {
-    top: 9px;
-    right: 9px;
-  }
-
-  .player-cube-basketball {
-    width: 95px;
-    height:240px;
-  }
-
-  .fifa-player-image {
-    width: 85px;
-    height: 80px;
-  }
-
-  .fifa-stats {
-    font-size: 0.75em;
-  }
-
-  .player-HP-name {
-    font-size: 0.9em;
-  }
-
-  .basketball-scheduled-games-button {
-    font-size: 1.5rem;
-    padding: 8px 16px;
-  }
-}
 
 /* Page Headers */
 .HP-registered-players2 {
@@ -593,15 +616,14 @@ body {
 .search-input {
   font-family: 'Exo 2', sans-serif;
   font-weight: 100;
-  font-size: 1rem;
+  font-size: 0.9rem;
   padding: 10px;
   margin-bottom: 10px;
-  border: 2px solid rgba(111, 134, 214, 0.7) !important;
+  border: 2px solid rgba(251, 251, 251, 0.7) !important;
   border-radius: 22px !important;
-  color: #48c6ef !important;
-  background-color: rgba(30, 60, 114, 0.2) !important;
-  text-shadow: 0 0 3px rgba(72, 198, 239, 0.8),
-    0 0 5px rgba(111, 134, 214, 0.5);
+  color: #ef9393 !important;
+  background-color: rgba(30, 59, 114, 0.135) !important;
+
   box-shadow: 0 0 15px rgba(0, 149, 255, 0.15),
     inset 0 0 20px rgba(135, 206, 250, 0.2);
   outline: none;
@@ -610,16 +632,331 @@ body {
 }
 
 .search-input::placeholder {
-  color: #999999;
+  color: #e28b8b;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #f18d8d;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 
 
 
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
 
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.bug-report-button-container {
+  position: fixed;
+  /* Change to fixed */
+  top: 6px;
+  right: 4px;
+  z-index: 999;
+
+}
+
+.bug-report-button {
+  border: 1px solid #fcfcfcbd;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0.1px 4px;
+  border-radius: 5px;
+  transition: transform 0.2s;
+  background-color: rgba(0, 0, 0, 0);
+  /* Optional: slight background */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  /* Optional: slight shadow */
+}
+
+.bug-report-button:hover {
+  transform: scale(1.1);
+  background-color: rgba(176, 181, 183, 0.2);
+  /* Optional: darker on hover */
+}
+
+.bug-report-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.bug-report-modal {
+  font-family: 'Exo 2', sans-serif;
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(145deg, #3e0808 0%, #3e0808 50%, #3e0808 100%);
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  color: white;
+  animation: modalFadeIn 0.3s ease forwards;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+}
+
+.bug-report-modal h2 {
+  font-family: 'Exo 2', sans-serif;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 1.5rem;
+  color: #f8f8f8;
+}
+
+.bug-report-modal textarea {
+  font-family: 'Exo 2', sans-serif;
+  width: 100%;
+  height: 150px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #fdf9f9;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  resize: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.bug-report-modal textarea:focus {
+  outline: none;
+  border-color: #e4deded1;
+  box-shadow: 0 0 10px rgba(239, 72, 72, 0.3);
+}
+
+.char-count {
+  text-align: right;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  color: #fbc4c4;
+}
+
+.bug-report-modal-buttons {
+  font-family: 'Exo 2', sans-serif;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.bug-report-modal-buttons button {
+  font-family: 'Exo 2', sans-serif;
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  justify-content: flex-end;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.bug-report-modal-buttons button:first-child {
+  background: linear-gradient(145deg, #eea5a5 0%, #e4deded1 100%);
+  color: white;
+}
+
+.bug-report-modal-buttons button:last-child {
+  background-color: #666;
+  color: white;
+}
+
+.bug-report-modal-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+.bug-report-modal-buttons button:active {
+  transform: translateY(0);
+}
+
+.bug-report-modal-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .bug-report-modal {
+    width: 90%;
+    padding: 15px;
+    top: 5%;
+  }
+
+  .bug-report-modal h2 {
+    font-size: 1.2rem;
+  }
+
+  .bug-report-modal-buttons button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+
+  .bug-report-button-container {
+    top: 10px;
+    right: 10px;
+  }
+
+  .bug-report-button {
+    font-size: 15px;
+    padding: 1px 1px;
+  }
+}
+
+.player-cube-basketball:after {
+  position: absolute;
+  top: -10px;
+  right: 2px;
+  font-size: 40px;
+  z-index: 2;
+}
+
+/* iPhone-specific styles */
+@media only screen and (max-width: 765px) {
+  .player-cube-basketball.heart-corner:after {
+    font-size: 24px;
+    top: 2px;
+
+  }
+
+  .player-cube-basketball.diamond-corner:after {
+    font-size: 24px;
+    top: 2px;
+
+  }
+
+  .player-cube-basketball.club-corner:after {
+    font-size: 24px;
+    top: 2px;
+  }
+
+  .player-cube-basketball.spade-corner:after {
+    font-size: 24px;
+    top: 2px;
+  }
+
+
+
+
+  .HP-basketball-title {
+    font-size: 3rem;
+    padding-top: 10px;
+  }
+
+  .medal {
+    top: 9px;
+    right: 42%;
+  }
+
+  .player-cube-basketball {
+    width: 160px;
+    height: 240px;
+  }
+
+  .fifa-player-image {
+    width: 85px;
+    height: 80px;
+  }
+
+  .fifa-stats {
+    font-size: 0.75em;
+  }
+
+  .player-HP-name {
+    font-size: 0.9em;
+  }
+
+  .basketball-scheduled-games-button {
+    font-size: 1.5rem;
+    padding: 8px 16px;
+  }
+
+}
+
+/* iPad-specific styles */
+@media only screen and (min-width: 768px) and (max-width: 1324px) {
+  
+  .player-cube-basketball.heart-corner:after {
+    font-size: 30px;
+    top: 0px;
+    right: 7px;
+
+  }
+
+  .player-cube-basketball.diamond-corner:after {
+    font-size: 36px;
+    top:-6px;
+    right: 7px;
+    
+
+  }
+
+  .player-cube-basketball.club-corner:after {
+    font-size: 30px;
+    top: 0px;
+    right: 7px;
+
+  }
+
+  .player-cube-basketball.spade-corner:after {
+    font-size: 30px;
+    top: 0px;
+    right: 7px;
+
+  }
+
+  
+  .HP-basketball-title {
+    font-size: 3rem;
+    padding-top: 10px;
+  }
+
+  .medal {
+    top: 9px;
+    right: 42%;
+    
+  }
+
+  .player-cube-basketball {
+    width: 160px;
+    height: 240px;
+  }
+
+  .fifa-player-image {
+    width: 85px;
+    height: 80px;
+  }
+
+  .fifa-stats {
+    font-size: 0.75em;
+  }
+
+  .player-HP-name {
+    font-size: 0.9em;
+  }
+
+  .basketball-scheduled-games-button {
+    font-size: 1.5rem;
+    padding: 8px 16px;
+  }
+}

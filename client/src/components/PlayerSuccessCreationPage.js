@@ -44,11 +44,12 @@ const PlayerSuccessCreationPage = () => {
 
   return (
     <div className='PS-page-style'>
+
+      <h1 className='PS-title1'>{name} Created Successfully!</h1>
+      <p className='overall'>OVERALL: {overall}</p>
       <Link to={`/court_home_page/${courtId}?userId=${currUserId}`} className="back-home-button">
         Back to Home
       </Link>
-      <h1 className='PS-title1'>{name} Created Successfully!</h1>
-      <p className='overall'>OVERALL: {overall}</p>
 
 
     </div>
