@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const multer = require('multer');
 const cron = require('node-cron');
+const moment = require('moment-timezone');
+
 
 
 
@@ -274,15 +276,18 @@ const authenticateToken = (req, res, next) => {
 // Schedule task to run every minute
 cron.schedule('* * * * *', async () => {
   try {
-    // Check for games where registration opened in the last minute
+    // Get the current time in UTC
+    const currentTimeIsrael = moment.tz("Asia/Jerusalem").format("YYYY-MM-DD HH:mm:ss");
+
+    // Check for games where registration opened in the last minute based on UTC time
     const { results: newlyOpenedGames } = await promiseQuery(`
       SELECT g.game_id, g.court_id, g.game_start_time, g.location,
              c.courtName
       FROM games g
       JOIN courts c ON g.court_id = c.id
-      WHERE g.registration_open_time <= NOW()
-      AND g.registration_open_time > DATE_SUB(NOW(), INTERVAL 1 MINUTE)
-    `);
+      WHERE g.registration_open_time <= ?
+      AND g.registration_open_time > DATE_SUB(?, INTERVAL 1 MINUTE)
+    `, [currentTimeIsrael, currentTimeIsrael]);
 
     for (const game of newlyOpenedGames) {
       // Get all users in the court
@@ -313,7 +318,6 @@ cron.schedule('* * * * *', async () => {
     console.error('Error in registration notification cron job:', error);
   }
 });
-
 
 // Handle push notification response
 app.post('/api/handle-notification-response', authenticateToken, async (req, res) => {
