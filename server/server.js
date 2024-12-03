@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const multer = require('multer');
+const cron = require('node-cron');
+
 
 
 const app = express(); //initiate the express app
@@ -17,6 +19,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 
 
 
@@ -122,37 +125,46 @@ app.post('/register', async (req, res) => {
 
 // Login endpoint
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, pushToken } = req.body;
   try {
-    // Check if the username exists in the database
     const { results } = await promiseQuery('SELECT * FROM users WHERE username = ?', [username]);
     if (results.length === 0) {
       return res.status(404).send('User not found');
     }
 
-    // Takes the first row (only row)
     const user = results[0];
-
-    // Checks password
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
     if (passwordMatch) {
-      console.log(user);
+      // Store or update push token if provided
+      if (pushToken) {
+        await promiseQuery(
+          `INSERT INTO user_push_tokens (user_id, push_token) 
+                   VALUES (?, ?) 
+                   ON DUPLICATE KEY UPDATE push_token = VALUES(push_token)`,
+          [user.id, pushToken]
+        );
+      }
 
-      // Fetch courts associated with the user
-      const { results: courtResults } = await promiseQuery('SELECT courtId FROM user_user_courts WHERE userId = ?', [user.id]);
-      const courts = courtResults.map(court => court.courtId); // Assuming court_id is the column name
+      // Fetch courts and create token as before
+      const { results: courtResults } = await promiseQuery(
+        'SELECT courtId FROM user_user_courts WHERE userId = ?',
+        [user.id]
+      );
 
-      // Create the token payload with userId and courts
+      const courts = courtResults.map(court => court.courtId);
       const tokenPayload = {
         userId: user.id,
-        courts: courts, // Array of court IDs the user has access to
-        // Other user info can be added here if needed
+        courts: courts,
       };
 
-      // Generates the token
-      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '24h' });
+      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '30d' }); // Extended token expiry
 
-      res.status(200).json({ userId: user.id, message: 'Logged in', token });
+      res.status(200).json({
+        userId: user.id,
+        message: 'Logged in',
+        token
+      });
     } else {
       res.status(401).send('Password incorrect');
     }
@@ -162,6 +174,87 @@ app.post('/login', async (req, res) => {
   }
 });
 
+//-----------------------------------------------------------------------------------------------
+// Push Notification Service
+async function sendPushNotification(userId, title, body, data = {}) {
+  try {
+    const { results } = await promiseQuery(
+      'SELECT push_token FROM user_push_tokens WHERE user_id = ?',
+      [userId]
+    );
+
+    if (results.length > 0 && results[0].push_token) {
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: results[0].push_token,
+          title,
+          body,
+          data,
+          sound: 'default',
+          priority: 'high',
+        }),
+      });
+
+      return response.ok;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending push notification:', error);
+    return false;
+  }
+}
+
+
+
+async function sendGameRegistrationNotification(userId, courtName, gameStartTime, gameId, playerId) {
+  try {
+    const { results } = await promiseQuery(
+      'SELECT push_token FROM user_push_tokens WHERE user_id = ?',
+      [userId]
+    );
+
+    if (results.length > 0 && results[0].push_token) {
+      const notification = {
+        to: results[0].push_token,
+        title: `Registration Open - ${courtName}`,
+        body: `Game starts at ${new Date(gameStartTime).toLocaleString()}. Would you like to register?`,
+        data: {
+          gameId,
+          playerId,
+          type: 'GAME_REGISTRATION'
+        },
+        categoryId: 'game_registration',
+        sound: 'default',
+        priority: 'high',
+        _displayInForeground: true,
+        ios: {
+          _category: 'game_registration'
+        },
+        android: {
+          channelId: 'game-registration'
+        }
+      };
+
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notification)
+      });
+
+      return response.ok;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending game registration notification:', error);
+    return false;
+  }
+}
 
 //-----------------------------------------------------------------------------------------------
 
@@ -176,6 +269,73 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+
+// Schedule task to run every minute
+cron.schedule('* * * * *', async () => {
+  try {
+    // Check for games where registration opened in the last minute
+    const { results: newlyOpenedGames } = await promiseQuery(`
+      SELECT g.game_id, g.court_id, g.game_start_time, g.location,
+             c.courtName
+      FROM games g
+      JOIN courts c ON g.court_id = c.id
+      WHERE g.registration_open_time <= NOW()
+      AND g.registration_open_time > DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+    `);
+
+    for (const game of newlyOpenedGames) {
+      // Get all users in the court
+      const { results: courtUsers } = await promiseQuery(
+        'SELECT userId FROM user_user_courts WHERE courtId = ?',
+        [game.court_id]
+      );
+
+      for (const user of courtUsers) {
+        const { results: playerInfo } = await promiseQuery(
+          'SELECT id FROM players WHERE courtId = ? AND user_fk = ?',
+          [game.court_id, user.userId]
+        );
+
+        if (playerInfo.length > 0) {
+          const playerId = playerInfo[0].id;
+          await sendGameRegistrationNotification(
+            user.userId,
+            game.courtName,
+            game.game_start_time,
+            game.game_id,
+            playerId
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in registration notification cron job:', error);
+  }
+});
+
+
+// Handle push notification response
+app.post('/api/handle-notification-response', authenticateToken, async (req, res) => {
+  const { gameId, playerId, action } = req.body;
+
+  if (action === 'REGISTER') {
+    try {
+      // Register player to game
+      await promiseQuery(
+        'INSERT INTO registrations_to_game (game_id, player_id, registered_by) VALUES (?, ?, ?)',
+        [gameId, playerId, req.user.userId]
+      );
+
+      res.status(200).json({ message: 'Successfully registered to game' });
+    } catch (error) {
+      console.error('Error registering player:', error);
+      res.status(500).json({ error: 'Failed to register player' });
+    }
+  } else {
+    res.status(200).json({ message: 'Notification dismissed' });
+  }
+});
 
 //-----------------------------------------------------------------------------------------------
 // Update token endpoint
@@ -726,25 +886,25 @@ app.get('/api/my-player/:user_id/:court_id', authenticateToken, async (req, res)
   try {
     const courtId = req.params.court_id;
     const userId = req.params.user_id;
- 
+
     const { results } = await promiseQuery(
       `SELECT p.id as playerId
        FROM ballershuffleschema.players as p
        WHERE p.courtId = ? AND p.user_fk = ?`,
       [courtId, userId]
     );
- 
+
     if (results.length === 0) {
       return res.status(404).json({ message: 'No player found for this user in this court' });
     }
- 
+
     res.json({ playerId: results[0].playerId });
- 
+
   } catch (error) {
     console.error(error);
     res.status(500).send('Error fetching player ID');
   }
- });
+});
 
 //-----------------------------------------------------------------------------------------------
 
@@ -1340,7 +1500,7 @@ app.get('/api/scheduled_games/:court_id', authenticateToken, async (req, res) =>
 //-----------------------------------------------------------------------------------------------
 
 // Create game API
-app.post('/api/create_game', authenticateToken, (req, res) => {
+app.post('/api/create_game', authenticateToken, async (req, res) => {
   const {
     court_id,
     game_start_time,
@@ -1353,6 +1513,12 @@ app.post('/api/create_game', authenticateToken, (req, res) => {
     description,
     max_players_each_user_can_add,
   } = req.body;
+
+
+  //in order to get the weekDay to the push 6notification
+  const newGameStartTime = new Date(game_start_time);
+  const newRegistrationOpenTime = new Date(registration_open_time);
+  const newRegistrationCloseTime = new Date(registration_close_time);
 
   // Insert query for adding a new game
   const sql = `
@@ -1375,20 +1541,45 @@ app.post('/api/create_game', authenticateToken, (req, res) => {
     max_players_each_user_can_add
   ];
 
-  promiseQuery(sql, params)
-    .then(({ results }) => {
-      res.status(201).json({ gameId: results.insertId, message: 'Game created successfully' });
-    })
-    .catch((error) => {
-      console.error(error);
-      res.status(500).send('Error creating game');
-    });
+  try {
+    const { results } = await promiseQuery(sql, params);
+    const gameId = results.insertId;
+
+    const { results: usersInCourtResults } = await promiseQuery(
+      'SELECT userId FROM user_user_courts WHERE courtId = ?',
+      [court_id]
+    );
+
+    // Query the courts table to get the court name
+    const { results: courtResult } = await promiseQuery(
+      'SELECT courtName FROM courts WHERE id = ?',
+      [court_id]
+    );
+    const courtName = courtResult[0].courtName;
+
+
+    for (const row of usersInCourtResults) {
+      await sendPushNotification(
+        row.userId,
+        `Game Created in ${courtName}`,
+        `
+        Start time: ${newGameStartTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Registration: 
+          Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+          Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Location: ${location}
+        `
+      );
+    }
+    res.status(201).json({ message: 'Game created successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating game');
+  }
 });
 
-
-
 // Update game API ----------------------------------------------------------------
-app.put('/api/update_game/:gameId', authenticateToken, (req, res) => {
+app.put('/api/update_game/:gameId', authenticateToken, async (req, res) => {
   const gameId = req.params.gameId;
   const {
     game_court_id,
@@ -1402,43 +1593,108 @@ app.put('/api/update_game/:gameId', authenticateToken, (req, res) => {
     max_players_each_user_can_add,
   } = req.body;
 
-  // Update query for modifying an existing game
-  const sql = `
-    UPDATE games SET 
-      court_id = ?, 
-      game_start_time = ?, 
-      registration_open_time = ?, 
-      registration_close_time = ?, 
-      max_players = ?, 
-      num_of_teams = ?, 
-      location = ?, 
-      description = ?, 
-      max_players_each_user_can_add = ?
-    WHERE game_id = ?`;
+  try {
+    // First, fetch the current game details
+    const { results: currentGameResults } = await promiseQuery(
+      'SELECT * FROM games WHERE game_id = ?',
+      [gameId]
+    );
 
-  const params = [
-    game_court_id,
-    game_start_time,
-    registration_open_time,
-    registration_close_time,
-    max_players,
-    num_of_teams,
-    location,
-    description,
-    max_players_each_user_can_add,
-    gameId,
-  ];
+    if (currentGameResults.length === 0) {
+      return res.status(404).send('Game not found');
+    }
 
-  promiseQuery(sql, params)
-    .then(() => {
-      res.status(200).json({ message: 'Game updated successfully' });
-    })
-    .catch((error) => {
-      console.error(error);
-      res.status(500).send('Error updating game');
-    });
+    const currentGame = currentGameResults[0];
+
+    // Convert request payload times to Date objects
+    const newGameStartTime = new Date(game_start_time);
+    const newRegistrationOpenTime = new Date(registration_open_time);
+    const newRegistrationCloseTime = new Date(registration_close_time);
+
+    // Check if any of the game details have changed
+    const hasGameDetailsChanged =
+      currentGame.court_id !== game_court_id ||
+      currentGame.game_start_time.getTime() !== newGameStartTime.getTime() ||
+      currentGame.registration_open_time.getTime() !== newRegistrationOpenTime.getTime() ||
+      currentGame.registration_close_time.getTime() !== newRegistrationCloseTime.getTime() ||
+      currentGame.location !== location;
+
+    // Update the game details
+    const sql = `
+      UPDATE games SET 
+        court_id = ?, 
+        game_start_time = ?, 
+        registration_open_time = ?, 
+        registration_close_time = ?, 
+        max_players = ?, 
+        num_of_teams = ?, 
+        location = ?, 
+        description = ?, 
+        max_players_each_user_can_add = ?
+      WHERE game_id = ?`;
+
+    const params = [
+      game_court_id,
+      game_start_time,
+      registration_open_time,
+      registration_close_time,
+      max_players,
+      num_of_teams,
+      location,
+      description,
+      max_players_each_user_can_add,
+      gameId,
+    ];
+
+    await promiseQuery(sql, params);
+
+    // If game details have changed, send push notifications to all registered users
+    if (hasGameDetailsChanged) {
+      const { results: registeredUserResults } = await promiseQuery(`
+        SELECT 
+          gr.registration_id, 
+          gr.game_id, 
+          gr.player_id, 
+          gr.registered_by, 
+          gr.registration_time, 
+          gr.approved,
+          p.user_fk
+        FROM 
+          ballershuffleschema.registrations_to_game gr
+        JOIN 
+          ballershuffleschema.players p ON gr.player_id = p.id
+        WHERE 
+          gr.game_id = ?
+      `, [gameId]);
+
+      // Query the courts table to get the court name
+      const { results: courtResult } = await promiseQuery(
+        'SELECT courtName FROM courts WHERE id = ?',
+        [game_court_id]
+      );
+      const courtName = courtResult[0].courtName;
+
+      for (const row of registeredUserResults) {
+        await sendPushNotification(
+          row.user_fk,
+          `Game Details Updated for ${courtName}`,
+          `
+          Start time: ${newGameStartTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+          Registration: 
+            Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+            Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+          Location: ${location}
+          `
+        );
+      }
+    }
+
+    res.status(200).json({ message: 'Game updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error updating game');
+  }
 });
-
 
 /* FETCH GAME API ----------------------------------------------*/
 app.get('/api/game/:game_id', authenticateToken, async (req, res) => {

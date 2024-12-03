@@ -354,6 +354,8 @@ const GamedayPage = () => {
   };
 
 
+  
+
   const handleRegistration = async () => {
 
     try {
