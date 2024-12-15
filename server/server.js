@@ -100,25 +100,54 @@ app.listen(PORT, '0.0.0.0', () => {
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, fullName, phoneNumber, pushToken } = req.body;
 
   try {
-    // Check if the username already exists in the database
-    const { results } = await promiseQuery('SELECT * FROM users WHERE username = ?', [username]);
+    // Input validation
+    if (!username || !password || !fullName || !phoneNumber) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
 
-    // If the username already exists, send a 409 Conflict response
+    // Phone number validation (basic)
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
+
+    // Check if username (email) already exists
+    const { results } = await promiseQuery('SELECT * FROM users WHERE username = ?', [username]);
     if (results.length > 0) {
       return res.status(409).json({ message: 'Username already exists' });
     }
 
-    // If the username does not exist, hash the password and save the user in the database
-    const hashedPassword = await bcrypt.hash(password, 10); //10 rounds of hashing
-    await promiseQuery('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', [username, username, hashedPassword]);
+    // Hash password and save user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await promiseQuery(
+      'INSERT INTO users (username, email, password_hash, full_name, phone_number) VALUES (?, ?, ?, ?, ?)',
+      [username, username, hashedPassword, fullName, phoneNumber]
+    );
 
-    res.status(201).send('User registered');
+    // If push token provided, store it
+    if (pushToken) {
+      const { results: userResults } = await promiseQuery(
+        'SELECT id FROM users WHERE username = ?',
+        [username]
+      );
+
+      if (userResults.length > 0) {
+        await promiseQuery(
+          `INSERT INTO user_push_tokens (user_id, push_token) 
+           VALUES (?, ?) 
+           ON DUPLICATE KEY UPDATE push_token = VALUES(push_token)`,
+          [userResults[0].id, pushToken]
+        );
+      }
+    }
+
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Error registering user');
+    res.status(500).json({ message: 'Error registering user' });
   }
 });
 
@@ -179,6 +208,7 @@ app.post('/login', async (req, res) => {
 //-----------------------------------------------------------------------------------------------
 // Push Notification Service
 async function sendPushNotification(userId, title, body, data = {}) {
+  console.log(userId, title)
   try {
     const { results } = await promiseQuery(
       'SELECT push_token FROM user_push_tokens WHERE user_id = ?',
@@ -210,6 +240,45 @@ async function sendPushNotification(userId, title, body, data = {}) {
   }
 }
 
+
+
+
+async function sendMvpVotingReminder(userId, courtName, gameStartTime) {
+  try {
+    const { results } = await promiseQuery(
+      'SELECT push_token FROM user_push_tokens WHERE user_id = ?',
+      [userId]
+    );
+
+    if (results.length > 0 && results[0].push_token) {
+      const notification = {
+        to: results[0].push_token,
+        title: `MVP Vote - ${courtName}`,
+        body: `Don't forget to vote for today's MVP for the game that started at ${new Date(gameStartTime).toLocaleTimeString()}!`,
+        priority: 'high',
+        sound: 'default',
+        _displayInForeground: true,
+        android: {
+          channelId: 'game-notification'
+        }
+      };
+
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notification)
+      });
+
+      return response.ok;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending MVP voting reminder:', error);
+    return false;
+  }
+}
 
 
 async function sendGameRegistrationNotification(userId, courtName, gameStartTime, gameId, playerId) {
@@ -254,6 +323,53 @@ async function sendGameRegistrationNotification(userId, courtName, gameStartTime
     return false;
   } catch (error) {
     console.error('Error sending game registration notification:', error);
+    return false;
+  }
+}
+
+
+async function sendGameConfirmationNotification(userId, courtName, gameStartTime, gameId, playerId) {
+  try {
+    const { results } = await promiseQuery(
+      'SELECT push_token FROM user_push_tokens WHERE user_id = ?',
+      [userId]
+    );
+
+    if (results.length > 0 && results[0].push_token) {
+      const notification = {
+        to: results[0].push_token,
+        title: `Confirm Arrival - ${courtName}`,
+        body: `Game starts soon! ( ${new Date(gameStartTime).toLocaleString()} ).\n Are you still coming?`,
+        data: {
+          gameId,
+          playerId,
+          type: 'GAME_CONFIRMATION'
+        },
+        categoryId: 'game_confirmation',
+        sound: 'default',
+        priority: 'high',
+        _displayInForeground: true,
+        ios: {
+          _category: 'game_confirmation'
+        },
+        android: {
+          channelId: 'game-confirmation'
+        }
+      };
+
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notification)
+      });
+
+      return response.ok;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending game confirmation notification:', error);
     return false;
   }
 }
@@ -319,6 +435,304 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
+
+
+// Check every 30 minutes for games that started ~24 hours ago in order to send MVP notifications and close the game and update the DB------------------------
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    // Get time window around 24 hours ago (±15 minutes to account for cron interval)
+    const twentyFourHoursAgo = moment.tz("Asia/Jerusalem")
+      .subtract(24, 'hours');
+
+    const windowStart = moment(twentyFourHoursAgo)
+      .subtract(15, 'minutes')
+      .format("YYYY-MM-DD HH:mm:ss");
+
+    const windowEnd = moment(twentyFourHoursAgo)
+      .add(15, 'minutes')
+      .format("YYYY-MM-DD HH:mm:ss");
+
+    // Find games that started ~24 hours ago and haven't had MVP votes counted
+    const { results: games } = await promiseQuery(`
+          SELECT g.game_id, g.court_id, g.game_start_time, c.courtName
+          FROM games g
+          JOIN courts c ON g.court_id = c.id
+          WHERE g.game_start_time BETWEEN ? AND ?
+          AND g.mvps IS NULL
+      `, [windowStart, windowEnd]);
+
+    for (const game of games) {
+      try {
+        // Count MVP votes for this game
+        const { results: votingResults } = await promiseQuery(
+          `SELECT mvp_player_id, COUNT(*) AS vote_count
+                   FROM mvp_votes
+                   WHERE game_id = ?
+                   GROUP BY mvp_player_id
+                   ORDER BY vote_count DESC`,
+          [game.game_id]
+        );
+
+        if (votingResults.length === 0) continue; // Skip if no votes
+
+        // Get the highest vote count
+        const maxVotes = votingResults[0].vote_count;
+
+        // Get all players with the highest vote count (handles ties)
+        const mvpPlayers = votingResults
+          .filter(player => player.vote_count === maxVotes)
+          .map(player => player.mvp_player_id);
+
+        // Update game with MVPs
+        const mvpsJson = JSON.stringify(mvpPlayers);
+        await promiseQuery(
+          `UPDATE games 
+                   SET mvps = ?
+                   WHERE game_id = ?`,
+          [mvpsJson, game.game_id]
+        );
+
+        // Update MVP count for winning players
+        for (const playerId of mvpPlayers) {
+          await promiseQuery(
+            `UPDATE players 
+                       SET num_of_mvps = COALESCE(num_of_mvps, 0) + 1 
+                       WHERE id = ?`,
+            [playerId]
+          );
+        }
+
+        // Get MVP player names for notification
+        const { results: mvpNames } = await promiseQuery(
+          `SELECT name FROM players WHERE id IN (?)`,
+          [mvpPlayers]
+        );
+
+        const mvpNamesList = mvpNames.map(p => p.name).join(', ');
+
+
+
+
+        // First get the max_players from the game
+        const { results: gameResults } = await promiseQuery(
+          'SELECT max_players FROM games WHERE game_id = ?',
+          [game.game_id]
+        );
+
+        if (!gameResults || gameResults.length === 0) {
+          continue;
+        }
+
+        const maxPlayers = gameResults[0].max_players;
+
+        // Get the main players (up to max_players) ordered by priority and registration time
+        const { results: playerResults } = await promiseQuery(
+          `SELECT rtg.player_id 
+       FROM registrations_to_game rtg
+       LEFT JOIN players p on p.id = rtg.player_id
+       WHERE game_id = ? 
+       ORDER BY p.priority, rtg.registration_time
+       LIMIT ?`,
+          [game.game_id, maxPlayers]
+        );
+
+        if (!playerResults || playerResults.length === 0) {
+          continue;
+        }
+
+        // Insert records into game_players_played
+        const values = playerResults.map(player => [game.game_id, player.player_id]);
+        const insertQuery = 'INSERT INTO game_players_played (game_id, player_id) VALUES ?';
+
+        await promiseQuery(insertQuery, [values]);
+
+
+        // Get all players who participated in the game to notify them
+        const { results: gamePlayers } = await promiseQuery(
+          `SELECT DISTINCT p.user_fk 
+                     FROM game_players_played gpp
+                     JOIN players p ON gpp.player_id = p.id
+                     WHERE gpp.game_id = ? AND p.user_fk IS NOT NULL`,
+          [game.game_id]
+        );
+
+
+        console.log("gameplayers:", gamePlayers)
+
+        // Send notifications to all players
+        for (const player of gamePlayers) {
+          if (player.user_fk) {
+            const mvpMessage = mvpPlayers.length > 1
+              ? `The MVPs are: ${mvpNamesList} !!!`
+              : `The MVP is: ${mvpNamesList} !!!`;
+
+            await sendPushNotification(
+              player.user_fk,
+              `MVP Results - ${game.courtName}`,
+              `For yesterday's game ( ${game.game_start_time.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' })} )\n${mvpMessage}`
+            );
+          }
+        }
+
+      } catch (error) {
+        console.error(`Error processing MVP votes for game ${game.game_id}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error in MVP voting cron job:', error);
+  }
+});
+
+
+//------------------------------------------------------------------------
+//CRON JOB FOR THE CONFIRM 
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    // Get current time in Israel timezone
+    const currentTimeIsrael = moment.tz("Asia/Jerusalem");
+
+    // Get games that start in ~2 hours
+    const twoHoursFromNow = moment(currentTimeIsrael).add(2, 'hours');
+    const windowStart = moment(twoHoursFromNow).subtract(15, 'minutes');
+    const windowEnd = moment(twoHoursFromNow).add(15, 'minutes');
+
+    // Find relevant games and players
+    const { results: gamesNeedingConfirmation } = await promiseQuery(`
+          SELECT 
+              g.game_id,
+              g.max_players,
+              g.game_start_time,
+              c.courtName,
+              rtg.player_id,
+              p.user_fk,
+              rtg.approved
+          FROM games g
+          JOIN courts c ON g.court_id = c.id
+          JOIN registrations_to_game rtg ON g.game_id = rtg.game_id
+          JOIN players p ON rtg.player_id = p.id
+          WHERE g.game_start_time BETWEEN ? AND ?
+          AND rtg.approved = 0
+          ORDER BY g.game_id, p.priority, rtg.registration_time
+      `, [windowStart.format('YYYY-MM-DD HH:mm:ss'), windowEnd.format('YYYY-MM-DD HH:mm:ss')]);
+
+    // Process each game
+    const processedGames = new Set();
+
+    for (const record of gamesNeedingConfirmation) {
+      // Get main players for this game if we haven't processed it yet
+      if (!processedGames.has(record.game_id)) {
+        processedGames.add(record.game_id);
+
+        const { results: mainPlayers } = await promiseQuery(`
+                  SELECT rtg.player_id 
+                  FROM registrations_to_game rtg
+                  LEFT JOIN players p on p.id = rtg.player_id
+                  WHERE game_id = ? 
+                  ORDER BY p.priority, rtg.registration_time
+                  LIMIT ?
+              `, [record.game_id, record.max_players]);
+
+        const mainPlayerIds = new Set(mainPlayers.map(p => p.player_id));
+
+        // If player is in main players and hasn't confirmed
+        if (mainPlayerIds.has(record.player_id) && record.user_fk) {
+          await sendGameConfirmationNotification(
+            record.user_fk,
+            record.courtName,
+            record.game_start_time,
+            record.game_id,
+            record.player_id
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in confirmation notification cron job:', error);
+  }
+});
+
+
+//------------------------------------------------------------------------
+//CRON JOB FOR REMINDER MVP VOTE
+
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    // Get current time in Israel timezone
+    const currentTimeIsrael = moment.tz("Asia/Jerusalem");
+
+    // Look for games that ended 2 hours ago
+    const twoHoursAgo = moment(currentTimeIsrael).subtract(2, 'hours');
+    const windowStart = moment(twoHoursAgo).subtract(15, 'minutes');
+    const windowEnd = moment(twoHoursAgo).add(15, 'minutes');
+
+    // Find games and their players
+    const { results: gamesForMvpVoting } = await promiseQuery(`
+          SELECT 
+              g.game_id,
+              g.max_players,
+              g.game_start_time,
+              c.courtName
+          FROM games g
+          JOIN courts c ON g.court_id = c.id
+          WHERE g.game_start_time BETWEEN ? AND ?
+          AND g.mvps IS NULL
+          ORDER BY g.game_id
+      `, [windowStart.format('YYYY-MM-DD HH:mm:ss'), windowEnd.format('YYYY-MM-DD HH:mm:ss')]);
+
+    // Process each game and notify players
+    const processedGames = new Set();
+
+    for (const game of gamesForMvpVoting) {
+      // Only process each game once
+      if (!processedGames.has(game.game_id)) {
+        processedGames.add(game.game_id);
+
+        // First get the max_players from the game
+        const { results: gameResults } = await promiseQuery(
+          'SELECT max_players FROM games WHERE game_id = ?',
+          [game.game_id]
+        );
+
+        if (!gameResults || gameResults.length === 0) {
+          continue;
+        }
+
+        const maxPlayers = gameResults[0].max_players;
+
+        // Get the actual players who played in this game
+        const { results: playersWhoPlayed } = await promiseQuery(
+          `SELECT rtg.player_id , p.user_fk
+          FROM registrations_to_game rtg
+          LEFT JOIN players p on p.id = rtg.player_id
+          WHERE game_id = ?
+              ORDER BY p.priority, rtg.registration_time
+          LIMIT ? `,
+          [game.game_id, maxPlayers]
+        );
+
+
+        console.log(playersWhoPlayed)
+        // Send notifications to all players who played
+        for (const player of playersWhoPlayed) {
+          if (player.user_fk) {
+            await sendMvpVotingReminder(
+              player.user_fk,
+              game.courtName,
+              game.game_start_time
+            );
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in MVP voting reminder cron job:', error);
+  }
+});
+
+
+
+//------------------------------------------------------------------------
+
 // Handle push notification response
 app.post('/api/handle-notification-response', authenticateToken, async (req, res) => {
   const { gameId, playerId, action } = req.body;
@@ -341,6 +755,26 @@ app.post('/api/handle-notification-response', authenticateToken, async (req, res
   }
 });
 
+//-----------------------------------------------------------------------------------------------
+// From the Push Notification
+app.post('/api/confirm-game-participation', authenticateToken, async (req, res) => {
+  try {
+    const { gameId, playerId, action } = req.body;
+
+    if (action === 'CONFIRM') {
+      await promiseQuery(
+        'UPDATE registrations_to_game SET approved = 1 WHERE game_id = ? AND player_id = ?',
+        [gameId, playerId]
+      );
+      res.status(200).json({ message: 'Game participation confirmed' });
+    } else {
+      res.status(200).json({ message: 'Confirmation postponed' });
+    }
+  } catch (error) {
+    console.error('Error confirming participation:', error);
+    res.status(500).json({ error: 'Failed to confirm participation' });
+  }
+});
 //-----------------------------------------------------------------------------------------------
 // Update token endpoint
 app.post('/api/update-token', async (req, res) => {
@@ -393,8 +827,8 @@ app.post('/api/bug-report', authenticateToken, async (req, res) => {
 
     // Insert the bug report
     await promiseQuery(
-      `INSERT INTO ballershuffleschema.bug_reports (user_id, username, message)
-       VALUES (?, ?, ?)`,
+      `INSERT INTO ballershuffleschema.bug_reports(user_id, username, message)
+       VALUES(?, ?, ?)`,
       [userId, username, message]
     );
 
@@ -414,7 +848,7 @@ app.get('/api/courts/:id', authenticateToken, async (req, res) => {
       `SELECT c.id, c.courtName, c.courtType
       FROM courts AS c
       JOIN user_user_courts AS uc ON c.id = uc.courtId
-      WHERE uc.userId = ?`,
+      WHERE uc.userId = ? `,
       [userId]
     );
     if (results.length === 0) {
@@ -442,7 +876,7 @@ app.get('/api/court_info/:court_id', authenticateToken, async (req, res) => {
     const { results } = await promiseQuery(
       `SELECT c.courtName, c.courtType
       FROM courts AS c
-      WHERE c.id = ?`,
+      WHERE c.id = ? `,
       [courtId]
     );
     if (results.length === 0) {
@@ -473,9 +907,10 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT p.*, fpa.* FROM ballershuffleschema.players as p
+      `SELECT p.id as pId, p.*, fpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffleschema.players as p
        LEFT JOIN football_player_attributes as fpa on p.id = fpa.playerId
-       WHERE courtId = ?`,
+       LEFT JOIN ballershuffleschema.users as u on p.user_fk = u.id
+       WHERE courtId = ? `,
       [courtId]
     );
     if (results.length === 0) {
@@ -483,6 +918,7 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
     }
     const players = results.map(p => ({
       playerId: p.playerId,
+      priority: p.priority,
       name: p.name,
       num_of_mvps: p.num_of_mvps,
       finishing: p.finishing,
@@ -512,9 +948,10 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT p.id as pId , p.*, bpa.* FROM ballershuffleschema.players as p
+      `SELECT p.id as pId, p.*, bpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffleschema.players as p
        LEFT JOIN basketball_player_attributes as bpa on p.id = bpa.playerId
-       WHERE courtId = ?`,
+       LEFT JOIN ballershuffleschema.users as u on p.user_fk = u.id
+       WHERE courtId = ? `,
       [courtId]
     );
     if (results.length === 0) {
@@ -522,6 +959,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
     }
     const players = results.map(p => ({
       playerId: p.pId,
+      priority: p.priority,
       name: p.name,
       num_of_mvps: p.num_of_mvps,
       scoring: p.scoring,
@@ -558,35 +996,35 @@ app.get('/api/court_averages/:court_id/', authenticateToken, async (req, res) =>
       `
     SELECT 
     AVG(bpa.scoring) AS avgScoring,
-    MAX(bpa.scoring) AS maxScoring,
-    MIN(bpa.scoring) AS minScoring,
-    AVG(bpa.passing) AS avgPassing,
-    MAX(bpa.passing) AS maxPassing,
-    MIN(bpa.passing) AS minPassing,
-    AVG(bpa.speed) AS avgSpeed,
-    MAX(bpa.speed) AS maxSpeed,
-    MIN(bpa.speed) AS minSpeed,
-    AVG(bpa.physical) AS avgPhysical,
-    MAX(bpa.physical) AS maxPhysical,
-    MIN(bpa.physical) AS minPhysical,
-    AVG(bpa.defence) AS avgDefence,
-    MAX(bpa.defence) AS maxDefence,
-    MIN(bpa.defence) AS minDefence,
-    AVG(bpa.threePtShot) AS avgThreePtShot,
-    MAX(bpa.threePtShot) AS maxThreePtShot,
-    MIN(bpa.threePtShot) AS minThreePtShot,
-    AVG(bpa.rebound) AS avgRebound,
-    MAX(bpa.rebound) AS maxRebound,
-    MIN(bpa.rebound) AS minRebound,
-    AVG(bpa.ballHandling) AS avgBallHandling,
-    MAX(bpa.ballHandling) AS maxBallHandling,
-    MIN(bpa.ballHandling) AS minBallHandling,
-    AVG(bpa.postUp) AS avgPostUp,
-    MAX(bpa.postUp) AS maxPostUp,
-    MIN(bpa.postUp) AS minPostUp,
-    AVG(bpa.overall) AS avgOverall,
-    MAX(bpa.overall) AS maxOverall,
-    MIN(bpa.overall) AS minOverall
+          MAX(bpa.scoring) AS maxScoring,
+          MIN(bpa.scoring) AS minScoring,
+          AVG(bpa.passing) AS avgPassing,
+          MAX(bpa.passing) AS maxPassing,
+          MIN(bpa.passing) AS minPassing,
+          AVG(bpa.speed) AS avgSpeed,
+          MAX(bpa.speed) AS maxSpeed,
+          MIN(bpa.speed) AS minSpeed,
+          AVG(bpa.physical) AS avgPhysical,
+          MAX(bpa.physical) AS maxPhysical,
+          MIN(bpa.physical) AS minPhysical,
+          AVG(bpa.defence) AS avgDefence,
+          MAX(bpa.defence) AS maxDefence,
+          MIN(bpa.defence) AS minDefence,
+          AVG(bpa.threePtShot) AS avgThreePtShot,
+          MAX(bpa.threePtShot) AS maxThreePtShot,
+          MIN(bpa.threePtShot) AS minThreePtShot,
+          AVG(bpa.rebound) AS avgRebound,
+          MAX(bpa.rebound) AS maxRebound,
+          MIN(bpa.rebound) AS minRebound,
+          AVG(bpa.ballHandling) AS avgBallHandling,
+          MAX(bpa.ballHandling) AS maxBallHandling,
+          MIN(bpa.ballHandling) AS minBallHandling,
+          AVG(bpa.postUp) AS avgPostUp,
+          MAX(bpa.postUp) AS maxPostUp,
+          MIN(bpa.postUp) AS minPostUp,
+          AVG(bpa.overall) AS avgOverall,
+          MAX(bpa.overall) AS maxOverall,
+          MIN(bpa.overall) AS minOverall
     FROM 
         ballershuffleschema.players p
     LEFT JOIN 
@@ -594,7 +1032,7 @@ app.get('/api/court_averages/:court_id/', authenticateToken, async (req, res) =>
     WHERE 
     p.courtId = ?;
 
-      `,
+        `,
       [courtId]
     );
 
@@ -610,6 +1048,106 @@ app.get('/api/court_averages/:court_id/', authenticateToken, async (req, res) =>
   }
 });
 
+
+//-----------------------------------------------------------------------------------------------
+//API FOR THE PlayerCardModal
+app.get('/api/player-full-data/:playerId/:courtId', authenticateToken, async (req, res) => {
+  try {
+    const playerId = req.params.playerId;
+    const courtId = req.params.courtId;
+
+    // First, get court type
+    const { results: courtResults } = await promiseQuery(
+      'SELECT courtType FROM courts WHERE id = ?',
+      [courtId]
+    );
+
+    if (!courtResults.length) {
+      return res.status(404).json({ message: 'Court not found' });
+    }
+
+    const courtType = courtResults[0].courtType;
+
+    // Get basic player info and attributes
+    const playerQuery = courtType === 'Football'
+      ? `SELECT p.*, fpa.*,
+          u.username as playerUserName,
+          u.phone_number as playerPhoneNumber,
+          creator.full_name as playerCreator
+            FROM players p
+            LEFT JOIN football_player_attributes fpa ON p.id = fpa.playerId
+            LEFT JOIN users u ON p.user_fk = u.id
+            LEFT JOIN users creator ON p.creator_user_fk = creator.id
+            WHERE p.id = ? AND p.courtId = ? `
+      : `SELECT p.*, bpa.*,
+          u.username as playerUserName,
+          u.phone_number as playerPhoneNumber,
+          creator.full_name as playerCreator
+            FROM players p
+            LEFT JOIN basketball_player_attributes bpa ON p.id = bpa.playerId
+            LEFT JOIN users u ON p.user_fk = u.id
+            LEFT JOIN users creator ON p.creator_user_fk = creator.id
+            WHERE p.id = ? AND p.courtId = ? `;
+
+    const { results: playerData } = await promiseQuery(playerQuery, [playerId, courtId]);
+
+    if (!playerData.length) {
+      return res.status(404).json({ message: 'Player not found' });
+    }
+
+    // Get player statistics
+    const statsQuery = courtType === 'Football'
+      ? `SELECT
+        fcs.total_games_played,
+          fcs.total_goals,
+          fcs.total_assists,
+          fcs.total_wins as wins,
+          p.num_of_mvps as mvps,
+          ROUND(fcs.total_goals / NULLIF(fcs.total_games_played, 0), 1) as gpg,
+          ROUND(fcs.total_assists / NULLIF(fcs.total_games_played, 0), 1) as apg
+         FROM players p
+         LEFT JOIN football_court_statistics fcs ON p.id = fcs.player_id
+         WHERE p.id = ? `
+      : `SELECT
+        bcs.total_games_played,
+          (bcs.total_2pts * 2 + bcs.total_3pts * 3) as total_points,
+          bcs.total_wins as wins,
+          p.num_of_mvps as mvps,
+          ROUND((bcs.total_2pts * 2 + bcs.total_3pts * 3) / NULLIF(bcs.total_games_played, 0), 1) as ppg,
+          ROUND(bcs.total_assists / NULLIF(bcs.total_games_played, 0), 1) as apg,
+          ROUND(bcs.total_steals / NULLIF(bcs.total_games_played, 0), 1) as spg,
+          ROUND(bcs.total_blocks / NULLIF(bcs.total_games_played, 0), 1) as bpg,
+          ROUND(bcs.total_3pts / NULLIF(bcs.total_games_played, 0), 1) as threeptpg
+         FROM players p
+         LEFT JOIN basketball_court_statistics bcs ON p.id = bcs.player_id
+         WHERE p.id = ? `;
+
+    const { results: statsData } = await promiseQuery(statsQuery, [playerId]);
+
+    // Get player's games
+    const { results: gamesData } = await promiseQuery(
+      `SELECT g.game_id, g.game_start_time as start_date, g.location
+       FROM games g
+       INNER JOIN game_players_played gpp ON g.game_id = gpp.game_id
+       WHERE gpp.player_id = ? AND g.court_id = ?
+          ORDER BY g.game_start_time DESC`,
+      [playerId, courtId]
+    );
+
+    // Combine all data
+    const fullPlayerData = {
+      ...playerData[0],
+      stats: statsData[0] || {},
+      games: gamesData
+    };
+
+    res.json(fullPlayerData);
+  } catch (error) {
+    console.error('Error fetching player data:', error);
+    res.status(500).json({ message: 'Error fetching player data' });
+  }
+});
+
 //-----------------------------------------------------------------------------------------------
 // FOOTBALL - Averages endpoint
 app.get('/api/football_court_averages/:court_id/', authenticateToken, async (req, res) => {
@@ -618,39 +1156,39 @@ app.get('/api/football_court_averages/:court_id/', authenticateToken, async (req
 
     const { results } = await promiseQuery(
       `
-    SELECT 
-    AVG(fpa.finishing) AS avgFinishing,
-    MAX(fpa.finishing) AS maxFinishing,
-    MIN(fpa.finishing) AS minFinishing,
-    AVG(fpa.passing) AS avgPassing,
-    MAX(fpa.passing) AS maxPassing,
-    MIN(fpa.passing) AS minPassing,
-    AVG(fpa.speed) AS avgSpeed,
-    MAX(fpa.speed) AS maxSpeed,
-    MIN(fpa.speed) AS minSpeed,
-    AVG(fpa.physical) AS avgPhysical,
-    MAX(fpa.physical) AS maxPhysical,
-    MIN(fpa.physical) AS minPhysical,
-    AVG(fpa.defence) AS avgDefence,
-    MAX(fpa.defence) AS maxDefence,
-    MIN(fpa.defence) AS minDefence,
-    AVG(fpa.dribbling) AS avgDribbling,
-    MAX(fpa.dribbling) AS maxDribbling,
-    MIN(fpa.dribbling) AS minDribbling,
-    AVG(fpa.stamina) AS avgStamina,
-    MAX(fpa.stamina) AS maxStamina,
-    MIN(fpa.stamina) AS minStamina,
-    AVG(fpa.overall) AS avgOverall,
-    MAX(fpa.overall) AS maxOverall,
-    MIN(fpa.overall) AS minOverall
-    FROM 
+        SELECT
+        AVG(fpa.finishing) AS avgFinishing,
+          MAX(fpa.finishing) AS maxFinishing,
+            MIN(fpa.finishing) AS minFinishing,
+              AVG(fpa.passing) AS avgPassing,
+                MAX(fpa.passing) AS maxPassing,
+                  MIN(fpa.passing) AS minPassing,
+                    AVG(fpa.speed) AS avgSpeed,
+                      MAX(fpa.speed) AS maxSpeed,
+                        MIN(fpa.speed) AS minSpeed,
+                          AVG(fpa.physical) AS avgPhysical,
+                            MAX(fpa.physical) AS maxPhysical,
+                              MIN(fpa.physical) AS minPhysical,
+                                AVG(fpa.defence) AS avgDefence,
+                                  MAX(fpa.defence) AS maxDefence,
+                                    MIN(fpa.defence) AS minDefence,
+                                      AVG(fpa.dribbling) AS avgDribbling,
+                                        MAX(fpa.dribbling) AS maxDribbling,
+                                          MIN(fpa.dribbling) AS minDribbling,
+                                            AVG(fpa.stamina) AS avgStamina,
+                                              MAX(fpa.stamina) AS maxStamina,
+                                                MIN(fpa.stamina) AS minStamina,
+                                                  AVG(fpa.overall) AS avgOverall,
+                                                    MAX(fpa.overall) AS maxOverall,
+                                                      MIN(fpa.overall) AS minOverall
+        FROM
         ballershuffleschema.players p
-    LEFT JOIN 
+    LEFT JOIN
         ballershuffleschema.football_player_attributes fpa ON p.id = fpa.playerId
-    WHERE 
-    p.courtId = ?;
+        WHERE
+        p.courtId = ?;
 
-      `,
+        `,
       [courtId]
     );
 
@@ -806,7 +1344,7 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
     const { results } = await promiseQuery(
       `SELECT * FROM ballershuffleschema.players as p
        LEFT JOIN football_player_attributes as fpa on p.id = fpa.playerId
-       WHERE courtId = ? AND playerId = ?`,
+       WHERE courtId = ? AND playerId = ? `,
       [courtId, playerId]
     );
     if (results.length === 0) {
@@ -848,7 +1386,7 @@ app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) 
     const { results } = await promiseQuery(
       `SELECT * FROM ballershuffleschema.players as p
        LEFT JOIN basketball_player_attributes as bpa on p.id = bpa.playerId
-       WHERE courtId = ? AND playerId = ?`,
+       WHERE courtId = ? AND playerId = ? `,
       [courtId, playerId]
     );
     if (results.length === 0) {
@@ -892,9 +1430,10 @@ app.get('/api/my-player/:user_id/:court_id', authenticateToken, async (req, res)
     const userId = req.params.user_id;
 
     const { results } = await promiseQuery(
-      `SELECT p.id as playerId
+      `SELECT p.id as playerId, u.phone_number as myPlayerPhoneNumber, u.username as myPlayerUserName
        FROM ballershuffleschema.players as p
-       WHERE p.courtId = ? AND p.user_fk = ?`,
+       left join ballershuffleschema.users as u on p.user_fk = u.id
+       WHERE p.courtId = ? AND p.user_fk = ? `,
       [courtId, userId]
     );
 
@@ -902,11 +1441,15 @@ app.get('/api/my-player/:user_id/:court_id', authenticateToken, async (req, res)
       return res.status(404).json({ message: 'No player found for this user in this court' });
     }
 
-    res.json({ playerId: results[0].playerId });
+    res.json({
+      playerId: results[0].playerId,
+      myPlayerPhoneNumber: results[0].myPlayerPhoneNumber,
+      myPlayerUserName: results[0].myPlayerUserName
+    });
 
   } catch (error) {
     console.error(error);
-    res.status(500).send('Error fetching player ID');
+    res.status(500).send('Error fetching player ID or Phone or UserName');
   }
 });
 
@@ -918,7 +1461,7 @@ app.get('/api/is_player_assinged/:player_id', authenticateToken, async (req, res
     const playerId = req.params.player_id;
 
     const { results } = await promiseQuery(
-      `SELECT user_fk FROM ballershuffleschema.players WHERE id = ?`,
+      `SELECT user_fk FROM ballershuffleschema.players WHERE id = ? `,
       [playerId]
     );
 
@@ -983,16 +1526,16 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
       });
     }
 
-    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ?`;
+    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ? `;
     await promiseQuery(updateNameAndPriority, [name, priority, playerId]);
 
     await delay(50);
 
     const updateQuery = ` UPDATE ballershuffleschema.basketball_player_attributes
-      SET scoring = ?, passing = ?, speed = ?, physical = ?, defence = ?, 
-          threePtShot = ?, rebound = ?, ballHandling = ?, postUp = ?, height = ?, 
+      SET scoring = ?, passing = ?, speed = ?, physical = ?, defence = ?,
+          threePtShot = ?, rebound = ?, ballHandling = ?, postUp = ?, height = ?,
           overall = ?, overallToMix = ?
-      WHERE playerId = ?`;
+            WHERE playerId = ? `;
 
     await promiseQuery(updateQuery,
       [scoring, passing, speed, physical, defence, threePtShot, rebound,
@@ -1047,16 +1590,16 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
     }
 
 
-    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ?`;
+    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ? `;
     await promiseQuery(updateNameAndPriority, [name, priority, playerId]);
 
     await delay(50);
 
 
     const updateQuery = ` UPDATE ballershuffleschema.football_player_attributes
-      SET finishing = ?, passing = ?, speed = ?, physical = ?, defence = ?, 
+      SET finishing = ?, passing = ?, speed = ?, physical = ?, defence = ?,
           dribbling = ?, stamina = ?, overall = ?, overallToMix = ?
-      WHERE playerId = ?`;
+            WHERE playerId = ? `;
 
 
 
@@ -1085,8 +1628,8 @@ app.put('/api/update-player-picture/:player_id/:court_id', authenticateToken, up
     const updateQuery = `
       UPDATE ballershuffleschema.players 
       SET profile_image = ?
-      WHERE id = ?
-    `;
+          WHERE id = ?
+            `;
 
     await promiseQuery(updateQuery, [req.file.buffer, playerId]);
 
@@ -1136,7 +1679,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
 
     // Check if the email exists
     const { results } = await promiseQuery(
-      `SELECT id FROM ballershuffleschema.users WHERE email = ?`,
+      `SELECT id FROM ballershuffleschema.users WHERE email = ? `,
       [email]
     );
 
@@ -1155,7 +1698,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
     //Make sure only one player in a court will be assinged to 1 user
     const { results: playerCheckResults } = await promiseQuery(
       `SELECT * FROM ballershuffleschema.players 
-       WHERE user_fk = ? AND courtId = ?`,
+       WHERE user_fk = ? AND courtId = ? `,
       [user_fk_to_assign, courtId]
     );
 
@@ -1164,7 +1707,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
       return res.status(400).json({ message: 'User is already assigned to a player in the specified court' });
     }
 
-    const assignUserFkToPlayer = `UPDATE ballershuffleschema.players SET user_fk = ? WHERE id = ?`;
+    const assignUserFkToPlayer = `UPDATE ballershuffleschema.players SET user_fk = ? WHERE id = ? `;
 
     // Update the player with the found user ID
     await promiseQuery(assignUserFkToPlayer, [user_fk_to_assign, playerId]);
@@ -1172,10 +1715,10 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
     // Insert into user_user_courts only if the court doesn't already exist to the user
 
     await promiseQuery(
-      `INSERT INTO ballershuffleschema.user_user_courts (userId, courtId)
-       SELECT ?, ?
-       WHERE NOT EXISTS (
-         SELECT 1 FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?
+      `INSERT INTO ballershuffleschema.user_user_courts(userId, courtId)
+        SELECT ?, ?
+          WHERE NOT EXISTS(
+            SELECT 1 FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?
        )`,
       [user_fk_to_assign, courtId, user_fk_to_assign, courtId]
     );
@@ -1209,7 +1752,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
     // Get player info before updating
     const { results: playerInfo } = await promiseQuery(
       `SELECT name, user_fk FROM ballershuffleschema.players 
-       WHERE id = ? AND courtId = ?`,
+       WHERE id = ? AND courtId = ? `,
       [playerId, courtId]
     );
 
@@ -1224,8 +1767,8 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
     // Update player name to indicate deletion
     await promiseQuery(
       `UPDATE ballershuffleschema.players 
-           SET name = ?, user_fk = NULL ,courtId = NULL
-           WHERE id = ? AND courtId = ?`,
+           SET name = ?, user_fk = NULL, courtId = NULL
+           WHERE id = ? AND courtId = ? `,
       [`Deleted(${currentName})`, playerId, courtId]
     );
 
@@ -1242,7 +1785,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
       // Remove only this court from user_user_courts
       await promiseQuery(
         `DELETE FROM ballershuffleschema.user_user_courts 
-         WHERE userId = ? AND courtId = ?`,
+         WHERE userId = ? AND courtId = ? `,
         [user_fk, courtId]
       );
     }
@@ -1415,7 +1958,7 @@ app.delete('/api/delete_court/:user_id/:court_id', authenticateToken, async (req
 
     // UnAssign the player from the user
     await promiseQuery(
-      ` UPDATE ballershuffleschema.players SET user_fk = NULL WHERE user_fk = ? AND courtId = ?`,
+      ` UPDATE ballershuffleschema.players SET user_fk = NULL WHERE user_fk = ? AND courtId = ? `,
       [userId, courtId]
     );
 
@@ -1440,8 +1983,8 @@ app.get('/api/scheduled_games/:court_id', authenticateToken, async (req, res) =>
     const { results } = await promiseQuery(
       `SELECT g.*, JSON_UNQUOTE(JSON_EXTRACT(g.mvps, '$')) AS mvp_ids
        FROM games AS g 
-       WHERE g.court_id = ? 
-       ORDER BY g.game_start_time DESC`, // Order by date, latest first
+       WHERE g.court_id = ?
+          ORDER BY g.game_start_time DESC`, // Order by date, latest first
       [courtId]
     );
 
@@ -1461,7 +2004,7 @@ app.get('/api/scheduled_games/:court_id', authenticateToken, async (req, res) =>
       const { results: mvpPlayers } = await promiseQuery(
         `SELECT id, name 
          FROM players 
-         WHERE id IN (?)`, [mvpIds]
+         WHERE id IN(?)`, [mvpIds]
       );
 
       // Map the MVP player IDs and names
@@ -1526,11 +2069,11 @@ app.post('/api/create_game', authenticateToken, async (req, res) => {
 
   // Insert query for adding a new game
   const sql = `
-    INSERT INTO games (
-      court_id, game_start_time, registration_open_time, registration_close_time,
-      max_players, num_of_teams, created_by, location, description , max_players_each_user_can_add
-    ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`;
+    INSERT INTO games(
+            court_id, game_start_time, registration_open_time, registration_close_time,
+            max_players, num_of_teams, created_by, location, description, max_players_each_user_can_add
+          )
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`;
 
   const params = [
     court_id,
@@ -1565,12 +2108,12 @@ app.post('/api/create_game', authenticateToken, async (req, res) => {
     for (const row of usersInCourtResults) {
       await sendPushNotification(
         row.userId,
-        `Game Created in ${courtName}`,
+        `Game Created in ${courtName} `,
         `
         Start time: ${newGameStartTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
-        Registration: 
-          Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
-          Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Registration:
+        Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
         Location: ${location}
         `
       );
@@ -1625,17 +2168,17 @@ app.put('/api/update_game/:gameId', authenticateToken, async (req, res) => {
 
     // Update the game details
     const sql = `
-      UPDATE games SET 
-        court_id = ?, 
-        game_start_time = ?, 
-        registration_open_time = ?, 
-        registration_close_time = ?, 
-        max_players = ?, 
-        num_of_teams = ?, 
-        location = ?, 
-        description = ?, 
-        max_players_each_user_can_add = ?
-      WHERE game_id = ?`;
+      UPDATE games SET
+        court_id = ?,
+          game_start_time = ?,
+          registration_open_time = ?,
+          registration_close_time = ?,
+          max_players = ?,
+          num_of_teams = ?,
+          location = ?,
+          description = ?,
+          max_players_each_user_can_add = ?
+            WHERE game_id = ? `;
 
     const params = [
       game_court_id,
@@ -1655,21 +2198,21 @@ app.put('/api/update_game/:gameId', authenticateToken, async (req, res) => {
     // If game details have changed, send push notifications to all registered users
     if (hasGameDetailsChanged) {
       const { results: registeredUserResults } = await promiseQuery(`
-        SELECT 
-          gr.registration_id, 
-          gr.game_id, 
-          gr.player_id, 
-          gr.registered_by, 
-          gr.registration_time, 
+        SELECT
+        gr.registration_id,
+          gr.game_id,
+          gr.player_id,
+          gr.registered_by,
+          gr.registration_time,
           gr.approved,
           p.user_fk
-        FROM 
-          ballershuffleschema.registrations_to_game gr
-        JOIN 
-          ballershuffleschema.players p ON gr.player_id = p.id
-        WHERE 
-          gr.game_id = ?
-      `, [gameId]);
+        FROM
+        ballershuffleschema.registrations_to_game gr
+        JOIN
+        ballershuffleschema.players p ON gr.player_id = p.id
+        WHERE
+        gr.game_id = ?
+          `, [gameId]);
 
       // Query the courts table to get the court name
       const { results: courtResult } = await promiseQuery(
@@ -1684,11 +2227,11 @@ app.put('/api/update_game/:gameId', authenticateToken, async (req, res) => {
           `Game Details Updated for ${courtName}`,
           `
           Start time: ${newGameStartTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
-          Registration: 
-            Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
-            Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
-          Location: ${location}
-          `
+        Registration:
+        Open: ${newRegistrationOpenTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Close: ${newRegistrationCloseTime.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        Location: ${location}
+        `
         );
       }
     }
@@ -1707,10 +2250,10 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
   try {
     // Query to fetch game details and MVPs from the database
     const { results } = await promiseQuery(
-      `SELECT g.*, u.username AS creator_username
+      `SELECT g.*, u.full_name AS creator_fullName
        FROM games AS g 
        LEFT JOIN users AS u ON g.created_by = u.id
-       WHERE g.game_id = ?`,
+       WHERE g.game_id = ? `,
       [gameId]
     );
 
@@ -1726,7 +2269,7 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
 
     let mvps = [];
     if (mvpIds.length > 0) {
-      const mvpQuery = `SELECT id, name FROM players WHERE id IN (?)`;
+      const mvpQuery = `SELECT id, name FROM players WHERE id IN(?)`;
       const mvpResults = await promiseQuery(mvpQuery, [mvpIds]);
       mvps = mvpResults.results; // Array of MVP player objects with `id` and `name`
     }
@@ -1742,7 +2285,7 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
       num_of_teams: game.num_of_teams,
       created_by: {
         user_id: game.created_by,
-        username: game.creator_username // Getting the username of the creator
+        full_name: game.creator_fullName // Getting the full name of the creator
       },
       location: game.location,
       description: game.description,
@@ -1801,7 +2344,7 @@ app.get('/api/game_registrations/:game_id', authenticateToken, async (req, res) 
       FROM registrations_to_game AS rtg
       JOIN players AS p ON rtg.player_id = p.id
       WHERE rtg.game_id = ?
-      ORDER BY p.priority DESC, rtg.registration_time ASC`,
+          ORDER BY p.priority, rtg.registration_time`,
       [gameId]
     );
 
@@ -1868,7 +2411,7 @@ app.delete('/api/game_registrations_deletion/:game_id/:player_id', authenticateT
   try {
     // Query to delete the registration for the specified game and player
     const { results } = await promiseQuery(
-      `DELETE FROM registrations_to_game WHERE game_id = ? AND player_id = ?`,
+      `DELETE FROM registrations_to_game WHERE game_id = ? AND player_id = ? `,
       [game_id, player_id]
     );
 
@@ -1895,7 +2438,7 @@ app.post('/api/approve_registration', authenticateToken, async (req, res) => {
     const { results } = await promiseQuery(
       `UPDATE registrations_to_game 
        SET approved = 1 
-       WHERE registration_id = ?`,
+       WHERE registration_id = ? `,
       [registration_id]
     );
 
@@ -1958,7 +2501,7 @@ app.get('/api/get_game_teams/:game_id', authenticateToken, async (req, res) => {
       SELECT JSON_EXTRACT(gt.team, '$.playerIds') AS player_ids 
       FROM game_teams gt
       WHERE gt.game_fk = ?;
-    `, [game_id]);
+        `, [game_id]);
 
     // Parse player_ids for each row
     const parsedResults = results.map(row => ({
@@ -2024,7 +2567,7 @@ app.post('/api/mvp-votes/:game_id', authenticateToken, async (req, res) => {
       `SELECT mvp_player_id, COUNT(*) AS vote_count
        FROM mvp_votes
        WHERE game_id = ?
-       GROUP BY mvp_player_id
+          GROUP BY mvp_player_id
        ORDER BY vote_count DESC`,
       [gameId]
     );
@@ -2046,7 +2589,7 @@ app.post('/api/mvp-votes/:game_id', authenticateToken, async (req, res) => {
     await promiseQuery(
       `UPDATE games
        SET mvps = ?
-       WHERE game_id = ?`,
+          WHERE game_id = ? `,
       [mvpsJson, gameId]
     );
 
@@ -2055,7 +2598,7 @@ app.post('/api/mvp-votes/:game_id', authenticateToken, async (req, res) => {
       await promiseQuery(
         `UPDATE players
              SET num_of_mvps = COALESCE(num_of_mvps, 0) + 1
-             WHERE id = ?`,
+             WHERE id = ? `,
         [playerId]
       );
     }
@@ -2160,8 +2703,8 @@ app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
         const scoreField = teamNumber === 1 ? 'team1_score' : 'team2_score';
         await promiseQuery(
           `UPDATE ballershuffleschema.matches 
-           SET ${scoreField} = ${scoreField} + ? 
-           WHERE match_id = ?`,
+           SET ${scoreField} = ${scoreField} + ?
+          WHERE match_id = ? `,
           [scoreToAdd, matchId]
         );
       }
@@ -2198,21 +2741,21 @@ app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
 app.get('/api/match-stats/:matchId', authenticateToken, async (req, res) => {
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         ms.match_stat_id as id,
-        ms.match_id,
-        ms.gameday_id as game_id,
-        ms.player_id,
-        ms.stat_type as stat,
-        ms.created_by,
-        ms.created_at,
-        p.name as player_name,
-        u.username as created_by_name
+          ms.match_id,
+          ms.gameday_id as game_id,
+          ms.player_id,
+          ms.stat_type as stat,
+          ms.created_by,
+          ms.created_at,
+          p.name as player_name,
+          u.username as created_by_name
       FROM ballershuffleschema.match_stats ms
       JOIN ballershuffleschema.players p ON ms.player_id = p.id
       LEFT JOIN ballershuffleschema.users u ON ms.created_by = u.id
       WHERE ms.match_id = ?
-      ORDER BY ms.created_at DESC`,
+          ORDER BY ms.created_at DESC`,
       [req.params.matchId]
     );
     res.json(results);
@@ -2237,7 +2780,7 @@ app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
          FROM ballershuffleschema.match_stats ms
          JOIN ballershuffleschema.match_players mp 
          ON ms.player_id = mp.player_id AND ms.match_id = mp.match_id
-         WHERE ms.match_stat_id = ?`,
+         WHERE ms.match_stat_id = ? `,
         [statId]
       );
 
@@ -2269,7 +2812,7 @@ app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
         await promiseQuery(
           `UPDATE ballershuffleschema.matches 
            SET ${scoreField} = GREATEST(${scoreField} - ?, 0)
-           WHERE match_id = ?`,
+           WHERE match_id = ? `,
           [scoreToSubtract, match_id]
         );
       }
@@ -2317,8 +2860,8 @@ app.get('/api/court-statistics/:courtId/:courtType', authenticateToken, async (r
     let query;
     if (courtType === 'Basketball') {
       query = `
-        SELECT 
-          p.id as player_id,
+        SELECT
+        p.id as player_id,
           p.name as player_name,
           bcs.total_games_played,
           bcs.total_2pts,
@@ -2336,11 +2879,11 @@ app.get('/api/court-statistics/:courtId/:courtType', authenticateToken, async (r
         FROM players p
         LEFT JOIN basketball_court_statistics bcs ON p.id = bcs.player_id
         WHERE p.courtId = ?
-        ORDER BY total_points DESC`;
+          ORDER BY total_points DESC`;
     } else {
       query = `
-        SELECT 
-          p.id as player_id,
+        SELECT
+        p.id as player_id,
           p.name as player_name,
           fcs.total_games_played,
           fcs.total_goals,
@@ -2352,7 +2895,7 @@ app.get('/api/court-statistics/:courtId/:courtType', authenticateToken, async (r
         FROM players p
         LEFT JOIN football_court_statistics fcs ON p.id = fcs.player_id
         WHERE p.courtId = ?
-        ORDER BY total_goals DESC`;
+          ORDER BY total_goals DESC`;
     }
 
     const { results } = await promiseQuery(query, [courtId]);
@@ -2376,48 +2919,48 @@ app.post('/api/update-court-statistics/:gameId/:courtType', authenticateToken, a
 
     if (courtType === 'Basketball') {
       await promiseQuery(
-        `INSERT INTO basketball_court_statistics (player_id, total_games_played, total_2pts, total_3pts, total_assists, total_steals, total_blocks, total_wins)
-         SELECT
-           bgs.player_id,
-           1 AS total_games_played,
-           IFNULL(SUM(bgs.total_2pts_today), 0) AS total_2pts,
-           IFNULL(SUM(bgs.total_3pts_today), 0) AS total_3pts,
-           IFNULL(SUM(bgs.total_assists_today), 0) AS total_assists,
-           IFNULL(SUM(bgs.total_steals_today), 0) AS total_steals,
-           IFNULL(SUM(bgs.total_blocks_today), 0) AS total_blocks,
-           IFNULL(SUM(bgs.total_wins_today), 0) AS total_wins
+        `INSERT INTO basketball_court_statistics(player_id, total_games_played, total_2pts, total_3pts, total_assists, total_steals, total_blocks, total_wins)
+        SELECT
+        bgs.player_id,
+          1 AS total_games_played,
+            IFNULL(SUM(bgs.total_2pts_today), 0) AS total_2pts,
+              IFNULL(SUM(bgs.total_3pts_today), 0) AS total_3pts,
+                IFNULL(SUM(bgs.total_assists_today), 0) AS total_assists,
+                  IFNULL(SUM(bgs.total_steals_today), 0) AS total_steals,
+                    IFNULL(SUM(bgs.total_blocks_today), 0) AS total_blocks,
+                      IFNULL(SUM(bgs.total_wins_today), 0) AS total_wins
          FROM ballershuffleschema.basketball_gameday_stats bgs
          WHERE bgs.gameday_id = ?
-         GROUP BY bgs.player_id
+          GROUP BY bgs.player_id
          ON DUPLICATE KEY UPDATE
-           total_games_played = total_games_played + 1,
-           total_2pts = total_2pts + VALUES(total_2pts),
-           total_3pts = total_3pts + VALUES(total_3pts),
-           total_assists = total_assists + VALUES(total_assists),
-           total_steals = total_steals + VALUES(total_steals),
-           total_blocks = total_blocks + VALUES(total_blocks),
-           total_wins = total_wins + VALUES(total_wins)`,
+        total_games_played = total_games_played + 1,
+          total_2pts = total_2pts + VALUES(total_2pts),
+          total_3pts = total_3pts + VALUES(total_3pts),
+          total_assists = total_assists + VALUES(total_assists),
+          total_steals = total_steals + VALUES(total_steals),
+          total_blocks = total_blocks + VALUES(total_blocks),
+          total_wins = total_wins + VALUES(total_wins)`,
         [gameId]
       );
     } else {
       await promiseQuery(
-        `INSERT INTO football_court_statistics (player_id, total_games_played, total_goals, total_assists, total_misses, total_wins)
-         SELECT
-           fgs.player_id,
-           1 AS total_games_played,
-           IFNULL(SUM(fgs.total_goals_today), 0) AS total_goals,
-           IFNULL(SUM(fgs.total_assists_today), 0) AS total_assists,
-           IFNULL(SUM(fgs.total_misses_today), 0) AS total_misses,
-           IFNULL(SUM(fgs.total_wins_today), 0) AS total_wins
+        `INSERT INTO football_court_statistics(player_id, total_games_played, total_goals, total_assists, total_misses, total_wins)
+        SELECT
+        fgs.player_id,
+          1 AS total_games_played,
+            IFNULL(SUM(fgs.total_goals_today), 0) AS total_goals,
+              IFNULL(SUM(fgs.total_assists_today), 0) AS total_assists,
+                IFNULL(SUM(fgs.total_misses_today), 0) AS total_misses,
+                  IFNULL(SUM(fgs.total_wins_today), 0) AS total_wins
          FROM ballershuffleschema.football_gameday_stats fgs
          WHERE fgs.gameday_id = ?
-         GROUP BY fgs.player_id
+          GROUP BY fgs.player_id
          ON DUPLICATE KEY UPDATE
-           total_games_played = total_games_played + 1,
-           total_goals = total_goals + VALUES(total_goals),
-           total_assists = total_assists + VALUES(total_assists),
-           total_misses = total_misses + VALUES(total_misses),
-           total_wins = total_wins + VALUES(total_wins)`,
+        total_games_played = total_games_played + 1,
+          total_goals = total_goals + VALUES(total_goals),
+          total_assists = total_assists + VALUES(total_assists),
+          total_misses = total_misses + VALUES(total_misses),
+          total_wins = total_wins + VALUES(total_wins)`,
         [gameId]
       );
     }
@@ -2437,7 +2980,7 @@ app.get('/api/player-statistics/:playerId/:courtId', authenticateToken, async (r
     const courtId = req.params.courtId;
 
     // First, determine the court type
-    const courtTypeQuery = `SELECT courtType FROM courts WHERE id = ?`;
+    const courtTypeQuery = `SELECT courtType FROM courts WHERE id = ? `;
     const { results: courtResults } = await promiseQuery(courtTypeQuery, [courtId]);
 
     if (!courtResults || courtResults.length === 0) {
@@ -2449,8 +2992,8 @@ app.get('/api/player-statistics/:playerId/:courtId', authenticateToken, async (r
     let query;
     if (courtType === 'Football') {
       query = `
-        SELECT 
-          p.id as player_id,
+        SELECT
+        p.id as player_id,
           p.name as player_name,
           p.num_of_mvps,
           fcs.total_games_played,
@@ -2463,11 +3006,11 @@ app.get('/api/player-statistics/:playerId/:courtId', authenticateToken, async (r
           ROUND(fcs.total_misses / NULLIF(fcs.total_games_played, 0), 1) as mpg
         FROM players p
         LEFT JOIN football_court_statistics fcs ON p.id = fcs.player_id
-        WHERE p.id = ? AND p.courtId = ?`;
+        WHERE p.id = ? AND p.courtId = ? `;
     } else {
       query = `
-        SELECT 
-          p.id as player_id,
+        SELECT
+        p.id as player_id,
           p.name as player_name,
           p.num_of_mvps,
           bcs.total_games_played,
@@ -2485,7 +3028,7 @@ app.get('/api/player-statistics/:playerId/:courtId', authenticateToken, async (r
           ROUND(bcs.total_3pts / NULLIF(bcs.total_games_played, 0), 1) as threeptpg
         FROM players p
         LEFT JOIN basketball_court_statistics bcs ON p.id = bcs.player_id
-        WHERE p.id = ? AND p.courtId = ?`;
+        WHERE p.id = ? AND p.courtId = ? `;
     }
 
     const { results } = await promiseQuery(query, [playerId, courtId]);
@@ -2551,9 +3094,9 @@ app.post('/api/game-players-that-played/:gameId', authenticateToken, async (req,
     const { results: playerResults } = await promiseQuery(
       `SELECT player_id 
        FROM registrations_to_game 
-       WHERE game_id = ? 
-       ORDER BY registration_time 
-       LIMIT ?`,
+       WHERE game_id = ?
+          ORDER BY registration_time
+        LIMIT ? `,
       [gameId, maxPlayers]
     );
 
@@ -2582,15 +3125,15 @@ app.get('/api/player-games/:playerId/:courtId', authenticateToken, async (req, r
     const courtId = req.params.courtId;
 
     const query = `
-      SELECT 
+      SELECT
         g.game_id,
-        g.game_start_time,
-        g.location
+          g.game_start_time,
+          g.location
       FROM games g
       INNER JOIN game_players_played gpp ON g.game_id = gpp.game_id
-      WHERE gpp.player_id = ? 
-      AND g.court_id = ?
-      ORDER BY g.game_start_time DESC`;
+      WHERE gpp.player_id = ?
+          AND g.court_id = ?
+            ORDER BY g.game_start_time DESC`;
 
     const { results } = await promiseQuery(query, [playerId, courtId]);
 
@@ -2672,13 +3215,13 @@ app.get('/api/match_players/:match_id', authenticateToken, async (req, res) => {
 
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         mp.player_id,
-        mp.team_number,
-        p.name,
-        p.user_fk,
-        p.creator_user_fk,
-        CASE 
+          mp.team_number,
+          p.name,
+          p.user_fk,
+          p.creator_user_fk,
+          CASE 
           WHEN bpa.overall IS NOT NULL THEN bpa.overall
           WHEN fpa.overall IS NOT NULL THEN fpa.overall
           ELSE NULL
@@ -2688,7 +3231,7 @@ app.get('/api/match_players/:match_id', authenticateToken, async (req, res) => {
       LEFT JOIN ballershuffleschema.basketball_player_attributes bpa ON p.id = bpa.playerId
       LEFT JOIN ballershuffleschema.football_player_attributes fpa ON p.id = fpa.playerId
       WHERE mp.match_id = ?
-      ORDER BY mp.team_number, p.name`,
+          ORDER BY mp.team_number, p.name`,
       [match_id]
     );
 
@@ -2714,22 +3257,22 @@ app.get('/api/match/:match_id', authenticateToken, async (req, res) => {
 
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         m.match_id,
-        m.gameday_id,
-        m.team1_score,
-        m.team2_score,
-        m.match_status,
-        m.created_by,
-        m.created_at,
-        m.completed_at,
-        g.game_start_time,
-        g.court_id,
-        c.courtType as court_type
+          m.gameday_id,
+          m.team1_score,
+          m.team2_score,
+          m.match_status,
+          m.created_by,
+          m.created_at,
+          m.completed_at,
+          g.game_start_time,
+          g.court_id,
+          c.courtType as court_type
       FROM ballershuffleschema.matches m
       JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
       JOIN ballershuffleschema.courts c ON g.court_id = c.id
-      WHERE m.match_id = ?`,
+      WHERE m.match_id = ? `,
       [match_id]
     );
 
@@ -2757,16 +3300,16 @@ app.get('/api/gameday_matches/:gameday_id', authenticateToken, async (req, res) 
 
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         match_id,
-        team1_score,
-        team2_score,
-        match_status,
-        created_at,
-        completed_at
+          team1_score,
+          team2_score,
+          match_status,
+          created_at,
+          completed_at
       FROM ballershuffleschema.matches
       WHERE gameday_id = ?
-      ORDER BY created_at DESC`,
+          ORDER BY created_at DESC`,
       [gameday_id]
     );
 
@@ -2794,7 +3337,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       const { results: matchStatus } = await promiseQuery(
         `SELECT match_status, gameday_id 
          FROM ballershuffleschema.matches 
-         WHERE match_id = ?`,
+         WHERE match_id = ? `,
         [matchId]
       );
 
@@ -2810,9 +3353,9 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       // Update match status to completed
       await promiseQuery(
         `UPDATE ballershuffleschema.matches 
-         SET match_status = 'completed', 
-             completed_at = NOW() 
-         WHERE match_id = ?`,
+         SET match_status = 'completed',
+          completed_at = NOW() 
+         WHERE match_id = ? `,
         [matchId]
       );
 
@@ -2822,7 +3365,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
          FROM ballershuffleschema.matches m
          JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
          JOIN ballershuffleschema.courts c ON g.court_id = c.id
-         WHERE m.match_id = ?`,
+         WHERE m.match_id = ? `,
         [matchId]
       );
 
@@ -2831,19 +3374,19 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       if (courtType === 'Basketball') {
         // Basketball stats update
         await promiseQuery(
-          `INSERT INTO ballershuffleschema.basketball_gameday_stats 
-           (player_id, gameday_id, total_matches_today, total_2pts_today, total_3pts_today, 
+          `INSERT INTO ballershuffleschema.basketball_gameday_stats
+          (player_id, gameday_id, total_matches_today, total_2pts_today, total_3pts_today,
             total_assists_today, total_steals_today, total_blocks_today, total_wins_today)
-           SELECT 
-             mp.player_id,
+        SELECT
+        mp.player_id,
              ? as gameday_id,
-             1 AS total_matches_today,
-             SUM(CASE WHEN ms.stat_type = 2 THEN 1 ELSE 0 END) AS total_2pts_today,
-             SUM(CASE WHEN ms.stat_type = 3 THEN 1 ELSE 0 END) AS total_3pts_today,
-             SUM(CASE WHEN ms.stat_type = 4 THEN 1 ELSE 0 END) AS total_assists_today,
-             SUM(CASE WHEN ms.stat_type = 6 THEN 1 ELSE 0 END) AS total_steals_today,
-             SUM(CASE WHEN ms.stat_type = 5 THEN 1 ELSE 0 END) AS total_blocks_today,
-             CASE 
+          1 AS total_matches_today,
+            SUM(CASE WHEN ms.stat_type = 2 THEN 1 ELSE 0 END) AS total_2pts_today,
+              SUM(CASE WHEN ms.stat_type = 3 THEN 1 ELSE 0 END) AS total_3pts_today,
+                SUM(CASE WHEN ms.stat_type = 4 THEN 1 ELSE 0 END) AS total_assists_today,
+                  SUM(CASE WHEN ms.stat_type = 6 THEN 1 ELSE 0 END) AS total_steals_today,
+                    SUM(CASE WHEN ms.stat_type = 5 THEN 1 ELSE 0 END) AS total_blocks_today,
+                      CASE 
                WHEN team_number = ? AND ? > 0 THEN 1 
                ELSE 0 
              END AS total_wins_today
@@ -2851,31 +3394,31 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
            LEFT JOIN ballershuffleschema.match_stats ms 
              ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
            WHERE mp.match_id = ?
-           GROUP BY mp.player_id, mp.team_number
+          GROUP BY mp.player_id, mp.team_number
            ON DUPLICATE KEY UPDATE
-             total_matches_today = basketball_gameday_stats.total_matches_today + 1,
-             total_2pts_today = basketball_gameday_stats.total_2pts_today + VALUES(total_2pts_today),
-             total_3pts_today = basketball_gameday_stats.total_3pts_today + VALUES(total_3pts_today),
-             total_assists_today = basketball_gameday_stats.total_assists_today + VALUES(total_assists_today),
-             total_steals_today = basketball_gameday_stats.total_steals_today + VALUES(total_steals_today),
-             total_blocks_today = basketball_gameday_stats.total_blocks_today + VALUES(total_blocks_today),
-             total_wins_today = basketball_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
+        total_matches_today = basketball_gameday_stats.total_matches_today + 1,
+          total_2pts_today = basketball_gameday_stats.total_2pts_today + VALUES(total_2pts_today),
+          total_3pts_today = basketball_gameday_stats.total_3pts_today + VALUES(total_3pts_today),
+          total_assists_today = basketball_gameday_stats.total_assists_today + VALUES(total_assists_today),
+          total_steals_today = basketball_gameday_stats.total_steals_today + VALUES(total_steals_today),
+          total_blocks_today = basketball_gameday_stats.total_blocks_today + VALUES(total_blocks_today),
+          total_wins_today = basketball_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
           [gameday_id, winningTeam, winningTeam, matchId]
         );
       } else {
         // Football stats update
         await promiseQuery(
-          `INSERT INTO ballershuffleschema.football_gameday_stats 
-           (player_id, gameday_id, total_matches_today, total_goals_today, total_assists_today, 
+          `INSERT INTO ballershuffleschema.football_gameday_stats
+          (player_id, gameday_id, total_matches_today, total_goals_today, total_assists_today,
             total_misses_today, total_wins_today)
-           SELECT 
-             mp.player_id,
+        SELECT
+        mp.player_id,
              ? as gameday_id,
-             1 AS total_matches_today,
-             SUM(CASE WHEN ms.stat_type = 7 THEN 1 ELSE 0 END) AS total_goals_today,
-             SUM(CASE WHEN ms.stat_type = 8 THEN 1 ELSE 0 END) AS total_assists_today,
-             SUM(CASE WHEN ms.stat_type = 9 THEN 1 ELSE 0 END) AS total_misses_today,
-             CASE 
+          1 AS total_matches_today,
+            SUM(CASE WHEN ms.stat_type = 7 THEN 1 ELSE 0 END) AS total_goals_today,
+              SUM(CASE WHEN ms.stat_type = 8 THEN 1 ELSE 0 END) AS total_assists_today,
+                SUM(CASE WHEN ms.stat_type = 9 THEN 1 ELSE 0 END) AS total_misses_today,
+                  CASE 
                WHEN team_number = ? AND ? > 0 THEN 1 
                ELSE 0 
              END AS total_wins_today
@@ -2883,13 +3426,13 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
            LEFT JOIN ballershuffleschema.match_stats ms 
              ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
            WHERE mp.match_id = ?
-           GROUP BY mp.player_id, mp.team_number
+          GROUP BY mp.player_id, mp.team_number
            ON DUPLICATE KEY UPDATE
-             total_matches_today = football_gameday_stats.total_matches_today + 1,
-             total_goals_today = football_gameday_stats.total_goals_today + VALUES(total_goals_today),
-             total_assists_today = football_gameday_stats.total_assists_today + VALUES(total_assists_today),
-             total_misses_today = football_gameday_stats.total_misses_today + VALUES(total_misses_today),
-             total_wins_today = football_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
+        total_matches_today = football_gameday_stats.total_matches_today + 1,
+          total_goals_today = football_gameday_stats.total_goals_today + VALUES(total_goals_today),
+          total_assists_today = football_gameday_stats.total_assists_today + VALUES(total_assists_today),
+          total_misses_today = football_gameday_stats.total_misses_today + VALUES(total_misses_today),
+          total_wins_today = football_gameday_stats.total_wins_today + VALUES(total_wins_today)`,
           [gameday_id, winningTeam, winningTeam, matchId]
         );
       }
@@ -2921,20 +3464,20 @@ app.get('/api/basketball_gameday_stats/:gameId', authenticateToken, async (req, 
 
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         bgs.player_id,
-        p.name as player_name,
-        bgs.total_matches_today,
-        bgs.total_2pts_today,
-        bgs.total_3pts_today,
-        bgs.total_assists_today,
-        bgs.total_steals_today,
-        bgs.total_blocks_today,
-        bgs.total_wins_today
+          p.name as player_name,
+          bgs.total_matches_today,
+          bgs.total_2pts_today,
+          bgs.total_3pts_today,
+          bgs.total_assists_today,
+          bgs.total_steals_today,
+          bgs.total_blocks_today,
+          bgs.total_wins_today
       FROM ballershuffleschema.basketball_gameday_stats bgs
       JOIN ballershuffleschema.players p ON bgs.player_id = p.id
       WHERE bgs.gameday_id = ?
-      ORDER BY (bgs.total_2pts_today * 2 + bgs.total_3pts_today * 3) DESC`,
+          ORDER BY(bgs.total_2pts_today * 2 + bgs.total_3pts_today * 3) DESC`,
       [gameId]
     );
 
@@ -2965,18 +3508,18 @@ app.get('/api/football_gameday_stats/:gameId', authenticateToken, async (req, re
 
   try {
     const { results } = await promiseQuery(
-      `SELECT 
+      `SELECT
         fgs.player_id,
-        p.name as player_name,
-        fgs.total_matches_today,
-        fgs.total_goals_today,
-        fgs.total_assists_today,
-        fgs.total_misses_today,
-        fgs.total_wins_today
+          p.name as player_name,
+          fgs.total_matches_today,
+          fgs.total_goals_today,
+          fgs.total_assists_today,
+          fgs.total_misses_today,
+          fgs.total_wins_today
       FROM ballershuffleschema.football_gameday_stats fgs
       JOIN ballershuffleschema.players p ON fgs.player_id = p.id
       WHERE fgs.gameday_id = ?
-      ORDER BY fgs.total_goals_today DESC`,
+          ORDER BY fgs.total_goals_today DESC`,
       [gameId]
     );
 
