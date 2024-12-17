@@ -205,6 +205,8 @@ app.post('/login', async (req, res) => {
   }
 });
 
+
+
 //-----------------------------------------------------------------------------------------------
 // Push Notification Service
 async function sendPushNotification(userId, title, body, data = {}) {
@@ -387,6 +389,26 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+
+//-----------------------------------------------------------------------------------------------
+//LogOut Endpoint
+app.post('/api/logout', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    await promiseQuery(
+      'DELETE FROM ballershuffleschema.user_push_tokens WHERE user_id = ?',      
+
+      [userId]
+    );
+
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Error during logout' });
+  }
+});
+//-----------------------------------------------------------------------------------------------
 
 
 // Schedule task to run every minute
@@ -744,6 +766,7 @@ app.post('/api/handle-notification-response', authenticateToken, async (req, res
         'INSERT INTO registrations_to_game (game_id, player_id, registered_by) VALUES (?, ?, ?)',
         [gameId, playerId, req.user.userId]
       );
+
 
       res.status(200).json({ message: 'Successfully registered to game' });
     } catch (error) {
@@ -1945,7 +1968,7 @@ app.get('/api/is_admin/:user_id/:court_id', (req, res) => {
 
 
 // Delete Court endpoint
-app.delete('/api/delete_court/:user_id/:court_id', authenticateToken, async (req, res) => {
+app.delete('/api/leave_court/:user_id/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const userId = req.params.user_id;
@@ -2306,20 +2329,84 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
 
 
 //REGISTER PLAYERS API ---------------------------------------------
-
 app.post('/api/register-players', authenticateToken, async (req, res) => {
   const { playersIds, gameId, userId } = req.body;
   try {
-    // Prepare an array of promises for inserting players
-    const promises = playersIds.map(playerId => {
+    // Get game and court details for the notification
+    const { results: gameDetails } = await promiseQuery(`
+      SELECT g.game_start_time, c.courtName, u.full_name as registerer_name, g.max_players
+      FROM games g 
+      JOIN courts c ON g.court_id = c.id
+      JOIN users u ON u.id = ?
+      WHERE g.game_id = ?`,
+      [userId, gameId]
+    );
+
+    if (!gameDetails.length) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+
+    const { game_start_time, courtName, registerer_name, max_players } = gameDetails[0];
+
+    // Get user details for each player
+    const { results: playerDetails } = await promiseQuery(`
+      SELECT p.id as player_id, p.user_fk, p.name as player_name 
+      FROM players p 
+      WHERE p.id IN (?)`,
+      [playersIds]
+    );
+
+    // Register players
+    const registrationPromises = playersIds.map(playerId => {
       return promiseQuery(
         'INSERT IGNORE INTO registrations_to_game (game_id, player_id, registered_by) VALUES (?, ?, ?)',
         [gameId, playerId, userId]
       );
     });
 
-    // Execute all promises concurrently
-    await Promise.all(promises);
+    await Promise.all(registrationPromises);
+
+    // Send notifications to registered players (except the registerer)
+    const notificationPromises = playerDetails
+      .filter(player => player.user_fk && player.user_fk !== userId)
+      .map(async (player) => {
+        await sendPushNotification(
+          player.user_fk,
+          `Game Registration - ${courtName}`,
+          `${registerer_name} has registered you for a game on ${new Date(game_start_time).toLocaleString()}.\n Don't forget to confirm in the app`
+        );
+      });
+
+    await Promise.all(notificationPromises);
+
+    // Check for players who got bumped out due to priority
+    const { results: bumpedPlayers } = await promiseQuery(`
+      WITH RankedPlayers AS (
+        SELECT 
+          rtg.player_id,
+          p.user_fk,
+          p.name,
+          ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as player_rank
+        FROM registrations_to_game rtg
+        JOIN players p ON rtg.player_id = p.id
+        WHERE rtg.game_id = ?
+      )
+      SELECT user_fk, name
+      FROM RankedPlayers
+      WHERE player_rank = ? + 1`,
+      [gameId, max_players]
+    );
+
+    // Notify bumped players
+    for (const bumpedPlayer of bumpedPlayers) {
+      if (bumpedPlayer.user_fk) {
+        await sendPushNotification(
+          bumpedPlayer.user_fk,
+          `You're Now on Reserve - ${courtName}`,
+          `Due to your lower priority, you are now on the reserve list for today's game.`
+        );
+      }
+    }
 
     res.status(200).send(`${playersIds.length} players registered successfully`);
   } catch (error) {
@@ -2327,8 +2414,6 @@ app.post('/api/register-players', authenticateToken, async (req, res) => {
     res.status(500).send('Error registering players');
   }
 });
-
-
 
 
 
@@ -2405,28 +2490,89 @@ app.get('/api/can-register-players-to-game/:game_id/:user_id', authenticateToken
 
 
 /* DELETE player registration from a game ----------------------------------------------*/
+/* DELETE player registration from a game ----------------------------------------------*/
 app.delete('/api/game_registrations_deletion/:game_id/:player_id', authenticateToken, async (req, res) => {
   const { game_id, player_id } = req.params;
 
   try {
-    // Query to delete the registration for the specified game and player
-    const { results } = await promiseQuery(
-      `DELETE FROM registrations_to_game WHERE game_id = ? AND player_id = ? `,
-      [game_id, player_id]
-    );
+    // Start a transaction
+    await promiseQuery('START TRANSACTION');
 
-    // Check if the deletion was successful
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ message: 'Registration not found for this game and player' });
+    try {
+      // First get the court name and game details
+      const { results: gameDetails } = await promiseQuery(
+        `SELECT g.max_players, c.courtName, g.game_start_time
+         FROM games g
+         JOIN courts c ON g.court_id = c.id
+         WHERE g.game_id = ?`,
+        [game_id]
+      );
+
+      if (!gameDetails.length) {
+        throw new Error('Game not found');
+      }
+
+      const { max_players, courtName, game_start_time } = gameDetails[0];
+
+      // Get the current ordered list of players before deletion
+      const { results: oldOrderedPlayers } = await promiseQuery(
+        `SELECT rtg.player_id, p.user_fk, p.priority, p.name
+         FROM registrations_to_game rtg
+         JOIN players p ON rtg.player_id = p.id
+         WHERE rtg.game_id = ?
+         ORDER BY p.priority, rtg.registration_time
+         LIMIT ?`,
+        [game_id, max_players + 1]  // Get one extra to know who might move up
+      );
+
+      // Delete the registration
+      await promiseQuery(
+        `DELETE FROM registrations_to_game WHERE game_id = ? AND player_id = ?`,
+        [game_id, player_id]
+      );
+
+      // Get the new ordered list after deletion
+      const { results: newOrderedPlayers } = await promiseQuery(
+        `SELECT rtg.player_id, p.user_fk, p.priority, p.name
+         FROM registrations_to_game rtg
+         JOIN players p ON rtg.player_id = p.id
+         WHERE rtg.game_id = ?
+         ORDER BY p.priority, rtg.registration_time
+         LIMIT ?`,
+        [game_id, max_players + 1]
+      );
+
+      // Find players who need notifications
+      if (oldOrderedPlayers.length > 0) {
+        const deletedPlayerIndex = oldOrderedPlayers.findIndex(p => p.player_id === parseInt(player_id));
+
+        if (deletedPlayerIndex < max_players) {
+          // Someone might have moved up
+          const movedUpPlayer = newOrderedPlayers[max_players - 1];
+          if (movedUpPlayer && !oldOrderedPlayers.slice(0, max_players).find(p => p.player_id === movedUpPlayer.player_id)) {
+            // This player moved up into the playing list
+            await sendPushNotification(
+              movedUpPlayer.user_fk,
+              `You're In! - ${courtName}`,
+              `You are now number ${max_players} in the list for today's game at ${new Date(game_start_time).toLocaleString()}!`
+            );
+          }
+        }
+      }
+
+      await promiseQuery('COMMIT');
+      res.json({ message: 'Player registration deleted successfully' });
+
+    } catch (error) {
+      await promiseQuery('ROLLBACK');
+      throw error;
     }
 
-    res.json({ message: 'Player registration deleted successfully' }); // Return success message
   } catch (error) {
     console.error(error);
     res.status(500).send('Error deleting player registration');
   }
 });
-
 //-----------------------------------------------------------------------------------------------
 
 // Approve registration endpoint
@@ -3541,5 +3687,35 @@ app.get('/api/football_gameday_stats/:gameId', authenticateToken, async (req, re
     res.status(500).json({
       error: 'Failed to fetch football gameday statistics'
     });
+  }
+});
+
+
+// Get last game (in this court) details endpoint---------------------------------------------------------
+app.get('/api/last-game-details/:court_id', authenticateToken, async (req, res) => {
+  const courtId = req.params.court_id;
+
+  try {
+    const { results } = await promiseQuery(
+      `SELECT 
+              max_players,
+              max_players_each_user_can_add,
+              num_of_teams,
+              description
+           FROM games 
+           WHERE court_id = ?
+           ORDER BY game_start_time DESC
+           LIMIT 1`,
+      [courtId]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No previous games found' });
+    }
+
+    res.json(results[0]);
+  } catch (error) {
+    console.error('Error fetching last game details:', error);
+    res.status(500).json({ message: 'Failed to fetch last game details' });
   }
 });
