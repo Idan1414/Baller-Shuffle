@@ -397,7 +397,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     await promiseQuery(
-      'DELETE FROM ballershuffleschema.user_push_tokens WHERE user_id = ?',      
+      'DELETE FROM ballershuffleschema.user_push_tokens WHERE user_id = ?',
 
       [userId]
     );
@@ -868,7 +868,7 @@ app.get('/api/courts/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.id;
     const { results } = await promiseQuery(
-      `SELECT c.id, c.courtName, c.courtType
+      `SELECT c.id, c.courtName, c.courtType, c.show_all_ratings
       FROM courts AS c
       JOIN user_user_courts AS uc ON c.id = uc.courtId
       WHERE uc.userId = ? `,
@@ -880,7 +880,8 @@ app.get('/api/courts/:id', authenticateToken, async (req, res) => {
     const courts = results.map(c => ({
       id: c.id,
       courtName: c.courtName,
-      courtType: c.courtType
+      courtType: c.courtType,
+      showAllRatings: c.show_all_ratings === 1 //convets to True or False
     }));
     res.json(courts);
   } catch (error) {
@@ -888,6 +889,32 @@ app.get('/api/courts/:id', authenticateToken, async (req, res) => {
     res.status(500).send('Error fetching courts');
   }
 });
+
+//-----------------------------------------------------------------------------------------------
+
+// Toggle show all ratings endpoint
+app.put('/api/courts/:courtId/toggle-ratings', authenticateToken, async (req, res) => {
+  try {
+    const courtId = req.params.courtId;
+    const { showAllRatings } = req.body;
+    console.log(showAllRatings)
+
+    const { results } = await promiseQuery(
+      'UPDATE courts SET show_all_ratings = ? WHERE id = ?',
+      [showAllRatings ? 1 : 0, courtId]
+    );
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: 'Court not found' });
+    }
+
+    res.json({ message: 'Setting updated successfully' });
+  } catch (error) {
+    console.error('Error updating show_all_ratings:', error);
+    res.status(500).json({ message: 'Failed to update setting' });
+  }
+});
+
 
 
 //-----------------------------------------------------------------------------------------------
@@ -897,7 +924,7 @@ app.get('/api/court_info/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT c.courtName, c.courtType
+      `SELECT c.courtName, c.courtType ,c.show_all_ratings
       FROM courts AS c
       WHERE c.id = ? `,
       [courtId]
@@ -907,7 +934,8 @@ app.get('/api/court_info/:court_id', authenticateToken, async (req, res) => {
     }
     const court = results.map(c => ({
       courtName: c.courtName,
-      courtType: c.courtType
+      courtType: c.courtType,
+      showAllRatings: c.show_all_ratings
     }));
     res.json(court);
   } catch (error) {
@@ -1123,6 +1151,7 @@ app.get('/api/player-full-data/:playerId/:courtId', authenticateToken, async (re
       ? `SELECT
         fcs.total_games_played,
           fcs.total_goals,
+          fcs.total_misses,
           fcs.total_assists,
           fcs.total_wins as wins,
           p.num_of_mvps as mvps,
@@ -1282,7 +1311,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
       [playerId, scoring, passing, speed, physical, defence, threePtShot, rebound, ballHandling, postUp, height, overall, 0]
     );
 
-    res.status(201).send('Player created successfully');
+    res.status(201).json({ id: playerId, message: 'Player created successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).send('Error creating player');
@@ -1349,7 +1378,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
       [playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, 0]
     );
 
-    res.status(201).send('Player created successfully');
+    res.status(201).json({ id: playerId, message: 'Player created successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).send('Error creating player');
@@ -1399,7 +1428,41 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
 
 
 //-----------------------------------------------------------------------------------------------
+// Update user profile endpoint
+app.put('/api/update-user-profile/:userId/:courtId', authenticateToken, async (req, res) => {
+  const userId = req.params.userId;
+  const courtId = req.params.courtId;
+  const { fullName, phoneNumber } = req.body;
 
+  try {
+    await promiseQuery('START TRANSACTION');
+
+    try {
+      // Update user details
+      await promiseQuery(
+        'UPDATE users SET full_name = ?, phone_number = ? WHERE id = ?',
+        [fullName, phoneNumber, userId]
+      );
+
+      // Update player name in the specific court
+      await promiseQuery(
+        'UPDATE players SET name = ? WHERE user_fk = ? AND courtId = ?',
+        [fullName, userId, courtId]
+      );
+
+      await promiseQuery('COMMIT');
+      res.status(200).json({ message: 'Profile updated successfully' });
+    } catch (error) {
+      await promiseQuery('ROLLBACK');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+//---------------------------------------------------------------------------------
 
 // Get one Basketball-Player endpoint
 app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) => {
@@ -1756,36 +1819,93 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
 
 
 
+// --------------------------------- Helper function to check and reassign admin if needed ---------------------
+const handleAdminSuccession = async (courtId, userId) => {
+  try {
+    // First check if there are other admins
+    const { results: adminResults } = await promiseQuery(
+      `SELECT user_id FROM court_admins 
+           WHERE court_id = ? AND user_id != ? AND is_admin = 1`,
+      [courtId, userId]
+    );
 
+    // If there are other admins, no need to do anything
+    if (adminResults.length > 0) return;
 
+    // Get court name first
+    const { results: courtResults } = await promiseQuery(
+      'SELECT courtName FROM courts WHERE id = ?',
+      [courtId]
+    );
 
+    if (courtResults.length === 0) return;
+    const courtName = courtResults[0].courtName;
 
+    // Check if there are any other players in the court
+    const { results: playerResults } = await promiseQuery(
+      `SELECT p.user_fk 
+           FROM players p 
+           WHERE p.courtId = ? AND p.user_fk IS NOT NULL AND p.user_fk != ?
+           LIMIT 1`,
+      [courtId, userId]
+    );
 
-//-----------------------------------------------------------------------------------------------
+    // If no other players, no need to assign new admin
+    if (playerResults.length === 0) return;
 
+    // Assign the first found player as the new admin
+    await promiseQuery(
+      `INSERT INTO court_admins (user_id, court_id, is_admin) 
+           VALUES (?, ?, 1)`,
+      [playerResults[0].user_fk, courtId]
+    );
 
+    // Send notification to new admin with court name
+    await sendPushNotification(
+      playerResults[0].user_fk,
+      `Admin Rights Granted - ${courtName}`,
+      `You have been assigned as an admin for ${courtName}.`
+    );
+  } catch (error) {
+    console.error('Error in admin succession:', error);
+    throw error;
+  }
+};
 
-// Delete Player endpoint
 app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const playerId = req.params.player_id;
 
+    // Start a transaction
+    await promiseQuery('START TRANSACTION');
 
     // Get player info before updating
     const { results: playerInfo } = await promiseQuery(
       `SELECT name, user_fk FROM ballershuffleschema.players 
-       WHERE id = ? AND courtId = ? `,
+           WHERE id = ? AND courtId = ? `,
       [playerId, courtId]
     );
 
     if (playerInfo.length === 0) {
+      await promiseQuery('ROLLBACK');
       return res.status(404).json({ message: 'Player not found' });
     }
 
     const user_fk = playerInfo[0].user_fk;
     const currentName = playerInfo[0].name;
 
+    // Check if user is admin and handle succession if needed
+    if (user_fk) {
+      const { results: adminCheck } = await promiseQuery(
+        'SELECT is_admin FROM court_admins WHERE user_id = ? AND court_id = ?',
+        [user_fk, courtId]
+      );
+
+      if (adminCheck.length > 0 && adminCheck[0].is_admin === 1) {
+        await handleAdminSuccession(courtId, user_fk);
+      }
+    }
 
     // Update player name to indicate deletion
     await promiseQuery(
@@ -1795,7 +1915,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
       [`Deleted(${currentName})`, playerId, courtId]
     );
 
-    // Delete from basketball_player_attributes table
+    // Delete from basketball/football_player_attributes table
     await promiseQuery(
       'DELETE FROM ballershuffleschema.basketball_player_attributes WHERE playerId = ?',
       [playerId]
@@ -1803,20 +1923,76 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
 
     await delay(50);
 
-
     if (user_fk) {
+      // Remove user from court_admins
+      await promiseQuery(
+        'DELETE FROM court_admins WHERE user_id = ? AND court_id = ?',
+        [user_fk, courtId]
+      );
+
       // Remove only this court from user_user_courts
       await promiseQuery(
         `DELETE FROM ballershuffleschema.user_user_courts 
-         WHERE userId = ? AND courtId = ? `,
+               WHERE userId = ? AND courtId = ? `,
         [user_fk, courtId]
       );
     }
 
+    await promiseQuery('COMMIT');
     res.status(200).json({ message: 'Player deleted successfully' });
+
   } catch (error) {
+    await promiseQuery('ROLLBACK');
     console.error(error);
     res.status(500).send('Error deleting player');
+  }
+});
+
+// leave court endpoint include admin succession
+app.delete('/api/leave_court/:user_id/:court_id', authenticateToken, async (req, res) => {
+  try {
+    const courtId = req.params.court_id;
+    const userId = req.params.user_id;
+
+    await promiseQuery('START TRANSACTION');
+
+    // Check if user is admin and handle succession if needed
+    const { results: adminCheck } = await promiseQuery(
+      'SELECT is_admin FROM court_admins WHERE user_id = ? AND court_id = ?',
+      [userId, courtId]
+    );
+
+    if (adminCheck.length > 0 && adminCheck[0].is_admin === 1) {
+      await handleAdminSuccession(courtId, userId);
+    }
+
+    // Delete from basketball_player_attributes table
+    await promiseQuery(
+      'DELETE FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?',
+      [userId, courtId]
+    );
+
+    // Remove from court_admins
+    await promiseQuery(
+      'DELETE FROM court_admins WHERE user_id = ? AND court_id = ?',
+      [userId, courtId]
+    );
+
+    // UnAssign the player from the user
+    await promiseQuery(
+      `UPDATE ballershuffleschema.players 
+           SET user_fk = NULL 
+           WHERE user_fk = ? AND courtId = ?`,
+      [userId, courtId]
+    );
+
+    await promiseQuery('COMMIT');
+    res.status(200).json({ message: 'Court deleted successfully' });
+
+  } catch (error) {
+    await promiseQuery('ROLLBACK');
+    console.error(error);
+    res.status(500).send('Error deleting court');
   }
 });
 
@@ -1831,7 +2007,7 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
   try {
     // First query: Insert into "courts" table
     await promiseQuery(
-      'INSERT INTO ballershuffleschema.courts (created_at, courtName, courtType) VALUES (NOW(), ?, ?)',
+      'INSERT INTO ballershuffleschema.courts (created_at, courtName, courtType, show_all_ratings) VALUES (NOW(), ?, ?, 0)',
       [courtName, courtType]
     );
 
@@ -1879,7 +2055,32 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
   }
 });
 
+
 //-----------------------------------------------------------------------------------------------
+// Get court admins endpoint
+app.get('/api/court_admins/:courtId', authenticateToken, async (req, res) => {
+  try {
+    const courtId = req.params.courtId;
+    const { results } = await promiseQuery(`
+    SELECT 
+        u.full_name as name,
+        u.phone_number as phoneNumber
+      FROM court_admins ca
+      JOIN users u ON ca.user_id = u.id
+      WHERE ca.court_id = ?
+      AND ca.is_admin = 1
+    `, [courtId]);
+
+    if (results.length === 0) {
+      return res.status(200).json([]); // Return empty array if no admins found
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching court admins:', error);
+    res.status(500).json({ message: 'Failed to fetch admins' });
+  }
+});
 
 // Add Admin Endpoint
 app.post('/api/add_admin/:court_id', authenticateToken, async (req, res) => {
@@ -1897,10 +2098,29 @@ app.post('/api/add_admin/:court_id', authenticateToken, async (req, res) => {
       return res.status(409).json({ message: 'User is already an admin' });
     }
 
+    // Get court name
+    const { results: courtResults } = await promiseQuery(
+      'SELECT courtName FROM courts WHERE id = ?',
+      [courtId]
+    );
+
+    if (courtResults.length === 0) {
+      return res.status(404).json({ message: 'Court not found' });
+    }
+
+    const courtName = courtResults[0].courtName;
+
     // Add the user as an admin
     await promiseQuery(
       'INSERT INTO ballershuffleschema.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
       [userId, courtId, 1] // 1 signifies is_admin
+    );
+
+    // Send notification to the new admin
+    await sendPushNotification(
+      userId,
+      `Admin Rights Granted - ${courtName}`,
+      `You have been assigned as an admin for ${courtName}.`
     );
 
     res.status(201).json({ message: 'User added as admin successfully' });
@@ -1963,34 +2183,6 @@ app.get('/api/is_admin/:user_id/:court_id', (req, res) => {
   });
 });
 
-
-//-----------------------------------------------------------------------------------------------
-
-
-// Delete Court endpoint
-app.delete('/api/leave_court/:user_id/:court_id', authenticateToken, async (req, res) => {
-  try {
-    const courtId = req.params.court_id;
-    const userId = req.params.user_id;
-
-    // Delete from basketball_player_attributes table
-    await promiseQuery(
-      'DELETE FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?',
-      [userId, courtId]
-    );
-
-    // UnAssign the player from the user
-    await promiseQuery(
-      ` UPDATE ballershuffleschema.players SET user_fk = NULL WHERE user_fk = ? AND courtId = ? `,
-      [userId, courtId]
-    );
-
-    res.status(200).json({ message: 'Court deleted successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error deleting court');
-  }
-});
 
 
 
@@ -2329,6 +2521,7 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
 
 
 //REGISTER PLAYERS API ---------------------------------------------
+// Register players API
 app.post('/api/register-players', authenticateToken, async (req, res) => {
   const { playersIds, gameId, userId } = req.body;
   try {
@@ -2379,32 +2572,60 @@ app.post('/api/register-players', authenticateToken, async (req, res) => {
 
     await Promise.all(notificationPromises);
 
-    // Check for players who got bumped out due to priority
+    // Check for players who got bumped out due to priority using the new query
     const { results: bumpedPlayers } = await promiseQuery(`
-      WITH RankedPlayers AS (
-        SELECT 
-          rtg.player_id,
-          p.user_fk,
-          p.name,
-          ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as player_rank
-        FROM registrations_to_game rtg
-        JOIN players p ON rtg.player_id = p.id
-        WHERE rtg.game_id = ?
-      )
-      SELECT user_fk, name
-      FROM RankedPlayers
-      WHERE player_rank = ? + 1`,
-      [gameId, max_players]
-    );
+                WITH NewPlayersPriority AS (
+                  SELECT MIN(p.priority) as min_new_priority
+                  FROM players p
+                  WHERE p.id IN (?)  
+                ),
+                PreviousPlayers AS (
+                  SELECT 
+                    rtg.player_id,
+                    p.user_fk,
+                    p.name,
+                    p.priority,
+                    ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_before
+                  FROM registrations_to_game rtg
+                  JOIN players p ON rtg.player_id = p.id
+                  WHERE rtg.game_id = ?
+                  AND rtg.player_id NOT IN (?)  
+                ),
+                -- Now get the current rankings after new registrations
+                CurrentPlayers AS (
+                  SELECT 
+                    rtg.player_id,
+                    p.user_fk,
+                    p.name,
+                    p.priority,
+                    ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_after
+                  FROM registrations_to_game rtg
+                  JOIN players p ON rtg.player_id = p.id
+                  WHERE rtg.game_id = ?
+                )
+                -- Finally, identify players who were bumped due to priority
+                SELECT 
+                  pp.user_fk,
+                  pp.name,
+                  pp.priority as bumped_priority,
+                  npp.min_new_priority as new_player_priority
+                FROM PreviousPlayers pp
+                JOIN CurrentPlayers cp ON pp.player_id = cp.player_id
+                CROSS JOIN NewPlayersPriority npp
+                WHERE pp.rank_before <= ? 
+                AND cp.rank_after > ?    
+                AND pp.priority > npp.min_new_priority;  
+          `, [playersIds, gameId, playersIds, gameId, max_players, max_players]);
 
-    // Notify bumped players
+    // Only notify players who were actually bumped due to priority
     for (const bumpedPlayer of bumpedPlayers) {
       if (bumpedPlayer.user_fk) {
         await sendPushNotification(
           bumpedPlayer.user_fk,
           `You're Now on Reserve - ${courtName}`,
-          `Due to your lower priority, you are now on the reserve list for today's game.`
+          `A player with higher priority (${bumpedPlayer.new_player_priority}) has registered, moving you (priority ${bumpedPlayer.bumped_priority}) to the reserve list.`
         );
+        console.log('notification sent that he is number 22 to: ', bumpedPlayer.name)
       }
     }
 
@@ -2554,7 +2775,7 @@ app.delete('/api/game_registrations_deletion/:game_id/:player_id', authenticateT
             await sendPushNotification(
               movedUpPlayer.user_fk,
               `You're In! - ${courtName}`,
-              `You are now number ${max_players} in the list for today's game at ${new Date(game_start_time).toLocaleString()}!`
+              `You are now number ${max_players} in the list for the game at ${new Date(game_start_time).toLocaleString()}!`
             );
           }
         }
@@ -2637,7 +2858,60 @@ app.post('/api/game_teams', authenticateToken, async (req, res) => {
 });
 
 
-// Get teams for a game
+// Get user information endpoint
+app.get('/api/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const { results } = await promiseQuery(
+      'SELECT id, email, username, full_name, phone_number,first_log_in FROM ballershuffleschema.users WHERE id = ?',
+      [userId]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return user data without sensitive information
+    res.json({
+      id: results[0].id,
+      email: results[0].username,
+      username: results[0].username,
+      fullName: results[0].full_name,
+      phoneNumber: results[0].phone_number,
+      first_log_in: results[0].first_log_in
+    });
+
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+});
+
+
+
+// Update user's first login status---------------------------------------------
+app.put('/api/update-first-login/:userId', authenticateToken, async (req, res) => {
+  try {
+      const userId = req.params.userId;
+      const {results} = await promiseQuery(
+          'UPDATE users SET first_log_in = 1 WHERE id = ?',
+          [userId]
+      );
+
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.status(200).json({ message: 'First login status updated successfully' });
+  } catch (error) {
+      console.error('Error updating first login status:', error);
+      res.status(500).json({ message: 'Failed to update first login status' });
+  }
+});
+
+
+// Get teams for a game-------------------------------------------------
 app.get('/api/get_game_teams/:game_id', authenticateToken, async (req, res) => {
   const { game_id } = req.params;
 
