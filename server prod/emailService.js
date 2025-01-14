@@ -1,6 +1,4 @@
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-dotenv.config();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -12,13 +10,11 @@ const transporter = nodemailer.createTransport({
         rejectUnauthorized: false
     }
 });
-
-export const generateVerificationCode = () => {
+export function generateVerificationCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-
-export const sendVerificationEmail = async (to, code) => {
+export async function sendVerificationEmail(to, code) {
 
     const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -128,7 +124,8 @@ export const sendVerificationEmail = async (to, code) => {
 };
 
 
-export const sendPasswordVerificationEmail = async (to, resetCode) => {
+
+export async function sendPasswordVerificationEmail(to, resetCode) {
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to,

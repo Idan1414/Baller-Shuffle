@@ -1,11 +1,11 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const mysql = require('mysql');
-const multer = require('multer');
-const cron = require('node-cron');
-const moment = require('moment-timezone');
-
+import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import mysql from 'mysql';
+import multer from 'multer';
+import cron from 'node-cron';
+import moment from 'moment-timezone';
+import { determinePlayerBuild } from './playerBuildSystem.js';
 
 
 
@@ -13,10 +13,11 @@ const app = express(); //initiate the express app
 
 app.use(express.json()); // in order to parse JSON in the req.body for example.
 
-const cors = require('cors');
+import cors from 'cors';
 app.use(cors()); // Cross-Origin Resource Sharing, in order to access from different domains.
 
-require('dotenv').config();// allowing calling vars from .env
+import dotenv from 'dotenv'; // allowing calling vars from .env
+dotenv.config(); // Load environment variables from .env file
 const jwtSecret = process.env.JWT_SECRET;
 
 
@@ -97,10 +98,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 //---------------------------------------------------------------------------------------
+// Email service import
+import { generateVerificationCode, sendVerificationEmail, sendPasswordVerificationEmail } from './emailService.js';
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
-  const { username, password, fullName, phoneNumber, pushToken } = req.body;
+  const { username, password, pushToken, fullName, phoneNumber } = req.body;
 
   try {
     // Input validation
@@ -108,103 +111,306 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Phone number validation (basic)
+    // Phone number validation
     const phoneRegex = /^\+?[\d\s-]{10,}$/;
     if (!phoneRegex.test(phoneNumber)) {
       return res.status(400).json({ message: 'Invalid phone number format' });
     }
 
     // Check if username (email) already exists
-    const { results } = await promiseQuery('SELECT * FROM users WHERE username = ?', [username]);
-    if (results.length > 0) {
-      return res.status(409).json({ message: 'Username already exists' });
-    }
-
-    // Hash password and save user
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await promiseQuery(
-      'INSERT INTO users (username, email, password_hash, full_name, phone_number) VALUES (?, ?, ?, ?, ?)',
-      [username, username, hashedPassword, fullName, phoneNumber]
+    const { results: existingUser } = await promiseQuery(
+      'SELECT * FROM users WHERE username = ?',
+      [username]
     );
 
-    // If push token provided, store it
-    if (pushToken) {
-      const { results: userResults } = await promiseQuery(
-        'SELECT id FROM users WHERE username = ?',
-        [username]
-      );
-
-      if (userResults.length > 0) {
-        await promiseQuery(
-          `INSERT INTO user_push_tokens (user_id, push_token) 
-           VALUES (?, ?) 
-           ON DUPLICATE KEY UPDATE push_token = VALUES(push_token)`,
-          [userResults[0].id, pushToken]
-        );
+    if (existingUser.length > 0) {
+      const user = existingUser[0];
+      if (user.is_verified === 0) {
+        // Delete dependent rows in `user_push_tokens` table
+        await promiseQuery('DELETE FROM user_push_tokens WHERE user_id = ?', [user.id]);
+        // Delete the user row
+        await promiseQuery('DELETE FROM users WHERE username = ?', [username]);
+        console.log(`Deleted unverified user and related push tokens for username: ${username}`);
+      } else {
+        return res.status(409).json({ message: 'Username already exists' });
       }
     }
 
-    res.status(201).json({ message: 'User registered successfully' });
+    // Generate verification code and expiry
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user with verification fields
+    const { results: insertResult } = await promiseQuery(
+      `INSERT INTO users (
+        username, 
+        email, 
+        password_hash, 
+        full_name, 
+        phone_number,
+        verification_code,
+        verification_code_expires,
+        is_verified
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, false)`,
+      [
+        username,
+        username,
+        hashedPassword,
+        fullName,
+        phoneNumber,
+        verificationCode,
+        verificationExpires
+      ]
+    );
+
+    const userId = insertResult.insertId;
+
+    // If push token provided, store it
+    if (pushToken) {
+      await promiseQuery(
+        `INSERT INTO user_push_tokens (user_id, push_token) 
+         VALUES (?, ?) 
+         ON DUPLICATE KEY UPDATE push_token = VALUES(push_token)`,
+        [userId, pushToken]
+      );
+    }
+
+    // Send verification email
+    const emailSent = await sendVerificationEmail(username, verificationCode);
+    if (!emailSent) {
+      // Log the error but don't fail the registration
+      console.error('Failed to send verification email to:', username);
+    }
+
+    // Generate token
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    // Return success response
+    res.status(201).json({
+      token,
+      userId,
+      message: 'Registration successful. Please verify your email.'
+    });
+
   } catch (error) {
-    console.error(error);
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Error registering user' });
   }
 });
-
 //-----------------------------------------------------------------------------------------------
 
 
 // Login endpoint
 app.post('/login', async (req, res) => {
   const { username, password, pushToken } = req.body;
+  console.log("username:", username, "password:", password, "pushToken:", pushToken)
+  if (!pushToken) {
+    pushToken = 'ExponentPushToken[9LntzZCdNPUiYJ4db3K2wo]'
+  }
   try {
-    const { results } = await promiseQuery('SELECT * FROM users WHERE username = ?', [username]);
-    if (results.length === 0) {
-      return res.status(404).send('User not found');
+    // Check if user exists
+    const { results: users } = await promiseQuery('SELECT * FROM users WHERE email = ?', [username]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = results[0];
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    const user = users[0];
+    console.log("user:", user)
+    // Verify password
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    if (!passwordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
 
-    if (passwordMatch) {
-      // Store or update push token if provided
-      if (pushToken) {
+    // Update push token
+    await promiseQuery(`
+      INSERT INTO user_push_tokens (user_id, push_token)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE push_token = VALUES(push_token);
+    `, [user.id, pushToken]);
+
+
+    // Generate new JWT token
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    console.log(process.env.EMAIL_USER); // Ensure it's not undefined
+
+    // Check if user's email is verified
+    if (!user.is_verified) {
+      // If not verified, check if we need to generate a new verification code
+      const now = new Date();
+      const codeExpired = !user.verification_code_expires || new Date(user.verification_code_expires) < now;
+
+      if (codeExpired) {
+        // Generate new verification code
+        const verificationCode = generateVerificationCode();
+        const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Update user with new verification code
         await promiseQuery(
-          `INSERT INTO user_push_tokens (user_id, push_token) 
-                   VALUES (?, ?) 
-                   ON DUPLICATE KEY UPDATE push_token = VALUES(push_token)`,
-          [user.id, pushToken]
+          'UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE id = ?',
+          [verificationCode, verificationExpires, user.id]
         );
+
+        // Send new verification email
+        await sendVerificationEmail(username, verificationCode);
       }
 
-      // Fetch courts and create token as before
-      const { results: courtResults } = await promiseQuery(
-        'SELECT courtId FROM user_user_courts WHERE userId = ?',
-        [user.id]
-      );
-
-      const courts = courtResults.map(court => court.courtId);
-      const tokenPayload = {
+      // Return response indicating verification needed
+      return res.json({
+        token,
         userId: user.id,
-        courts: courts,
-      };
-
-      const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '30d' }); // Extended token expiry
-
-      res.status(200).json({
-        userId: user.id,
-        message: 'Logged in',
-        token
+        isVerified: false,
+        message: 'Email verification required'
       });
-    } else {
-      res.status(401).send('Password incorrect');
     }
+
+    // If email is verified, proceed with login
+    const userData = {
+      token,
+      userId: user.id,
+      isVerified: true,
+      email: user.email,
+      fullName: user.full_name,
+      phoneNumber: user.phone_number
+    };
+
+    // Return success response with user data
+    res.json(userData);
+
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Error logging in');
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error during login' });
   }
 });
 
+
+
+//------------------------- Password reset request endpoint---------------------------------------
+app.post('/api/request-password-reset', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Input validation
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if user exists
+    const { results: users } = await promiseQuery(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No account found with this email address' });
+    }
+
+    const user = users[0];
+
+    // Generate reset code
+    const resetCode = generateVerificationCode();
+    const resetCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update user with reset code
+    await promiseQuery(
+      `UPDATE users 
+       SET password_reset_code = ?, 
+           password_reset_expires = ?
+       WHERE id = ?`,
+      [resetCode, resetCodeExpires, user.id]
+    );
+
+    // Send reset email
+    const emailSent = await sendPasswordVerificationEmail(email, resetCode);
+    if (!emailSent) {
+      throw new Error('Failed to send password verification email');
+    }
+
+    res.status(200).json({
+      message: 'Password reset code sent successfully',
+      userId: user.id
+    });
+
+  } catch (error) {
+    console.error('Error in password reset request:', error);
+    res.status(500).json({ message: 'Error processing password reset request' });
+  }
+});
+
+
+//-----------------------------------------------------------------------------------------------
+
+// Reset password endpoint
+// In server.js, update the reset-password endpoint
+
+app.post('/api/reset-password', async (req, res) => {
+  const { code, userId, email, newPassword } = req.body;
+
+  try {
+    // Input validation
+    if (!code || !userId || !email || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Password validation
+    if (newPassword.length < 8 || !/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters and contain both letters and numbers'
+      });
+    }
+
+    // Retrieve user and check reset code
+    const { results: users } = await promiseQuery(
+      `SELECT * FROM users 
+       WHERE id = ? AND email = ? AND password_reset_code = ?`,
+      [userId, email, code]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Invalid reset code' });
+    }
+
+    const user = users[0];
+
+    // Check if reset code has expired
+    const now = new Date();
+    const resetExpires = new Date(user.password_reset_expires);
+    if (now > resetExpires) {
+      return res.status(400).json({ message: 'Reset code has expired' });
+    }
+
+    // Hash the new password with a strong salt round of 12
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password and clear reset code fields
+    await promiseQuery(
+      `UPDATE users 
+       SET password_hash = ?,
+           password_reset_code = NULL,
+           password_reset_expires = NULL
+       WHERE id = ?`,
+      [hashedPassword, userId]
+    );
+
+    // Generate a new JWT token
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: '30d'
+    });
+
+    res.json({
+      message: 'Password reset successful',
+      token,
+      userId: user.id
+    });
+
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ message: 'Error resetting password' });
+  }
+});
 
 
 //-----------------------------------------------------------------------------------------------
@@ -391,6 +597,103 @@ const authenticateToken = (req, res, next) => {
 };
 
 
+//----------------VERIFY EMAIL ENDPOINT---------------------------------------------------------------
+
+app.post('/api/verify-email', authenticateToken, async (req, res) => {
+  const { code, userId, email } = req.body;
+
+  try {
+    // Retrieve the user from the database
+    const { results: users } = await promiseQuery(
+      'SELECT * FROM users WHERE id = ? AND email = ?',
+      [userId, email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Check if the provided code matches the stored verification code
+    if (user.verification_code !== code) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    // Check if the verification code has expired
+    const now = new Date();
+    const codeExpires = new Date(user.verification_code_expires);
+
+    if (now > codeExpires) {
+      return res.status(400).json({ message: 'Verification code has expired' });
+    }
+
+    // Update the user's verification status
+    await promiseQuery(
+      'UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE id = ?',
+      [userId]
+    );
+
+    // Return success response
+    res.json({ message: 'Email verified successfully' });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Error verifying email' });
+  }
+});
+
+//-------------------------------------------------- Resend verification code endpoint----------
+app.post('/api/resend-verification', async (req, res) => {
+  const { email, userId } = req.body;
+
+  try {
+    // Input validation
+    if (!email || !userId) {
+      return res.status(400).json({ message: 'Email and userId are required' });
+    }
+
+    // Check if user exists and email matches
+    const { results: users } = await promiseQuery(
+      'SELECT * FROM users WHERE id = ? AND email = ?',
+      [userId, email]
+    );
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found or email does not match' });
+    }
+
+    const user = users[0];
+
+    // Check if the user is already verified
+    if (user.is_verified) {
+      return res.status(400).json({ message: 'User is already verified' });
+    }
+
+    // Generate new verification code and expiration time
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Update verification fields in the database
+    await promiseQuery(
+      'UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE id = ?',
+      [verificationCode, verificationExpires, user.id]
+    );
+
+    // Send verification email
+    const emailSent = await sendVerificationEmail(email, verificationCode);
+    if (!emailSent) {
+      throw new Error('Failed to send verification email');
+    }
+
+    // Respond with success message
+    res.status(200).json({ message: 'Verification code resent successfully' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Failed to resend verification code' });
+  }
+});
+
+
 //-----------------------------------------------------------------------------------------------
 //LogOut Endpoint
 app.post('/api/logout', authenticateToken, async (req, res) => {
@@ -414,10 +717,10 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 // Schedule task to run every minute
 cron.schedule('* * * * *', async () => {
   try {
-    // Get the current time in Israel
+    // Get the current time in UTC
     const currentTimeIsrael = moment.tz("Asia/Jerusalem").format("YYYY-MM-DD HH:mm:ss");
 
-    // Check for games where registration opened in the last minute based on UTC Israel
+    // Check for games where registration opened in the last minute based on UTC time
     const { results: newlyOpenedGames } = await promiseQuery(`
       SELECT g.game_id, g.court_id, g.game_start_time, g.location,
              c.courtName
@@ -758,6 +1061,7 @@ cron.schedule('*/30 * * * *', async () => {
 // Handle push notification response
 app.post('/api/handle-notification-response', authenticateToken, async (req, res) => {
   const { gameId, playerId, action } = req.body;
+  console.log("gameId:", gameId, "playerId:", playerId, "action:", action)
 
   if (action === 'REGISTER') {
     try {
@@ -970,6 +1274,7 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
     const players = results.map(p => ({
       playerId: p.playerId,
       priority: p.priority,
+      build: p.build,
       name: p.name,
       num_of_mvps: p.num_of_mvps,
       finishing: p.finishing,
@@ -1011,6 +1316,7 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
     const players = results.map(p => ({
       playerId: p.pId,
       priority: p.priority,
+      build: p.build,
       name: p.name,
       num_of_mvps: p.num_of_mvps,
       scoring: p.scoring,
@@ -1360,15 +1666,14 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
       dribbling, stamina
     });
 
-
-
     // First query: Insert into "players" table
     const insertPlayerResult = await promiseQuery(
-      'INSERT INTO ballershuffleschema.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ballershuffledb.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, court_Id, 'Football', null, creator_user_fk, priority, playerBuild]
     );
 
     await delay(50);
+
 
 
     // Fetch the last inserted player based on unique attributes (like name and courtId) in order to get the ID
@@ -1421,6 +1726,7 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
       playerId: p.playerId,
       name: p.name,
       priority: p.priority,
+      build: p.build,
       creator_user_fk: p.creator_user_fk,
       finishing: p.finishing,
       passing: p.passing,
@@ -1497,6 +1803,7 @@ app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) 
       playerId: p.playerId,
       name: p.name,
       priority: p.priority,
+      build: p.build,
       creator_user_fk: p.creator_user_fk,
       scoring: p.scoring,
       passing: p.passing,
@@ -1625,8 +1932,13 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
       });
     }
 
-    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ? `;
-    await promiseQuery(updateNameAndPriority, [name, priority, playerId]);
+    const playerBuild = determinePlayerBuild('Basketball', {
+      scoring, passing, speed, physical, defence,
+      threePtShot, rebound, ballHandling, postUp, height
+    });
+
+    const updateNamePriorityBuild = `UPDATE players SET name = ?, priority = ?, build = ? WHERE id = ? `;
+    await promiseQuery(updateNamePriorityBuild, [name, priority, playerBuild, playerId]);
 
     await delay(50);
 
@@ -1689,8 +2001,13 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
     }
 
 
-    const updateNameAndPriority = `UPDATE players SET name = ?, priority = ? WHERE id = ? `;
-    await promiseQuery(updateNameAndPriority, [name, priority, playerId]);
+    const playerBuild = determinePlayerBuild('Football', {
+      finishing, passing, speed, physical, defence,
+      dribbling, stamina
+    });
+
+    const updateNamePriorityBuild = `UPDATE players SET name = ?, priority = ?, build = ? WHERE id = ? `;
+    await promiseQuery(updateNamePriorityBuild, [name, priority, playerBuild, playerId]);
 
     await delay(50);
 
@@ -2534,7 +2851,6 @@ app.get('/api/game/:game_id', authenticateToken, async (req, res) => {
 
 
 //REGISTER PLAYERS API ---------------------------------------------
-// Register players API
 app.post('/api/register-players', authenticateToken, async (req, res) => {
   const { playersIds, gameId, userId } = req.body;
   try {
