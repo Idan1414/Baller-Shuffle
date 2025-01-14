@@ -51,12 +51,14 @@ const AuthForm = () => {
     const url = isLogin
       ? `http://${process.env.REACT_APP_DB_HOST}:5000/login`
       : `http://${process.env.REACT_APP_DB_HOST}:5000/register`;
+    const pushToken = 'ExponentPushToken[9LntzZCdNPUiYJ4db3K2wo]'
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, pushToken }),
     });
 
     try {

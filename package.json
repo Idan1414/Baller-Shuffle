@@ -12,8 +12,10 @@
     "concurrently": "^8.2.2",
     "dotenv": "^16.4.5",
     "jwt-decode": "^4.0.0",
+    "moment-timezone": "^0.5.46",
     "mysql": "^2.18.1",
     "mysql2": "^3.9.2",
+    "node-cron": "^3.0.3",
     "react-icons": "^5.0.1"
   },
   "devDependencies": {

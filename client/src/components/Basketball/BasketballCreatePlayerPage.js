@@ -26,20 +26,22 @@ const BasketballCreatePlayerPage = () => {
 
   const [playerAttributes, setPlayerAttributes] = useState({
     name: '',
-    scoring: 0,
-    passing: 0,
-    speed: 0,
-    physical: 0,
-    defence: 0,
-    threePtShot: 0,
-    rebound: 0,
-    ballHandling: 0,
-    postUp: 0,
+    priority: 'A',
+    scoring: null,
+    passing: null,
+    speed: null,
+    physical: null,
+    defence: null,
+    threePtShot: null,
+    rebound: null,
+    ballHandling: null,
+    postUp: null,
     height: 170,
   });
 
   const [errors, setErrors] = useState({
     name: '',
+    priority: '',
     height: '',
     scoring: '',
     passing: '',
@@ -135,6 +137,9 @@ const BasketballCreatePlayerPage = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
+
+
+
   const handleCreatePlayer = async () => {
     const nameError = validateName();
     const heightError = validateNumber(playerAttributes.height, 50, 300, 'height');
@@ -164,13 +169,18 @@ const BasketballCreatePlayerPage = () => {
       postUp: validateNumber(numericalAttributes.postUp, 0, 99, 'postUp'),
     };
 
+
+    const priorityError = validatePriority(playerAttributes.priority);
+
     setErrors({
       name: nameError,
       height: heightError,
+      priority: priorityError,
       ...attributesErrors,
     });
 
-    if (!nameError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
+
+    if (!nameError && !priorityError && !heightError && !Object.values(attributesErrors).some((error) => error !== '')) {
       const playerData = {
         ...playerAttributes,
         ...numericalAttributes,
@@ -190,7 +200,7 @@ const BasketballCreatePlayerPage = () => {
 
         if (response.ok) {
           console.log('Player created successfully');
-          navigate(`/creation_success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`);
+          navigate(`/creation-success/${courtId}?overall=${playerData.overall}&name=${playerData.name}&courtName=${currCourtName}&courtType=${currCourtType}&userId=${currUserId}`);
         } else {
           console.error('Error creating player:', response.statusText);
         }
@@ -217,177 +227,258 @@ const BasketballCreatePlayerPage = () => {
     return Math.round(average);
   };
 
-
+  const validatePriority = (priority) => {
+    const validPriorities = ['A', 'B', 'C'];
+    if (!validPriorities.includes(priority)) {
+      return 'Please select a valid priority (A, B, or C)';
+    }
+    return '';
+  };
 
   return (
     <div className="create-player-page-style">
+      <div className="back-button-container">
+        <Link
+          to={`/court_home_page/${courtId}?userId=${currUserId}`}
+          className="back-home-button-home"
+        >
+          🏠
+        </Link>
+      </div>
       <h1 className="CP-title">Create New Player</h1>
+
       <div className="CP-content-container">
+
         <div className="CP-form-container">
           {/* Player Creation Form */}
           <div className="CP-input-wrapper">
             <div className="CP-input-container">
-              <label htmlFor="name">Name :</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={playerAttributes.name}
-                onChange={handleInputChange}
+              <div className="input-label-wrapper">
 
-              />
+                <label htmlFor="name">Name :</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={playerAttributes.name}
+                  onChange={handleInputChange}
+
+                />
+              </div>
+
               {errors.name && <p className="error-message">{errors.name}</p>}
             </div>
 
             <div className="CP-input-container">
-              <label htmlFor="height">Height (cm) :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="height"
-                name="height"
-                value={playerAttributes.height}
-                onChange={handleInputChange}
+              <div className="input-label-wrapper">
 
-              />
+                <label htmlFor="height">Height (cm) :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="height"
+                  name="height"
+                  value={playerAttributes.height}
+                  onChange={handleInputChange}
+
+                />
+              </div>
+
               {errors.height && <p className="error-message">{errors.height}</p>}
             </div>
 
-            {/* Repeat similar input containers for other attributes */}
+            {/* Priority Dropdown */}
+            <div className="CP-input-container">
+              <div className="input-label-wrapper">
+
+                <label htmlFor="priority">Priority:</label>
+                <select
+                  id="priority"
+                  name="priority"
+                  value={playerAttributes.priority}
+                  onChange={handleInputChange}
+                >
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+
+              {errors.priority && <p className="error-message">{errors.priority}</p>}
+            </div>
+
+
             {/* Scoring */}
             <div className="CP-input-container">
-              <label htmlFor="scoring">Scoring :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="scoring"
-                name="scoring"
-                value={playerAttributes.scoring}
-                onChange={handleInputChange}
+              <div className="input-label-wrapper">
 
-              />
+                <label htmlFor="scoring">Scoring :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="scoring"
+                  name="scoring"
+                  value={playerAttributes.scoring}
+                  onChange={handleInputChange}
+
+                />
+              </div>
+
               {errors.scoring && <p className="error-message">{errors.scoring}</p>}
             </div>
 
             {/* Passing */}
             <div className="CP-input-container">
-              <label htmlFor="passing">Passing :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="passing"
-                name="passing"
-                value={playerAttributes.passing}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="passing">Passing :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="passing"
+                  name="passing"
+                  value={playerAttributes.passing}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.passing && <p className="error-message">{errors.passing}</p>}
             </div>
 
             {/* Speed */}
             <div className="CP-input-container">
-              <label htmlFor="speed">Speed :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="speed"
-                name="speed"
-                value={playerAttributes.speed}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="speed">Speed :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="speed"
+                  name="speed"
+                  value={playerAttributes.speed}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.speed && <p className="error-message">{errors.speed}</p>}
             </div>
 
             {/* Physical */}
             <div className="CP-input-container">
-              <label htmlFor="physical">Physical :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="physical"
-                name="physical"
-                value={playerAttributes.physical}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="physical">Physical :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="physical"
+                  name="physical"
+                  value={playerAttributes.physical}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.physical && <p className="error-message">{errors.physical}</p>}
             </div>
 
             {/* Defence */}
             <div className="CP-input-container">
-              <label htmlFor="defence">Defence :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="defence"
-                name="defence"
-                value={playerAttributes.defence}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="defence">Defence :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="defence"
+                  name="defence"
+                  value={playerAttributes.defence}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.defence && <p className="error-message">{errors.defence}</p>}
             </div>
 
             {/* 3 PT Shot */}
             <div className="CP-input-container">
-              <label htmlFor="threePtShot">3 PT Shot :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="threePtShot"
-                name="threePtShot"
-                value={playerAttributes.threePtShot}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="threePtShot">3 PT Shot :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="threePtShot"
+                  name="threePtShot"
+                  value={playerAttributes.threePtShot}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.threePtShot && <p className="error-message">{errors.threePtShot}</p>}
             </div>
 
             {/* Rebound */}
             <div className="CP-input-container">
-              <label htmlFor="rebound">Rebound :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="rebound"
-                name="rebound"
-                value={playerAttributes.rebound}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="rebound">Rebound :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="rebound"
+                  name="rebound"
+                  value={playerAttributes.rebound}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.rebound && <p className="error-message">{errors.rebound}</p>}
             </div>
 
             {/* Ball Handling */}
+
             <div className="CP-input-container">
-              <label htmlFor="ballHandling">Ball Handling :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="ballHandling"
-                name="ballHandling"
-                value={playerAttributes.ballHandling}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="ballHandling">Ball Handling :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="ballHandling"
+                  name="ballHandling"
+                  value={playerAttributes.ballHandling}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.ballHandling && <p className="error-message">{errors.ballHandling}</p>}
             </div>
 
             {/* Post Up */}
             <div className="CP-input-container">
-              <label htmlFor="postUp">Post Up :</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                id="postUp"
-                name="postUp"
-                value={playerAttributes.postUp}
-                onChange={handleInputChange}
-              />
+              <div className="input-label-wrapper">
+
+                <label htmlFor="postUp">Post Up :</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  id="postUp"
+                  name="postUp"
+                  value={playerAttributes.postUp}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {errors.postUp && <p className="error-message">{errors.postUp}</p>}
             </div>
           </div>
@@ -476,12 +567,7 @@ const BasketballCreatePlayerPage = () => {
               <button className="calc-save-button" onClick={handleCreatePlayer}>
                 Create and Calculate Overall
               </button>
-              <Link
-                to={`/court_home_page/${courtId}?userId=${currUserId}`}
-                className="back-home-button"
-              >
-                Back to Home
-              </Link>
+
             </div>
           </div>
 
