@@ -1589,15 +1589,10 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
       });
     }
 
-    const playerBuild = determinePlayerBuild('Basketball', {
-      scoring, passing, speed, physical, defence,
-      threePtShot, rebound, ballHandling, postUp, height
-    });
-
     // First query: Insert into "players" table
     const insertPlayerResult = await promiseQuery(
-      'INSERT INTO ballershuffledb.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, court_Id, 'Basketball', null, creator_user_fk, priority, playerBuild]
+      'INSERT INTO ballershuffledb.players (name, courtId, type, user_fk, creator_user_fk, priority) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, court_Id, 'Basketball', null, creator_user_fk, priority]
     );
 
     await delay(50);
@@ -1673,6 +1668,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
     );
 
     await delay(50);
+
 
 
 
@@ -3222,20 +3218,20 @@ app.get('/api/user/:userId', authenticateToken, async (req, res) => {
 // Update user's first login status---------------------------------------------
 app.put('/api/update-first-login/:userId', authenticateToken, async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const { results } = await promiseQuery(
-      'UPDATE users SET first_log_in = 1 WHERE id = ?',
-      [userId]
-    );
+      const userId = req.params.userId;
+      const {results} = await promiseQuery(
+          'UPDATE users SET first_log_in = 1 WHERE id = ?',
+          [userId]
+      );
 
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'User not found' });
+      }
 
-    res.status(200).json({ message: 'First login status updated successfully' });
+      res.status(200).json({ message: 'First login status updated successfully' });
   } catch (error) {
-    console.error('Error updating first login status:', error);
-    res.status(500).json({ message: 'Failed to update first login status' });
+      console.error('Error updating first login status:', error);
+      res.status(500).json({ message: 'Failed to update first login status' });
   }
 });
 

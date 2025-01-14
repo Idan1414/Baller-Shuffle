@@ -1,8 +1,5 @@
 
-
-
-export function determinePlayerBuild(sport, stats) {
-
+export const determinePlayerBuild = (sport, stats) => {
     // Helper function to check if other stats are in range
     const areOtherStatsInRange = (primaryStat, minRange, maxRange) => {
         return Object.entries(stats).every(([key, value]) => {
