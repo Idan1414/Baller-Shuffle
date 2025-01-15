@@ -15,6 +15,10 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 The local testing might not go so well because of the ongoing changes I am doing. (Implementing the DB connections for example).
 
 
+The code provided in this repository is the old code I have for when the app was a web app, since my friends got reallly exited about it , I developed it in React-Native in order to make it better and as a mobile app (to allow push notifications). 
+The pictures added down here are from the mobile app , but I won't expose my code because I am about to upload it to the stores and make it REAL.
+
+
 Here are some pictures of the App : 
 
 Login Page:
