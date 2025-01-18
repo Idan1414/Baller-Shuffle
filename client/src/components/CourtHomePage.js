@@ -49,7 +49,7 @@ const CourtHomePage = () => {
 
 
     // Check if the user is an admin
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_admin/${currUserId}/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/is_admin/${currUserId}/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -64,7 +64,7 @@ const CourtHomePage = () => {
 
 
     // Get court info
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/court_info/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -85,7 +85,7 @@ const CourtHomePage = () => {
   // Fetch Players after setting playersAPI
   useEffect(() => {
     if (playersAPI) {
-      fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/${playersAPI}/${courtId}`, {
+      fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/${playersAPI}/${courtId}`, {
         headers: {
           Authorization: token,
         },
@@ -99,7 +99,7 @@ const CourtHomePage = () => {
           const imagePromises = storedPlayers.map(async player => {
             try {
               const response = await fetch(
-                `http://${process.env.REACT_APP_DB_HOST}:5000/api/player-picture/${player.playerId}`,
+                `http://${process.env.REACT_APP_DB_HOST}:5001/api/player-picture/${player.playerId}`,
                 {
                   headers: {
                     Authorization: token,
@@ -188,7 +188,7 @@ const CourtHomePage = () => {
     const newCourtName = prompt('Enter the new court name:', currCourtName);
     if (newCourtName && newCourtName !== currCourtName) {
       try {
-        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/update_court_name/${courtId}`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/update_court_name/${courtId}`, {
           method: 'PUT',
           headers: {
             Authorization: token,
@@ -217,7 +217,7 @@ const CourtHomePage = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/bug-report`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/bug-report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ const CourtHomePage = () => {
       const userId = selected.user_fk;
 
       try {
-        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/add_admin/${courtId}`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/add_admin/${courtId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

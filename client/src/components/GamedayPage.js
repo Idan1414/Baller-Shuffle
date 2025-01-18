@@ -96,7 +96,7 @@ const GamedayPage = () => {
       return;
     }
     // Get court info
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/court_info/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -114,7 +114,7 @@ const GamedayPage = () => {
   // Fetch game data
   const fetchGame = useCallback(async () => {
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/game/${gameId}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/game/${gameId}`, {
         method: 'GET',
         headers: {
           'Authorization': token,
@@ -148,7 +148,7 @@ const GamedayPage = () => {
     const fetchData = async () => {
       try {
         // Check if the user is an admin
-        const adminResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/is_admin/${currUserId}/${courtId}`, {
+        const adminResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/is_admin/${currUserId}/${courtId}`, {
           headers: {
             Authorization: token,
           },
@@ -174,8 +174,8 @@ const GamedayPage = () => {
       setIsLoading(true); // Start loading
       try {
         const apiUrl = currCourtType == 'Football'
-          ? `http://${process.env.REACT_APP_DB_HOST}:5000/api/football_players/${courtId}`
-          : `http://${process.env.REACT_APP_DB_HOST}:5000/api/players/${courtId}`;
+          ? `http://${process.env.REACT_APP_DB_HOST}:5001/api/football_players/${courtId}`
+          : `http://${process.env.REACT_APP_DB_HOST}:5001/api/players/${courtId}`;
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -209,7 +209,7 @@ const GamedayPage = () => {
   //Fetching Teams if they were already Shuffled
   const fetchGameTeams = async () => {
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/get_game_teams/${gameId}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/get_game_teams/${gameId}`, {
         headers: {
           'Authorization': token
         }
@@ -230,7 +230,7 @@ const GamedayPage = () => {
     const fetchMatches = async () => {
       try {
         const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/gameday_matches/${gameId}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/gameday_matches/${gameId}`,
           {
             headers: {
               'Authorization': token
@@ -260,7 +260,7 @@ const GamedayPage = () => {
   useEffect(() => {
     const fetchRegisteredPlayersCount = async () => {
       try {
-        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/can-register-players-to-game/${gameId}/${currUserId}`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/can-register-players-to-game/${gameId}/${currUserId}`, {
           method: 'GET',
           headers: {
             'Authorization': token,
@@ -291,7 +291,7 @@ const GamedayPage = () => {
   useEffect(() => {
     const fetchRegisteredPlayers = async () => {
       try {
-        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/game_registrations/${gameId}`, {
+        const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/game_registrations/${gameId}`, {
           method: 'GET',
           headers: {
             'Authorization': token,
@@ -333,7 +333,7 @@ const GamedayPage = () => {
 
 
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/game_registrations_deletion/${gameId}/${playerId}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/game_registrations_deletion/${gameId}/${playerId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': token,
@@ -359,7 +359,7 @@ const GamedayPage = () => {
   const handleRegistration = async () => {
 
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/register-players`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/register-players`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -459,7 +459,7 @@ const GamedayPage = () => {
     }
 
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/mvp-vote`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/mvp-vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -567,7 +567,7 @@ const GamedayPage = () => {
   const revealMVP = async () => {
     try {
       // First, reveal the MVP
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/mvp-votes/${gameId}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/mvp-votes/${gameId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -588,7 +588,7 @@ const GamedayPage = () => {
 
       //update the main player that played the game
       const responseTwo = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/game-players-that-played/${gameId}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/game-players-that-played/${gameId}`,
         {
           method: 'POST',
           headers: {
@@ -604,7 +604,7 @@ const GamedayPage = () => {
 
       // Then, update court statistics
       const statsResponse = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/update-court-statistics/${gameId}/${currCourtType}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/update-court-statistics/${gameId}/${currCourtType}`,
         {
           method: 'POST',
           headers: {
@@ -635,7 +635,7 @@ const GamedayPage = () => {
   const handlePlayerApprove = async (registration_id) => {
     setPlayerAprrovedNow(false);
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/approve_registration`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/approve_registration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -673,7 +673,7 @@ const GamedayPage = () => {
 
     try {
       const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete_game/${gameId}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/delete_game/${gameId}`,
         {
           method: 'DELETE',
           headers: {
@@ -743,7 +743,7 @@ const GamedayPage = () => {
   const handleCreateMatch = async () => {
     try {
       const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/create_match/${gameId}/${currUserId}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/create_match/${gameId}/${currUserId}`,
         {
           method: 'POST',
           headers: {

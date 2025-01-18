@@ -60,7 +60,7 @@ const CreateGameModal = ({ onClose, onGameCreated, existingGameData }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/${existingGameData ? `update_game/${existingGameData.game_id}` : 'create_game'}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/${existingGameData ? `update_game/${existingGameData.game_id}` : 'create_game'}`, {
         method: existingGameData ? 'PUT' : 'POST', // Use PUT for updates
         headers: {
           'Content-Type': 'application/json',

@@ -38,7 +38,7 @@ const TeamsPage = () => {
       return;
     }
 
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/court_info/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -204,7 +204,7 @@ const TeamsPage = () => {
     }
 
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/game_teams`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/game_teams`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

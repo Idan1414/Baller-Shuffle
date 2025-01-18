@@ -13,7 +13,7 @@ const GamedayStats = ({ matchPlayers, currCourtType, gameId, token }) => {
         const endpoint = currCourtType === 'Basketball' ? 'basketball_gameday_stats' : 'football_gameday_stats';
         
         const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/${endpoint}/${gameId}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/${endpoint}/${gameId}`,
           {
             headers: {
               'Authorization': token,

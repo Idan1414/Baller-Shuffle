@@ -41,7 +41,7 @@ const StatisticsPage = () => {
     }
 
     // Get court info
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/court_info/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -64,7 +64,7 @@ const StatisticsPage = () => {
 
       try {
         const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/court-statistics/${courtId}/${currCourtType}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/court-statistics/${courtId}/${currCourtType}`,
           {
             headers: {
               Authorization: token,

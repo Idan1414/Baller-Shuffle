@@ -50,7 +50,7 @@ const CourtsPage = () => {
 
       try {
         // Update token
-        const updateTokenResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/update-token`, {
+        const updateTokenResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/update-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ const CourtsPage = () => {
         console.log('Token updated with new court access');
 
         // Fetch courts
-        const courtsResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/courts/${userId}`, {
+        const courtsResponse = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/courts/${userId}`, {
           headers: {
             'Authorization': token,
           },
@@ -98,7 +98,7 @@ const CourtsPage = () => {
     if (!isConfirmed) return;
 
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/delete_court/${userId}/${court.id}`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/delete_court/${userId}/${court.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': token,

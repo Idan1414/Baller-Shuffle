@@ -1,13 +1,11 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const mysql = require('mysql');
-const multer = require('multer');
-const cron = require('node-cron');
-const moment = require('moment-timezone');
-const { determinePlayerBuild } = require('./playerBuildSystem').default;
-
-
+import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import mysql from 'mysql';
+import multer from 'multer';
+import cron from 'node-cron';
+import moment from 'moment-timezone';
+import { determinePlayerBuild } from './playerBuildSystem.js'; 
 
 
 
@@ -15,11 +13,13 @@ const app = express(); //initiate the express app
 
 app.use(express.json()); // in order to parse JSON in the req.body for example.
 
-const cors = require('cors');
+import cors from 'cors';
 app.use(cors()); // Cross-Origin Resource Sharing, in order to access from different domains.
 
-require('dotenv').config();// allowing calling vars from .env
+import dotenv from 'dotenv'; // allowing calling vars from .env
+dotenv.config(); // Load environment variables from .env file
 const jwtSecret = process.env.JWT_SECRET;
+
 
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -94,13 +94,13 @@ db.connect(err => {
   console.log('Connected to the database');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 //---------------------------------------------------------------------------------------
 // Email service import
-const { generateVerificationCode, sendVerificationEmail, sendPasswordVerificationEmail } = require('./emailService');
+import { generateVerificationCode, sendVerificationEmail, sendPasswordVerificationEmail } from './emailService.js';
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
@@ -1169,6 +1169,7 @@ app.post('/api/bug-report', authenticateToken, async (req, res) => {
 
 // Courts endpoint
 app.get('/api/courts/:id', authenticateToken, async (req, res) => {
+  console.log("courts api called")
   try {
     const userId = req.params.id;
     const { results } = await promiseQuery(

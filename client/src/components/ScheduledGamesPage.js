@@ -38,7 +38,7 @@ const ScheduledGamesPage = () => {
       return;
     }
     // Get court info
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/court_info/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/court_info/${courtId}`, {
       headers: {
         Authorization: token,
       },
@@ -56,7 +56,7 @@ const ScheduledGamesPage = () => {
 
   const fetchGames = useCallback(() => {
     setLoading(true); // Set loading to true when fetch starts
-    fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/scheduled_games/${courtId}`, {
+    fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/scheduled_games/${courtId}`, {
       headers: {
         Authorization: token,
       },

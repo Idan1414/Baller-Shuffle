@@ -40,7 +40,7 @@ const MatchPage = () => {
     const fetchMatchData = async () => {
       try {
         const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/match/${matchId}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/match/${matchId}`,
           {
             headers: {
               'Authorization': token
@@ -59,7 +59,7 @@ const MatchPage = () => {
 
         // Fetch all match players
         const playersResponse = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/match_players/${matchId}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/match_players/${matchId}`,
           {
             headers: {
               'Authorization': token
@@ -116,7 +116,7 @@ const MatchPage = () => {
     const fetchMatchStats = async () => {
       try {
         const response = await fetch(
-          `http://${process.env.REACT_APP_DB_HOST}:5000/api/match-stats/${matchId}`,
+          `http://${process.env.REACT_APP_DB_HOST}:5001/api/match-stats/${matchId}`,
           {
             headers: {
               'Authorization': token,
@@ -148,7 +148,7 @@ const MatchPage = () => {
 
   const handleAddStat = async (playerId, statType) => {
     try {
-      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5000/api/add-player-stat`, {
+      const response = await fetch(`http://${process.env.REACT_APP_DB_HOST}:5001/api/add-player-stat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ const MatchPage = () => {
 
     try {
       const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/delete-stat/${statId}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/delete-stat/${statId}`,
         {
           method: 'DELETE',
           headers: {
@@ -235,7 +235,7 @@ const MatchPage = () => {
           0; // 0 indicates a tie
 
       const response = await fetch(
-        `http://${process.env.REACT_APP_DB_HOST}:5000/api/end-match/${matchId}`,
+        `http://${process.env.REACT_APP_DB_HOST}:5001/api/end-match/${matchId}`,
         {
           method: 'POST',
           headers: {

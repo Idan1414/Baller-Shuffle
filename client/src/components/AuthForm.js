@@ -49,8 +49,8 @@ const AuthForm = () => {
     }
     console.log(process.env.REACT_APP_DB_HOST)
     const url = isLogin
-      ? `http://${process.env.REACT_APP_DB_HOST}:5000/login`
-      : `http://${process.env.REACT_APP_DB_HOST}:5000/register`;
+      ? `http://${process.env.REACT_APP_DB_HOST}:5001/login`
+      : `http://${process.env.REACT_APP_DB_HOST}:5001/register`;
     const pushToken = 'ExponentPushToken[9LntzZCdNPUiYJ4db3K2wo]'
 
     const response = await fetch(url, {
