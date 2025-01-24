@@ -18,23 +18,34 @@ The local testing might not go so well because of the ongoing changes I am doing
 Here are some pictures of the App : 
 
 Login Page:
-![image](https://github.com/user-attachments/assets/ccd00dd9-bfc0-49e3-b748-fa99c52f3f7e)
+<img width="314" alt="image" src="https://github.com/user-attachments/assets/8fb8717c-1cb4-489f-812e-0e0523c1a1c7" />
 
 
-MyCourts page:
-![image](https://github.com/user-attachments/assets/24fbeff8-7074-4c67-9d70-7ad3a19744b1)
+MySquads page:
+<img width="313" alt="image" src="https://github.com/user-attachments/assets/1c8a905f-15b6-4785-beb4-582f60fd5ed7" />
 
-Court Page: presents the players with their overall ratings.
-![image](https://github.com/user-attachments/assets/43c39f5b-b669-46cd-b036-719dcebc3e55)
+Players Tab: presents the players with their overall ratings.
+<img width="319" alt="image" src="https://github.com/user-attachments/assets/6954aed5-8adb-4016-83f3-dba490683ae6" />
 
-
-Edit Player Page: 
-![image](https://github.com/user-attachments/assets/1043d7d9-4c88-4091-9eae-5b62cc21e18a)
-
-
-Create Game page: choose the number of teams and all the friends that will be playing today.
-![image](https://github.com/user-attachments/assets/790394f3-4edd-42a4-8ecd-67147d250685)
+Create Player Modal:
+<img width="318" alt="image" src="https://github.com/user-attachments/assets/3f581198-8487-4be4-97eb-a98f6deb2586" />
 
 
-Random Teams Page : presents the teams. the user can drag and drop players in order to manually mix the teams or just click re-randomize.
-![image](https://github.com/user-attachments/assets/293535e2-88e5-4004-b44f-4a942d9c0a77)
+Player Card: 
+<img width="317" alt="image" src="https://github.com/user-attachments/assets/e3a1d1a5-acbb-42aa-b633-9ce439208802" />
+
+
+Create Game Modal: choose the details for the game:
+<img width="320" alt="image" src="https://github.com/user-attachments/assets/c897dab2-b952-4226-a418-085ed6c4d9dc" />
+
+Games Tab : 
+<img width="317" alt="image" src="https://github.com/user-attachments/assets/eea3eaad-3627-4e95-af87-ae325ede82f9" />
+
+
+Game Page : 
+<img width="317" alt="image" src="https://github.com/user-attachments/assets/c8866981-f6a4-493a-8dd7-10ddc326a4dc" />
+
+
+
+Random Teams Page : presents the teams. The user can manually change players, mix the teams with the Best Fit algorithm or just click re-randomize.
+<img width="317" alt="image" src="https://github.com/user-attachments/assets/d30f81da-3fcd-4e5c-bb12-0dd10345910d" />
