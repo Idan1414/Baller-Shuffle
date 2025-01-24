@@ -1,19 +1,9 @@
 An application that makes fair random teams for playing basketball and football "in the neighborhood".
 
-# Getting Started with Create React App
+Note:
+The code in this project originates from my earlier web implementation. Since then, I’ve transitioned the project to a mobile app, which is set to be published on both Apple’s App Store and Google Play soon.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
-## Available Scripts
-
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-The local testing might not go so well because of the ongoing changes I am doing. (Implementing the DB connections for example).
-
+The React Native code for the mobile app is private. However, if you’re reviewing this project from my resume, rest assured—I’d be happy to showcase the mobile app code during the interview.
 
 Here are some pictures of the App : 
 
