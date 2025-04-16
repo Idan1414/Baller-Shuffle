@@ -3,27 +3,25 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.sendgrid.net',
+    port: 587,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false
+      user: 'apikey', // תמיד זה נשאר apikey!
+      pass: process.env.EMAIL_SENDGRID_API_KEY
     }
-});
+  });
 
 export const generateVerificationCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-
 export const sendVerificationEmail = async (to, code) => {
 
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: 'BallerShuffle <noreply@ballershuffle.com>',
         to,
-        subject: 'BallerShuffle - Email Verification',
+        subject: `Your BallerShuffle code: ${code}`,
+        text: `Your verification code is ${code}`,
         html: `
     <!DOCTYPE html>
     <html lang="en">
@@ -130,9 +128,9 @@ export const sendVerificationEmail = async (to, code) => {
 
 export const sendPasswordVerificationEmail = async (to, resetCode) => {
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: 'BallerShuffle <noreply@ballershuffle.com>',
         to,
-        subject: 'BallerShuffle - Password Reset Request',
+        subject: `Your BallerShuffle code: ${resetCode}`,
         html: `
     <!DOCTYPE html>
     <html lang="en">
@@ -230,6 +228,34 @@ export const sendPasswordVerificationEmail = async (to, resetCode) => {
         return false;
     }
 };
+
+
+export const sendBugReportEmail = async (username, message) => {
+    const mailOptions = {
+      from: 'BallerShuffle <noreply@ballershuffle.com>',
+      to: 'ballershuffle@gmail.com',
+      subject: `🐞 New Bug Report from ${username}`,
+      html: `
+        <h2>📬 New Bug Report / Suggestion</h2>
+        <p><strong>User:</strong> ${username}</p>
+        <p><strong>Message:</strong></p>
+        <div style="background-color: #f2f2f2; padding: 12px; border-radius: 8px;">
+          <pre style="white-space: pre-wrap; font-size: 15px;">${message}</pre>
+        </div>
+        <br/>
+        <p style="font-size: 13px; color: #888;">This was automatically sent from BallerShuffle’s app bug report form.</p>
+      `
+    };
+  
+    try {
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error("❌ Error sending bug report email:", error);
+      return false;
+    }
+  };
+  
 
 
 export default {

@@ -6,6 +6,10 @@ import multer from 'multer';
 import cron from 'node-cron';
 import moment from 'moment-timezone';
 import { determinePlayerBuild } from './playerBuildSystem.js'; 
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
+
 
 
 
@@ -82,7 +86,7 @@ const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'IdanSQL',
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'ballershuffledb'
+  database: process.env.DB_NAME || 'ballershuffleschema'
 });
 
 
@@ -94,9 +98,21 @@ db.connect(err => {
   console.log('Connected to the database');
 });
 
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+const httpsOptions = {
+  key: fs.readFileSync('/etc/letsencrypt/live/ballershuffle.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/ballershuffle.com/fullchain.pem')
+};
+
+
+http.createServer((req, res) => {
+  res.writeHead(301, {
+    Location: 'https://' + req.headers.host + req.url
+  });
+  res.end();
+}).listen(80);
+
+https.createServer(httpsOptions, app).listen(443, () => {
+  console.log('✅ HTTPS Server running on port 443');
 });
 //---------------------------------------------------------------------------------------
 // Email service import
@@ -700,7 +716,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     await promiseQuery(
-      'DELETE FROM ballershuffledb.user_push_tokens WHERE user_id = ?',
+      'DELETE FROM ballershuffleschema.user_push_tokens WHERE user_id = ?',
 
       [userId]
     );
@@ -1142,7 +1158,7 @@ app.post('/api/bug-report', authenticateToken, async (req, res) => {
 
     // Get username from users table
     const { results: userResults } = await promiseQuery(
-      'SELECT username FROM ballershuffledb.users WHERE id = ?',
+      'SELECT username FROM ballershuffleschema.users WHERE id = ?',
       [userId]
     );
 
@@ -1154,7 +1170,7 @@ app.post('/api/bug-report', authenticateToken, async (req, res) => {
 
     // Insert the bug report
     await promiseQuery(
-      `INSERT INTO ballershuffledb.bug_reports(user_id, username, message)
+      `INSERT INTO ballershuffleschema.bug_reports(user_id, username, message)
        VALUES(?, ?, ?)`,
       [userId, username, message]
     );
@@ -1169,6 +1185,7 @@ app.post('/api/bug-report', authenticateToken, async (req, res) => {
 
 // Courts endpoint
 app.get('/api/courts/:id', authenticateToken, async (req, res) => {
+  console.log("courts api called")
   try {
     const userId = req.params.id;
     const { results } = await promiseQuery(
@@ -1262,9 +1279,9 @@ app.get('/api/football_players/:court_id', authenticateToken, async (req, res) =
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT p.id as pId, p.*, fpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffledb.players as p
+      `SELECT p.id as pId, p.*, fpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffleschema.players as p
        LEFT JOIN football_player_attributes as fpa on p.id = fpa.playerId
-       LEFT JOIN ballershuffledb.users as u on p.user_fk = u.id
+       LEFT JOIN ballershuffleschema.users as u on p.user_fk = u.id
        WHERE courtId = ? `,
       [courtId]
     );
@@ -1304,9 +1321,9 @@ app.get('/api/players/:court_id', authenticateToken, async (req, res) => {
   try {
     const courtId = req.params.court_id;
     const { results } = await promiseQuery(
-      `SELECT p.id as pId, p.*, bpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffledb.players as p
+      `SELECT p.id as pId, p.*, bpa.* , u.phone_number as playerPhoneNumber, u.username as playerUserName FROM ballershuffleschema.players as p
        LEFT JOIN basketball_player_attributes as bpa on p.id = bpa.playerId
-       LEFT JOIN ballershuffledb.users as u on p.user_fk = u.id
+       LEFT JOIN ballershuffleschema.users as u on p.user_fk = u.id
        WHERE courtId = ? `,
       [courtId]
     );
@@ -1383,9 +1400,9 @@ app.get('/api/court_averages/:court_id/', authenticateToken, async (req, res) =>
           MAX(bpa.overall) AS maxOverall,
           MIN(bpa.overall) AS minOverall
     FROM 
-        ballershuffledb.players p
+        ballershuffleschema.players p
     LEFT JOIN 
-        ballershuffledb.basketball_player_attributes bpa ON p.id = bpa.playerId
+        ballershuffleschema.basketball_player_attributes bpa ON p.id = bpa.playerId
     WHERE 
     p.courtId = ?;
 
@@ -1540,9 +1557,9 @@ app.get('/api/football_court_averages/:court_id/', authenticateToken, async (req
                                                     MAX(fpa.overall) AS maxOverall,
                                                       MIN(fpa.overall) AS minOverall
         FROM
-        ballershuffledb.players p
+        ballershuffleschema.players p
     LEFT JOIN
-        ballershuffledb.football_player_attributes fpa ON p.id = fpa.playerId
+        ballershuffleschema.football_player_attributes fpa ON p.id = fpa.playerId
         WHERE
         p.courtId = ?;
 
@@ -1579,7 +1596,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
 
     // Check if name already exists in this court
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ?',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ?',
       [name, court_Id]
     );
 
@@ -1596,7 +1613,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
 
     // First query: Insert into "players" table
     const insertPlayerResult = await promiseQuery(
-      'INSERT INTO ballershuffledb.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ballershuffleschema.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, court_Id, 'Basketball', null, creator_user_fk, priority, playerBuild]
     );
 
@@ -1604,7 +1621,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
 
     // Fetch the last inserted player based on unique attributes
     const { results } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ? ORDER BY id DESC LIMIT 1',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? ORDER BY id DESC LIMIT 1',
       [name, court_Id]
     );
 
@@ -1618,7 +1635,7 @@ app.post('/api/create_player/:court_id/:creator_user_fk', authenticateToken, asy
 
     // Second query: Insert into "basketball_player_attributes" table
     await promiseQuery(
-      'INSERT INTO ballershuffledb.basketball_player_attributes (playerId, scoring, passing, speed, physical, defence, threePtShot, rebound, ballHandling, postUp, height, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ballershuffleschema.basketball_player_attributes (playerId, scoring, passing, speed, physical, defence, threePtShot, rebound, ballHandling, postUp, height, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [playerId, scoring, passing, speed, physical, defence, threePtShot, rebound, ballHandling, postUp, height, overall, 0]
     );
 
@@ -1650,7 +1667,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
 
     // Check if name already exists in this court
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ?',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ?',
       [name, court_Id]
     );
 
@@ -1668,7 +1685,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
 
     // First query: Insert into "players" table
     const insertPlayerResult = await promiseQuery(
-      'INSERT INTO ballershuffledb.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ballershuffleschema.players (name, courtId, type, user_fk, creator_user_fk, priority, build) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, court_Id, 'Football', null, creator_user_fk, priority, playerBuild]
     );
 
@@ -1678,7 +1695,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
 
     // Fetch the last inserted player based on unique attributes (like name and courtId) in order to get the ID
     const { results } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ? ORDER BY id DESC LIMIT 1',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? ORDER BY id DESC LIMIT 1',
       [name, court_Id]
     );
 
@@ -1692,7 +1709,7 @@ app.post('/api/create_player_football/:court_id/:creator_user_fk', authenticateT
 
     // Second query: Insert into "basketball_player_attributes" table
     await promiseQuery(
-      'INSERT INTO ballershuffledb.football_player_attributes (playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ballershuffleschema.football_player_attributes (playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, overallToMix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [playerId, finishing, passing, speed, physical, defence, dribbling, stamina, overall, 0]
     );
 
@@ -1712,7 +1729,7 @@ app.get('/api/football-player/:player_id/:court_id', authenticateToken, async (r
     const courtId = req.params.court_id;
     const playerId = req.params.player_id;
     const { results } = await promiseQuery(
-      `SELECT * FROM ballershuffledb.players as p
+      `SELECT * FROM ballershuffleschema.players as p
        LEFT JOIN football_player_attributes as fpa on p.id = fpa.playerId
        WHERE courtId = ? AND playerId = ? `,
       [courtId, playerId]
@@ -1789,7 +1806,7 @@ app.get('/api/player/:player_id/:court_id', authenticateToken, async (req, res) 
     const courtId = req.params.court_id;
     const playerId = req.params.player_id;
     const { results } = await promiseQuery(
-      `SELECT * FROM ballershuffledb.players as p
+      `SELECT * FROM ballershuffleschema.players as p
        LEFT JOIN basketball_player_attributes as bpa on p.id = bpa.playerId
        WHERE courtId = ? AND playerId = ? `,
       [courtId, playerId]
@@ -1837,8 +1854,8 @@ app.get('/api/my-player/:user_id/:court_id', authenticateToken, async (req, res)
 
     const { results } = await promiseQuery(
       `SELECT p.id as playerId, u.phone_number as myPlayerPhoneNumber, u.username as myPlayerUserName
-       FROM ballershuffledb.players as p
-       left join ballershuffledb.users as u on p.user_fk = u.id
+       FROM ballershuffleschema.players as p
+       left join ballershuffleschema.users as u on p.user_fk = u.id
        WHERE p.courtId = ? AND p.user_fk = ? `,
       [courtId, userId]
     );
@@ -1867,7 +1884,7 @@ app.get('/api/is_player_assinged/:player_id', authenticateToken, async (req, res
     const playerId = req.params.player_id;
 
     const { results } = await promiseQuery(
-      `SELECT user_fk FROM ballershuffledb.players WHERE id = ? `,
+      `SELECT user_fk FROM ballershuffleschema.players WHERE id = ? `,
       [playerId]
     );
 
@@ -1922,7 +1939,7 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
 
     // Check if name already exists in this court for a DIFFERENT player
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ? AND id != ?',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? AND id != ?',
       [name, courtId, playerId]
     );
 
@@ -1942,7 +1959,7 @@ app.put('/api/update_player/:player_id/:court_id', authenticateToken, async (req
 
     await delay(50);
 
-    const updateQuery = ` UPDATE ballershuffledb.basketball_player_attributes
+    const updateQuery = ` UPDATE ballershuffleschema.basketball_player_attributes
       SET scoring = ?, passing = ?, speed = ?, physical = ?, defence = ?,
           threePtShot = ?, rebound = ?, ballHandling = ?, postUp = ?, height = ?,
           overall = ?, overallToMix = ?
@@ -1990,7 +2007,7 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
 
     // Check if name already exists in this court
     const { results: existingPlayer } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.players WHERE name = ? AND courtId = ? AND id != ?',
+      'SELECT id FROM ballershuffleschema.players WHERE name = ? AND courtId = ? AND id != ?',
       [name, courtId, playerId]
     );
 
@@ -2012,7 +2029,7 @@ app.put('/api/update-player-football/:player_id/:court_id', authenticateToken, a
     await delay(50);
 
 
-    const updateQuery = ` UPDATE ballershuffledb.football_player_attributes
+    const updateQuery = ` UPDATE ballershuffleschema.football_player_attributes
       SET finishing = ?, passing = ?, speed = ?, physical = ?, defence = ?,
           dribbling = ?, stamina = ?, overall = ?, overallToMix = ?
             WHERE playerId = ? `;
@@ -2042,7 +2059,7 @@ app.put('/api/update-player-picture/:player_id/:court_id', authenticateToken, up
     }
 
     const updateQuery = `
-      UPDATE ballershuffledb.players 
+      UPDATE ballershuffleschema.players 
       SET profile_image = ?
           WHERE id = ?
             `;
@@ -2061,7 +2078,7 @@ app.get('/api/player-picture/:player_id', authenticateToken, async (req, res) =>
   try {
     const playerId = req.params.player_id;
 
-    const query = 'SELECT profile_image FROM ballershuffledb.players WHERE id = ?';
+    const query = 'SELECT profile_image FROM ballershuffleschema.players WHERE id = ?';
     const { results } = await promiseQuery(query, [playerId]);
 
     if (!results[0] || !results[0].profile_image) {
@@ -2095,7 +2112,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
 
     // Check if the email exists
     const { results } = await promiseQuery(
-      `SELECT id FROM ballershuffledb.users WHERE email = ? `,
+      `SELECT id FROM ballershuffleschema.users WHERE email = ? `,
       [email]
     );
 
@@ -2113,7 +2130,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
 
     //Make sure only one player in a court will be assinged to 1 user
     const { results: playerCheckResults } = await promiseQuery(
-      `SELECT * FROM ballershuffledb.players 
+      `SELECT * FROM ballershuffleschema.players 
        WHERE user_fk = ? AND courtId = ? `,
       [user_fk_to_assign, courtId]
     );
@@ -2123,7 +2140,7 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
       return res.status(400).json({ message: 'User is already assigned to a player in the specified court' });
     }
 
-    const assignUserFkToPlayer = `UPDATE ballershuffledb.players SET user_fk = ? WHERE id = ? `;
+    const assignUserFkToPlayer = `UPDATE ballershuffleschema.players SET user_fk = ? WHERE id = ? `;
 
     // Update the player with the found user ID
     await promiseQuery(assignUserFkToPlayer, [user_fk_to_assign, playerId]);
@@ -2131,10 +2148,10 @@ app.put('/api/assign_player/:player_id/:email/:court_id', authenticateToken, asy
     // Insert into user_user_courts only if the court doesn't already exist to the user
 
     await promiseQuery(
-      `INSERT INTO ballershuffledb.user_user_courts(userId, courtId)
+      `INSERT INTO ballershuffleschema.user_user_courts(userId, courtId)
         SELECT ?, ?
           WHERE NOT EXISTS(
-            SELECT 1 FROM ballershuffledb.user_user_courts WHERE userId = ? AND courtId = ?
+            SELECT 1 FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?
        )`,
       [user_fk_to_assign, courtId, user_fk_to_assign, courtId]
     );
@@ -2212,7 +2229,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
 
     // Get player info before updating
     const { results: playerInfo } = await promiseQuery(
-      `SELECT name, user_fk FROM ballershuffledb.players 
+      `SELECT name, user_fk FROM ballershuffleschema.players 
            WHERE id = ? AND courtId = ? `,
       [playerId, courtId]
     );
@@ -2239,7 +2256,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
 
     // Update player name to indicate deletion
     await promiseQuery(
-      `UPDATE ballershuffledb.players 
+      `UPDATE ballershuffleschema.players 
            SET name = ?, user_fk = NULL, courtId = NULL
            WHERE id = ? AND courtId = ? `,
       [`Deleted(${currentName})`, playerId, courtId]
@@ -2247,7 +2264,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
 
     // Delete from basketball/football_player_attributes table
     await promiseQuery(
-      'DELETE FROM ballershuffledb.basketball_player_attributes WHERE playerId = ?',
+      'DELETE FROM ballershuffleschema.basketball_player_attributes WHERE playerId = ?',
       [playerId]
     );
 
@@ -2262,7 +2279,7 @@ app.delete('/api/delete_player/:player_id/:court_id', authenticateToken, async (
 
       // Remove only this court from user_user_courts
       await promiseQuery(
-        `DELETE FROM ballershuffledb.user_user_courts 
+        `DELETE FROM ballershuffleschema.user_user_courts 
                WHERE userId = ? AND courtId = ? `,
         [user_fk, courtId]
       );
@@ -2298,7 +2315,7 @@ app.delete('/api/leave_court/:user_id/:court_id', authenticateToken, async (req,
 
     // Delete from basketball_player_attributes table
     await promiseQuery(
-      'DELETE FROM ballershuffledb.user_user_courts WHERE userId = ? AND courtId = ?',
+      'DELETE FROM ballershuffleschema.user_user_courts WHERE userId = ? AND courtId = ?',
       [userId, courtId]
     );
 
@@ -2310,7 +2327,7 @@ app.delete('/api/leave_court/:user_id/:court_id', authenticateToken, async (req,
 
     // UnAssign the player from the user
     await promiseQuery(
-      `UPDATE ballershuffledb.players 
+      `UPDATE ballershuffleschema.players 
            SET user_fk = NULL 
            WHERE user_fk = ? AND courtId = ?`,
       [userId, courtId]
@@ -2337,7 +2354,7 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
   try {
     // First query: Insert into "courts" table
     await promiseQuery(
-      'INSERT INTO ballershuffledb.courts (created_at, courtName, courtType, show_all_ratings) VALUES (NOW(), ?, ?, 0)',
+      'INSERT INTO ballershuffleschema.courts (created_at, courtName, courtType, show_all_ratings) VALUES (NOW(), ?, ?, 0)',
       [courtName, courtType]
     );
 
@@ -2346,7 +2363,7 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
 
     // Fetch the last inserted court based on unique attributes (like courtName and userId) to get the ID
     const { results } = await promiseQuery(
-      'SELECT id FROM ballershuffledb.courts WHERE courtName = ? ORDER BY id DESC LIMIT 1',
+      'SELECT id FROM ballershuffleschema.courts WHERE courtName = ? ORDER BY id DESC LIMIT 1',
       [courtName]
     );
 
@@ -2361,7 +2378,7 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
 
     //Add admin
     await promiseQuery(
-      'INSERT INTO ballershuffledb.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
+      'INSERT INTO ballershuffleschema.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
       [userId, courtId, 1]
     );
     await delay(50);
@@ -2369,7 +2386,7 @@ app.post('/api/create_court/:user_id', authenticateToken, async (req, res) => {
 
     //Add to user_user_courts
     await promiseQuery(
-      'INSERT INTO ballershuffledb.user_user_courts (userId, courtId) VALUES (?, ?)',
+      'INSERT INTO ballershuffleschema.user_user_courts (userId, courtId) VALUES (?, ?)',
       [userId, courtId]
     );
 
@@ -2420,7 +2437,7 @@ app.post('/api/add_admin/:court_id', authenticateToken, async (req, res) => {
   try {
     // Check if the user is already an admin for this court
     const { results: adminCheck } = await promiseQuery(
-      'SELECT * FROM ballershuffledb.court_admins WHERE court_id = ? AND user_id = ?',
+      'SELECT * FROM ballershuffleschema.court_admins WHERE court_id = ? AND user_id = ?',
       [courtId, userId]
     );
 
@@ -2442,7 +2459,7 @@ app.post('/api/add_admin/:court_id', authenticateToken, async (req, res) => {
 
     // Add the user as an admin
     await promiseQuery(
-      'INSERT INTO ballershuffledb.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
+      'INSERT INTO ballershuffleschema.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)',
       [userId, courtId, 1] // 1 signifies is_admin
     );
 
@@ -2474,7 +2491,7 @@ app.put('/api/update_court_name/:courtId', authenticateToken, async (req, res) =
   try {
     // Update the court name in the "courts" table
     const result = await promiseQuery(
-      'UPDATE ballershuffledb.courts SET courtName = ? WHERE id = ?',
+      'UPDATE ballershuffleschema.courts SET courtName = ? WHERE id = ?',
       [newCourtName, courtId]
     );
 
@@ -2502,7 +2519,7 @@ app.put('/api/update_court_name/:courtId', authenticateToken, async (req, res) =
 app.get('/api/is_admin/:user_id/:court_id', (req, res) => {
   const courtId = req.params.court_id;
   const userId = req.params.user_id;
-  const query = 'SELECT is_admin FROM ballershuffledb.court_admins WHERE user_id = ? AND court_id = ?';
+  const query = 'SELECT is_admin FROM ballershuffleschema.court_admins WHERE user_id = ? AND court_id = ?';
   db.query(query, [userId, courtId], (error, results) => {
     if (error) return res.status(500).send(error);
     if (results.length > 0 && results[0].is_admin === 1) {
@@ -2752,9 +2769,9 @@ app.put('/api/update_game/:gameId', authenticateToken, async (req, res) => {
           gr.approved,
           p.user_fk
         FROM
-        ballershuffledb.registrations_to_game gr
+        ballershuffleschema.registrations_to_game gr
         JOIN
-        ballershuffledb.players p ON gr.player_id = p.id
+        ballershuffleschema.players p ON gr.player_id = p.id
         WHERE
         gr.game_id = ?
           `, [gameId]);
@@ -3193,7 +3210,7 @@ app.get('/api/user/:userId', authenticateToken, async (req, res) => {
     const userId = req.params.userId;
 
     const { results } = await promiseQuery(
-      'SELECT id, email, username, full_name, phone_number,first_log_in FROM ballershuffledb.users WHERE id = ?',
+      'SELECT id, email, username, full_name, phone_number,first_log_in FROM ballershuffleschema.users WHERE id = ?',
       [userId]
     );
 
@@ -3415,13 +3432,13 @@ app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
     try {
       // Insert the stat
       const statResult = await promiseQuery(
-        'INSERT INTO ballershuffledb.match_stats (match_id, gameday_id, player_id, stat_type, created_by) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO ballershuffleschema.match_stats (match_id, gameday_id, player_id, stat_type, created_by) VALUES (?, ?, ?, ?, ?)',
         [matchId, gameday_id, playerId, stat, creatorUserId]
       );
 
       // Get player's team number
       const teamResult = await promiseQuery(
-        'SELECT team_number FROM ballershuffledb.match_players WHERE match_id = ? AND player_id = ?',
+        'SELECT team_number FROM ballershuffleschema.match_players WHERE match_id = ? AND player_id = ?',
         [matchId, playerId]
       );
 
@@ -3451,7 +3468,7 @@ app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
       if (scoreToAdd > 0) {
         const scoreField = teamNumber === 1 ? 'team1_score' : 'team2_score';
         await promiseQuery(
-          `UPDATE ballershuffledb.matches 
+          `UPDATE ballershuffleschema.matches 
            SET ${scoreField} = ${scoreField} + ?
           WHERE match_id = ? `,
           [scoreToAdd, matchId]
@@ -3460,7 +3477,7 @@ app.post('/api/add-player-stat', authenticateToken, async (req, res) => {
 
       // Get updated match data
       const matchResult = await promiseQuery(
-        'SELECT team1_score, team2_score FROM ballershuffledb.matches WHERE match_id = ?',
+        'SELECT team1_score, team2_score FROM ballershuffleschema.matches WHERE match_id = ?',
         [matchId]
       );
 
@@ -3500,9 +3517,9 @@ app.get('/api/match-stats/:matchId', authenticateToken, async (req, res) => {
           ms.created_at,
           p.name as player_name,
           u.username as created_by_name
-      FROM ballershuffledb.match_stats ms
-      JOIN ballershuffledb.players p ON ms.player_id = p.id
-      LEFT JOIN ballershuffledb.users u ON ms.created_by = u.id
+      FROM ballershuffleschema.match_stats ms
+      JOIN ballershuffleschema.players p ON ms.player_id = p.id
+      LEFT JOIN ballershuffleschema.users u ON ms.created_by = u.id
       WHERE ms.match_id = ?
           ORDER BY ms.created_at DESC`,
       [req.params.matchId]
@@ -3526,8 +3543,8 @@ app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
       // Get stat details before deletion
       const { results: statDetails } = await promiseQuery(
         `SELECT ms.match_id, ms.stat_type, mp.team_number
-         FROM ballershuffledb.match_stats ms
-         JOIN ballershuffledb.match_players mp 
+         FROM ballershuffleschema.match_stats ms
+         JOIN ballershuffleschema.match_players mp 
          ON ms.player_id = mp.player_id AND ms.match_id = mp.match_id
          WHERE ms.match_stat_id = ? `,
         [statId]
@@ -3559,7 +3576,7 @@ app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
       if (scoreToSubtract > 0) {
         const scoreField = team_number === 1 ? 'team1_score' : 'team2_score';
         await promiseQuery(
-          `UPDATE ballershuffledb.matches 
+          `UPDATE ballershuffleschema.matches 
            SET ${scoreField} = GREATEST(${scoreField} - ?, 0)
            WHERE match_id = ? `,
           [scoreToSubtract, match_id]
@@ -3568,13 +3585,13 @@ app.delete('/api/delete-stat/:statId', authenticateToken, async (req, res) => {
 
       // Delete the stat
       await promiseQuery(
-        'DELETE FROM ballershuffledb.match_stats WHERE match_stat_id = ?',
+        'DELETE FROM ballershuffleschema.match_stats WHERE match_stat_id = ?',
         [statId]
       );
 
       // Get updated match data
       const { results: matchResult } = await promiseQuery(
-        'SELECT team1_score, team2_score FROM ballershuffledb.matches WHERE match_id = ?',
+        'SELECT team1_score, team2_score FROM ballershuffleschema.matches WHERE match_id = ?',
         [match_id]
       );
 
@@ -3678,7 +3695,7 @@ app.post('/api/update-court-statistics/:gameId/:courtType', authenticateToken, a
                   IFNULL(SUM(bgs.total_steals_today), 0) AS total_steals,
                     IFNULL(SUM(bgs.total_blocks_today), 0) AS total_blocks,
                       IFNULL(SUM(bgs.total_wins_today), 0) AS total_wins
-         FROM ballershuffledb.basketball_gameday_stats bgs
+         FROM ballershuffleschema.basketball_gameday_stats bgs
          WHERE bgs.gameday_id = ?
           GROUP BY bgs.player_id
          ON DUPLICATE KEY UPDATE
@@ -3701,7 +3718,7 @@ app.post('/api/update-court-statistics/:gameId/:courtType', authenticateToken, a
               IFNULL(SUM(fgs.total_assists_today), 0) AS total_assists,
                 IFNULL(SUM(fgs.total_misses_today), 0) AS total_misses,
                   IFNULL(SUM(fgs.total_wins_today), 0) AS total_wins
-         FROM ballershuffledb.football_gameday_stats fgs
+         FROM ballershuffleschema.football_gameday_stats fgs
          WHERE fgs.gameday_id = ?
           GROUP BY fgs.player_id
          ON DUPLICATE KEY UPDATE
@@ -3924,7 +3941,7 @@ app.post('/api/create_match/:gameday_id/:created_by', authenticateToken, async (
 
     // First query: Insert into "matches" table
     const insertMatchResult = await promiseQuery(
-      'INSERT INTO ballershuffledb.matches (gameday_id, team1_score, team2_score, match_status, created_by) VALUES (?, 0, 0, "in_progress", ?)',
+      'INSERT INTO ballershuffleschema.matches (gameday_id, team1_score, team2_score, match_status, created_by) VALUES (?, 0, 0, "in_progress", ?)',
       [gameday_id, created_by]
     );
 
@@ -3933,14 +3950,14 @@ app.post('/api/create_match/:gameday_id/:created_by', authenticateToken, async (
     // Insert team 1 players
     const team1Values = team1_players.map(playerId => [match_id, playerId, 1]);
     await promiseQuery(
-      'INSERT INTO ballershuffledb.match_players (match_id, player_id, team_number) VALUES ?',
+      'INSERT INTO ballershuffleschema.match_players (match_id, player_id, team_number) VALUES ?',
       [team1Values]
     );
 
     // Insert team 2 players
     const team2Values = team2_players.map(playerId => [match_id, playerId, 2]);
     await promiseQuery(
-      'INSERT INTO ballershuffledb.match_players (match_id, player_id, team_number) VALUES ?',
+      'INSERT INTO ballershuffleschema.match_players (match_id, player_id, team_number) VALUES ?',
       [team2Values]
     );
 
@@ -3975,10 +3992,10 @@ app.get('/api/match_players/:match_id', authenticateToken, async (req, res) => {
           WHEN fpa.overall IS NOT NULL THEN fpa.overall
           ELSE NULL
         END as overall
-      FROM ballershuffledb.match_players mp
-      JOIN ballershuffledb.players p ON mp.player_id = p.id
-      LEFT JOIN ballershuffledb.basketball_player_attributes bpa ON p.id = bpa.playerId
-      LEFT JOIN ballershuffledb.football_player_attributes fpa ON p.id = fpa.playerId
+      FROM ballershuffleschema.match_players mp
+      JOIN ballershuffleschema.players p ON mp.player_id = p.id
+      LEFT JOIN ballershuffleschema.basketball_player_attributes bpa ON p.id = bpa.playerId
+      LEFT JOIN ballershuffleschema.football_player_attributes fpa ON p.id = fpa.playerId
       WHERE mp.match_id = ?
           ORDER BY mp.team_number, p.name`,
       [match_id]
@@ -4018,9 +4035,9 @@ app.get('/api/match/:match_id', authenticateToken, async (req, res) => {
           g.game_start_time,
           g.court_id,
           c.courtType as court_type
-      FROM ballershuffledb.matches m
-      JOIN ballershuffledb.games g ON m.gameday_id = g.game_id
-      JOIN ballershuffledb.courts c ON g.court_id = c.id
+      FROM ballershuffleschema.matches m
+      JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
+      JOIN ballershuffleschema.courts c ON g.court_id = c.id
       WHERE m.match_id = ? `,
       [match_id]
     );
@@ -4056,7 +4073,7 @@ app.get('/api/gameday_matches/:gameday_id', authenticateToken, async (req, res) 
           match_status,
           created_at,
           completed_at
-      FROM ballershuffledb.matches
+      FROM ballershuffleschema.matches
       WHERE gameday_id = ?
           ORDER BY created_at DESC`,
       [gameday_id]
@@ -4085,7 +4102,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       // First check if match is already completed
       const { results: matchStatus } = await promiseQuery(
         `SELECT match_status, gameday_id 
-         FROM ballershuffledb.matches 
+         FROM ballershuffleschema.matches 
          WHERE match_id = ? `,
         [matchId]
       );
@@ -4101,7 +4118,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
 
       // Update match status to completed
       await promiseQuery(
-        `UPDATE ballershuffledb.matches 
+        `UPDATE ballershuffleschema.matches 
          SET match_status = 'completed',
           completed_at = NOW() 
          WHERE match_id = ? `,
@@ -4111,9 +4128,9 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       // Get the match type
       const { results: matchDetails } = await promiseQuery(
         `SELECT c.courtType
-         FROM ballershuffledb.matches m
-         JOIN ballershuffledb.games g ON m.gameday_id = g.game_id
-         JOIN ballershuffledb.courts c ON g.court_id = c.id
+         FROM ballershuffleschema.matches m
+         JOIN ballershuffleschema.games g ON m.gameday_id = g.game_id
+         JOIN ballershuffleschema.courts c ON g.court_id = c.id
          WHERE m.match_id = ? `,
         [matchId]
       );
@@ -4123,7 +4140,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       if (courtType === 'Basketball') {
         // Basketball stats update
         await promiseQuery(
-          `INSERT INTO ballershuffledb.basketball_gameday_stats
+          `INSERT INTO ballershuffleschema.basketball_gameday_stats
           (player_id, gameday_id, total_matches_today, total_2pts_today, total_3pts_today,
             total_assists_today, total_steals_today, total_blocks_today, total_wins_today)
         SELECT
@@ -4139,8 +4156,8 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
                WHEN team_number = ? AND ? > 0 THEN 1 
                ELSE 0 
              END AS total_wins_today
-           FROM ballershuffledb.match_players mp
-           LEFT JOIN ballershuffledb.match_stats ms 
+           FROM ballershuffleschema.match_players mp
+           LEFT JOIN ballershuffleschema.match_stats ms 
              ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
            WHERE mp.match_id = ?
           GROUP BY mp.player_id, mp.team_number
@@ -4157,7 +4174,7 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
       } else {
         // Football stats update
         await promiseQuery(
-          `INSERT INTO ballershuffledb.football_gameday_stats
+          `INSERT INTO ballershuffleschema.football_gameday_stats
           (player_id, gameday_id, total_matches_today, total_goals_today, total_assists_today,
             total_misses_today, total_wins_today)
         SELECT
@@ -4171,8 +4188,8 @@ app.post('/api/end-match/:matchId', authenticateToken, async (req, res) => {
                WHEN team_number = ? AND ? > 0 THEN 1 
                ELSE 0 
              END AS total_wins_today
-           FROM ballershuffledb.match_players mp
-           LEFT JOIN ballershuffledb.match_stats ms 
+           FROM ballershuffleschema.match_players mp
+           LEFT JOIN ballershuffleschema.match_stats ms 
              ON mp.match_id = ms.match_id AND mp.player_id = ms.player_id
            WHERE mp.match_id = ?
           GROUP BY mp.player_id, mp.team_number
@@ -4223,8 +4240,8 @@ app.get('/api/basketball_gameday_stats/:gameId', authenticateToken, async (req, 
           bgs.total_steals_today,
           bgs.total_blocks_today,
           bgs.total_wins_today
-      FROM ballershuffledb.basketball_gameday_stats bgs
-      JOIN ballershuffledb.players p ON bgs.player_id = p.id
+      FROM ballershuffleschema.basketball_gameday_stats bgs
+      JOIN ballershuffleschema.players p ON bgs.player_id = p.id
       WHERE bgs.gameday_id = ?
           ORDER BY(bgs.total_2pts_today * 2 + bgs.total_3pts_today * 3) DESC`,
       [gameId]
@@ -4265,8 +4282,8 @@ app.get('/api/football_gameday_stats/:gameId', authenticateToken, async (req, re
           fgs.total_assists_today,
           fgs.total_misses_today,
           fgs.total_wins_today
-      FROM ballershuffledb.football_gameday_stats fgs
-      JOIN ballershuffledb.players p ON fgs.player_id = p.id
+      FROM ballershuffleschema.football_gameday_stats fgs
+      JOIN ballershuffleschema.players p ON fgs.player_id = p.id
       WHERE fgs.gameday_id = ?
           ORDER BY fgs.total_goals_today DESC`,
       [gameId]
