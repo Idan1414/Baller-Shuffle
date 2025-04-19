@@ -75,6 +75,7 @@ const db = mysql.createConnection({
   user: process.env.DB_USER || "IdanSQL",
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || "ballershuffledb",
+  timezone: "Z", // Set timezone to UTC
 });
 
 db.connect((err) => {
@@ -493,7 +494,13 @@ async function sendPushNotification(userId, title, body, data = {}) {
   }
 }
 
-async function sendMvpVotingReminder(userId, courtName, gameStartTime) {
+async function sendMvpVotingReminder(
+  userId,
+  courtName,
+  formattedStartTime,
+  courtId,
+  gameId
+) {
   try {
     const { results } = await promiseQuery(
       "SELECT push_token FROM user_push_tokens WHERE user_id = ?",
@@ -504,15 +511,18 @@ async function sendMvpVotingReminder(userId, courtName, gameStartTime) {
       const notification = {
         to: results[0].push_token,
         title: `MVP Vote - ${courtName}`,
-        body: `Don't forget to vote for today's MVP for the game that started at ${new Date(
-          gameStartTime
-        ).toLocaleTimeString()}!`,
+        body: `Don't forget to vote for today's MVP!\nGame started at ${formattedStartTime}.`,
         priority: "high",
         sound: "default",
         _displayInForeground: true,
+        data: {
+          type: "OPEN_GAME", // 👈 זה סוג ההתראה שמשתמש בה לניווט
+          courtId, // 👈 courtId נדרש כדי להיכנס לעמוד מגרש
+          gameId, // 👈 gameId נדרש כדי לעבור למשחק הספציפי
+        },
         android: {
           channelId: "game-notification",
-        }
+        },
       };
 
       const response = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -541,6 +551,16 @@ async function sendGameRegistrationNotification(
   playerId
 ) {
   try {
+    const { results: courtResults } = await promiseQuery(
+      "SELECT timezone FROM courts WHERE id = ?",
+      [courtId]
+    );
+    const courtTimezone = courtResults[0]?.timezone || "UTC";
+    const formattedStart = moment
+      .utc(gameStartTime)
+      .tz(courtTimezone)
+      .format("ddd, MMM D YYYY - HH:mm");
+
     const { results } = await promiseQuery(
       "SELECT push_token FROM user_push_tokens WHERE user_id = ?",
       [userId]
@@ -550,9 +570,7 @@ async function sendGameRegistrationNotification(
       const notification = {
         to: results[0].push_token,
         title: `Registration Open - ${courtName}`,
-        body: `Game starts at ${new Date(
-          gameStartTime
-        ).toLocaleString()}. Would you like to register?`,
+        body: `Game starts at ${formattedStart}. Would you like to register?`,
         data: {
           gameId,
           playerId,
@@ -587,7 +605,6 @@ async function sendGameRegistrationNotification(
     return false;
   }
 }
-
 async function sendGameConfirmationNotification(
   userId,
   courtName,
@@ -597,6 +614,13 @@ async function sendGameConfirmationNotification(
   playerId
 ) {
   try {
+    const { results: courtResults } = await promiseQuery(
+      "SELECT timezone FROM courts WHERE id = ?",
+      [courtId]
+    );
+    const courtTimezone = courtResults[0]?.timezone || "UTC";
+    const formattedStart = moment.utc(gameStartTime).tz(courtTimezone).format("ddd, MMM D YYYY - HH:mm");
+
     const { results } = await promiseQuery(
       "SELECT push_token FROM user_push_tokens WHERE user_id = ?",
       [userId]
@@ -606,12 +630,11 @@ async function sendGameConfirmationNotification(
       const notification = {
         to: results[0].push_token,
         title: `Confirm Arrival - ${courtName}`,
-        body: `Game starts soon! ( ${new Date(
-          gameStartTime
-        ).toLocaleString()} ).\n Are you still coming?`,
+        body: `Game starts soon! (${formattedStart}).\nAre you still coming?`,
         data: {
           gameId,
           playerId,
+          courtId,
           type: "GAME_CONFIRMATION",
         },
         categoryId: "game_confirmation",
@@ -777,9 +800,7 @@ app.post("/api/logout", authenticateToken, async (req, res) => {
 cron.schedule("* * * * *", async () => {
   try {
     // Get the current time in UTC
-    const currentTimeIsrael = moment
-      .tz("Asia/Jerusalem")
-      .format("YYYY-MM-DD HH:mm:ss");
+    const currentTimeUtc = moment.utc().format("YYYY-MM-DD HH:mm:ss");
 
     // Check for games where registration opened in the last minute based on UTC time
     const { results: newlyOpenedGames } = await promiseQuery(
@@ -791,7 +812,7 @@ cron.schedule("* * * * *", async () => {
       WHERE g.registration_open_time <= ?
       AND g.registration_open_time > DATE_SUB(?, INTERVAL 1 MINUTE)
     `,
-      [currentTimeIsrael, currentTimeIsrael]
+      [currentTimeUtc, currentTimeUtc]
     );
 
     for (const game of newlyOpenedGames) {
@@ -825,151 +846,97 @@ cron.schedule("* * * * *", async () => {
   }
 });
 
-// Check every 30 minutes for games that started ~24 hours ago in order to send MVP notifications and close the game and update the DB------------------------
+
+//-------MVP CHECK EVERY 30 minutes
 cron.schedule("*/30 * * * *", async () => {
   try {
-    // Get time window around 24 hours ago (±15 minutes to account for cron interval)
-    const twentyFourHoursAgo = moment
-      .tz("Asia/Jerusalem")
-      .subtract(24, "hours");
+    const twentyFourHoursAgo = moment.utc().subtract(24, "hours");
 
-    const windowStart = moment(twentyFourHoursAgo)
-      .subtract(15, "minutes")
-      .format("YYYY-MM-DD HH:mm:ss");
+    const windowStart = twentyFourHoursAgo.clone().subtract(15, "minutes").format("YYYY-MM-DD HH:mm:ss");
+    const windowEnd = twentyFourHoursAgo.clone().add(15, "minutes").format("YYYY-MM-DD HH:mm:ss");
 
-    const windowEnd = moment(twentyFourHoursAgo)
-      .add(15, "minutes")
-      .format("YYYY-MM-DD HH:mm:ss");
-
-    // Find games that started ~24 hours ago and haven't had MVP votes counted
     const { results: games } = await promiseQuery(
-      `
-          SELECT g.game_id, g.court_id, g.game_start_time, c.courtName
-          FROM games g
-          JOIN courts c ON g.court_id = c.id
-          WHERE g.game_start_time BETWEEN ? AND ?
-          AND g.mvps IS NULL
-      `,
+      `SELECT g.game_id, g.court_id, g.game_start_time, c.courtName, c.timezone
+       FROM games g
+       JOIN courts c ON g.court_id = c.id
+       WHERE g.game_start_time BETWEEN ? AND ? AND g.mvps IS NULL`,
       [windowStart, windowEnd]
     );
 
     for (const game of games) {
       try {
-        // Count MVP votes for this game
         const { results: votingResults } = await promiseQuery(
           `SELECT mvp_player_id, COUNT(*) AS vote_count
-                   FROM mvp_votes
-                   WHERE game_id = ?
-                   GROUP BY mvp_player_id
-                   ORDER BY vote_count DESC`,
+           FROM mvp_votes WHERE game_id = ?
+           GROUP BY mvp_player_id ORDER BY vote_count DESC`,
           [game.game_id]
         );
 
-        if (votingResults.length === 0) continue; // Skip if no votes
+        if (votingResults.length === 0) continue;
 
-        // Get the highest vote count
         const maxVotes = votingResults[0].vote_count;
-
-        // Get all players with the highest vote count (handles ties)
         const mvpPlayers = votingResults
-          .filter((player) => player.vote_count === maxVotes)
-          .map((player) => player.mvp_player_id);
+          .filter((p) => p.vote_count === maxVotes)
+          .map((p) => p.mvp_player_id);
 
-        // Update game with MVPs
-        const mvpsJson = JSON.stringify(mvpPlayers);
         await promiseQuery(
-          `UPDATE games 
-                   SET mvps = ?
-                   WHERE game_id = ?`,
-          [mvpsJson, game.game_id]
+          `UPDATE games SET mvps = ? WHERE game_id = ?`,
+          [JSON.stringify(mvpPlayers), game.game_id]
         );
 
-        // Update MVP count for winning players
         for (const playerId of mvpPlayers) {
           await promiseQuery(
-            `UPDATE players 
-                       SET num_of_mvps = COALESCE(num_of_mvps, 0) + 1 
-                       WHERE id = ?`,
+            `UPDATE players SET num_of_mvps = COALESCE(num_of_mvps, 0) + 1 WHERE id = ?`,
             [playerId]
           );
         }
 
-        // Get MVP player names for notification
         const { results: mvpNames } = await promiseQuery(
           `SELECT name FROM players WHERE id IN (?)`,
           [mvpPlayers]
         );
-
         const mvpNamesList = mvpNames.map((p) => p.name).join(", ");
 
-        // First get the max_players from the game
         const { results: gameResults } = await promiseQuery(
           "SELECT max_players FROM games WHERE game_id = ?",
           [game.game_id]
         );
-
-        if (!gameResults || gameResults.length === 0) {
-          continue;
-        }
+        if (!gameResults.length) continue;
 
         const maxPlayers = gameResults[0].max_players;
-
-        // Get the main players (up to max_players) ordered by priority and registration time
         const { results: playerResults } = await promiseQuery(
-          `SELECT rtg.player_id 
-       FROM registrations_to_game rtg
-       LEFT JOIN players p on p.id = rtg.player_id
-       WHERE game_id = ? 
-       ORDER BY p.priority, rtg.registration_time
-       LIMIT ?`,
+          `SELECT rtg.player_id FROM registrations_to_game rtg
+           LEFT JOIN players p ON p.id = rtg.player_id
+           WHERE game_id = ? ORDER BY p.priority, rtg.registration_time LIMIT ?`,
           [game.game_id, maxPlayers]
         );
+        if (!playerResults.length) continue;
 
-        if (!playerResults || playerResults.length === 0) {
-          continue;
-        }
+        const values = playerResults.map((p) => [game.game_id, p.player_id]);
+        await promiseQuery("INSERT INTO game_players_played (game_id, player_id) VALUES ?", [values]);
 
-        // Insert records into game_players_played
-        const values = playerResults.map((player) => [
-          game.game_id,
-          player.player_id,
-        ]);
-        const insertQuery =
-          "INSERT INTO game_players_played (game_id, player_id) VALUES ?";
-
-        await promiseQuery(insertQuery, [values]);
-
-        // Get all players who participated in the game to notify them
         const { results: gamePlayers } = await promiseQuery(
-          `SELECT DISTINCT p.user_fk 
-                     FROM game_players_played gpp
-                     JOIN players p ON gpp.player_id = p.id
-                     WHERE gpp.game_id = ? AND p.user_fk IS NOT NULL`,
+          `SELECT DISTINCT p.user_fk FROM game_players_played gpp
+           JOIN players p ON gpp.player_id = p.id
+           WHERE gpp.game_id = ? AND p.user_fk IS NOT NULL`,
           [game.game_id]
         );
 
-        console.log("gameplayers:", gamePlayers);
+        const courtTimezone = game.timezone || "UTC";
+        const formattedDate = moment(game.game_start_time)
+          .tz(courtTimezone)
+          .format("ddd, MMM D YYYY - HH:mm");
 
-        // Send notifications to all players
         for (const player of gamePlayers) {
           if (player.user_fk) {
-            const mvpMessage =
-              mvpPlayers.length > 1
-                ? `The MVPs are: ${mvpNamesList} !!!`
-                : `The MVP is: ${mvpNamesList} !!!`;
+            const mvpMessage = mvpPlayers.length > 1
+              ? `The MVPs are: ${mvpNamesList} !!!`
+              : `The MVP is: ${mvpNamesList} !!!`;
 
             await sendPushNotification(
               player.user_fk,
               `MVP Results - ${game.courtName}`,
-              `For yesterday's game ( ${game.game_start_time.toLocaleString(
-                "en-GB",
-                {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "numeric",
-                  year: "numeric",
-                }
-              )} )\n${mvpMessage}`,
+              `For yesterday's game (${formattedDate})\n${mvpMessage}`,
               {
                 type: "OPEN_GAME",
                 courtId: game.court_id,
@@ -979,28 +946,45 @@ cron.schedule("*/30 * * * *", async () => {
           }
         }
       } catch (error) {
-        console.error(
-          `Error processing MVP votes for game ${game.game_id}:`,
-          error
-        );
+        console.error(`❌ Error processing MVP votes for game ${game.game_id}:`, error);
       }
     }
   } catch (error) {
-    console.error("Error in MVP voting cron job:", error);
+    console.error("❌ Error in MVP voting cron job:", error);
   }
 });
+
 
 //------------------------------------------------------------------------
 //CRON JOB FOR THE CONFIRM
 cron.schedule("*/30 * * * *", async () => {
   try {
-    // Get current time in Israel timezone
-    const currentTimeIsrael = moment.tz("Asia/Jerusalem");
+    const currentTimeUtc = moment.utc();
 
-    // Get games that start in ~2 hours
-    const twoHoursFromNow = moment(currentTimeIsrael).add(2, "hours");
-    const windowStart = moment(twoHoursFromNow).subtract(15, "minutes");
-    const windowEnd = moment(twoHoursFromNow).add(15, "minutes");
+    // ✅ Calculate the time window (~2 hours from now ± 15 minutes)
+    const twoHoursFromNow = currentTimeUtc.clone().add(2, "hours");
+    const windowStart = twoHoursFromNow.clone().subtract(15, "minutes");
+    const windowEnd = twoHoursFromNow.clone().add(15, "minutes");
+
+    console.log("CONFIRMATION CHECK:");
+
+    console.log("✅ twoHoursFromNow:", twoHoursFromNow.format());
+    console.log("✅ windowStart:", windowStart.format());
+    console.log("✅ windowEnd:", windowEnd.format());
+
+    console.log(
+      "twoHoursFromNow:",
+      twoHoursFromNow.format("YYYY-MM-DD HH:mm:ss"),
+      "currentTimeUtc:",
+      currentTimeUtc
+    );
+
+    console.log(
+      "windowStart:",
+      windowStart.format("YYYY-MM-DD HH:mm:ss"),
+      "windowEnd:",
+      windowEnd.format("YYYY-MM-DD HH:mm:ss")
+    );
 
     // Find relevant games and players
     const { results: gamesNeedingConfirmation } = await promiseQuery(
@@ -1047,9 +1031,9 @@ cron.schedule("*/30 * * * *", async () => {
               `,
           [record.game_id, record.max_players]
         );
-
+        console.log("record:", record);
         const mainPlayerIds = new Set(mainPlayers.map((p) => p.player_id));
-
+        console.log("mainPlayerIds:", mainPlayerIds);
         // If player is in main players and hasn't confirmed
         if (mainPlayerIds.has(record.player_id) && record.user_fk) {
           await sendGameConfirmationNotification(
@@ -1073,27 +1057,30 @@ cron.schedule("*/30 * * * *", async () => {
 
 cron.schedule("*/30 * * * *", async () => {
   try {
-    // Get current time in Israel timezone
-    const currentTimeIsrael = moment.tz("Asia/Jerusalem");
+    const currentTimeUtc = moment.utc();
+    const twoHoursAgo = currentTimeUtc.clone().subtract(2, "hours");
+    const windowStart = twoHoursAgo.clone().subtract(15, "minutes");
+    const windowEnd = twoHoursAgo.clone().add(15, "minutes");
 
-    // Look for games that ended 2 hours ago
-    const twoHoursAgo = moment(currentTimeIsrael).subtract(2, "hours");
-    const windowStart = moment(twoHoursAgo).subtract(15, "minutes");
-    const windowEnd = moment(twoHoursAgo).add(15, "minutes");
+    console.log("📣 MVP VOTE REMINDER WINDOW:");
+    console.log("   twoHoursAgo:", twoHoursAgo.format());
+    console.log("   windowStart:", windowStart.format());
+    console.log("   windowEnd:", windowEnd.format());
 
-    // Find games and their players
     const { results: gamesForMvpVoting } = await promiseQuery(
       `
-          SELECT 
-              g.game_id,
-              g.max_players,
-              g.game_start_time,
-              c.courtName
-          FROM games g
-          JOIN courts c ON g.court_id = c.id
-          WHERE g.game_start_time BETWEEN ? AND ?
-          AND g.mvps IS NULL
-          ORDER BY g.game_id
+      SELECT 
+        g.game_id,
+        g.max_players,
+        g.game_start_time,
+        g.court_id,
+        c.courtName,
+        c.timezone
+      FROM games g
+      JOIN courts c ON g.court_id = c.id
+      WHERE g.game_start_time BETWEEN ? AND ?
+        AND g.mvps IS NULL
+      ORDER BY g.game_id
       `,
       [
         windowStart.format("YYYY-MM-DD HH:mm:ss"),
@@ -1101,48 +1088,47 @@ cron.schedule("*/30 * * * *", async () => {
       ]
     );
 
-    // Process each game and notify players
     const processedGames = new Set();
 
     for (const game of gamesForMvpVoting) {
-      // Only process each game once
-      if (!processedGames.has(game.game_id)) {
-        processedGames.add(game.game_id);
+      if (processedGames.has(game.game_id)) continue;
+      processedGames.add(game.game_id);
 
-        // First get the max_players from the game
-        const { results: gameResults } = await promiseQuery(
-          "SELECT max_players FROM games WHERE game_id = ?",
-          [game.game_id]
+      const maxPlayers = game.max_players;
+      const gameId = game.game_id;
+      const courtId = game.court_id;
+      const courtName = game.courtName;
+      const courtTimezone = game.timezone || "UTC";
+
+      // ✅ פורמט שעה מקומית של המגרש
+      const formattedStartTime = moment(game.game_start_time)
+        .tz(courtTimezone)
+        .format("dddd, MMM D, YYYY - HH:mm");
+
+      const { results: playersWhoPlayed } = await promiseQuery(
+        `SELECT rtg.player_id, p.user_fk
+         FROM registrations_to_game rtg
+         LEFT JOIN players p ON p.id = rtg.player_id
+         WHERE rtg.game_id = ?
+         ORDER BY p.priority, rtg.registration_time
+         LIMIT ?`,
+        [gameId, maxPlayers]
+      );
+
+      console.log(
+        `🎯 Game ${gameId} (${courtName}) — ${playersWhoPlayed.length} players`
+      );
+
+      for (const player of playersWhoPlayed) {
+        if (!player.user_fk) continue;
+
+        await sendMvpVotingReminder(
+          player.user_fk,
+          courtName,
+          formattedStartTime, // נשלח כטקסט מוכן
+          courtId,
+          gameId
         );
-
-        if (!gameResults || gameResults.length === 0) {
-          continue;
-        }
-
-        const maxPlayers = gameResults[0].max_players;
-
-        // Get the actual players who played in this game
-        const { results: playersWhoPlayed } = await promiseQuery(
-          `SELECT rtg.player_id , p.user_fk
-          FROM registrations_to_game rtg
-          LEFT JOIN players p on p.id = rtg.player_id
-          WHERE game_id = ?
-              ORDER BY p.priority, rtg.registration_time
-          LIMIT ? `,
-          [game.game_id, maxPlayers]
-        );
-
-        console.log(playersWhoPlayed);
-        // Send notifications to all players who played
-        for (const player of playersWhoPlayed) {
-          if (player.user_fk) {
-            await sendMvpVotingReminder(
-              player.user_fk,
-              game.courtName,
-              game.game_start_time
-            );
-          }
-        }
       }
     }
   } catch (error) {
@@ -1158,11 +1144,31 @@ app.post(
   authenticateToken,
   async (req, res) => {
     const { gameId, playerId, action } = req.body;
-    console.log("gameId:", gameId, "playerId:", playerId, "action:", action);
 
     if (action === "REGISTER") {
       try {
-        // Register player to game
+        const { results: gameData } = await promiseQuery(
+          "SELECT registration_open_time, registration_close_time FROM games WHERE game_id = ?",
+          [gameId]
+        );
+
+        if (!gameData.length) {
+          return res.status(404).json({ message: "Game not found" });
+        }
+
+        const nowUtc = moment.utc();
+        const registrationOpen = moment.utc(gameData[0].registration_open_time);
+        const registrationClose = moment.utc(
+          gameData[0].registration_close_time
+        );
+
+        if (nowUtc.isBefore(registrationOpen)) {
+          return res.status(403).json({ error: "REGISTRATION_NOT_OPEN_YET" });
+        }
+        if (nowUtc.isAfter(registrationClose)) {
+          return res.status(403).json({ error: "REGISTRATION_ALREADY_CLOSED" });
+        }
+
         await promiseQuery(
           "INSERT INTO registrations_to_game (game_id, player_id, registered_by) VALUES (?, ?, ?)",
           [gameId, playerId, req.user.userId]
@@ -2612,16 +2618,22 @@ app.delete(
 app.post("/api/create_court/:user_id", authenticateToken, async (req, res) => {
   const userId = req.params.user_id;
   const { courtName, courtType } = req.body;
+
   try {
-    // First query: Insert into "courts" table
+    // 🕓 זיהוי טיים זון מהיוזר
+    const userTimezone = req.headers["x-timezone"] || "UTC"; // תמיד תקף גם אם לא נשלח מהקליינט
+
+    // ⛹️ יצירת הסקוואד עם הטיים זון
     await promiseQuery(
-      "INSERT INTO ballershuffledb.courts (created_at, courtName, courtType, show_all_ratings) VALUES (NOW(), ?, ?, 0)",
-      [courtName, courtType]
+      `INSERT INTO ballershuffledb.courts 
+        (created_at, courtName, courtType, show_all_ratings, timezone) 
+       VALUES (NOW(), ?, ?, 0, ?)`,
+      [courtName, courtType, userTimezone]
     );
 
     await delay(50);
 
-    // Fetch the last inserted court based on unique attributes (like courtName and userId) to get the ID
+    // 🆔 שליפת ID
     const { results } = await promiseQuery(
       "SELECT id FROM ballershuffledb.courts WHERE courtName = ? ORDER BY id DESC LIMIT 1",
       [courtName]
@@ -2635,14 +2647,15 @@ app.post("/api/create_court/:user_id", authenticateToken, async (req, res) => {
 
     await delay(50);
 
-    //Add admin
+    // 👑 הוספת האדמין
     await promiseQuery(
       "INSERT INTO ballershuffledb.court_admins (user_id, court_id, is_admin) VALUES (?, ?, ?)",
       [userId, courtId, 1]
     );
+
     await delay(50);
 
-    //Add to user_user_courts
+    // 📥 הוספת היוזר לרשימת המשתמשים של הסקוואד
     await promiseQuery(
       "INSERT INTO ballershuffledb.user_user_courts (userId, courtId) VALUES (?, ?)",
       [userId, courtId]
@@ -2854,7 +2867,7 @@ app.get(
           description: game.description,
           mvps: mvpList, // Now an array of MVPs
           max_players_each_user_can_add: game.max_players_each_user_can_add,
-          stats_approved : game.stats_approved,
+          stats_approved: game.stats_approved,
         });
       }
 
@@ -2889,18 +2902,11 @@ app.post("/api/create_game", authenticateToken, async (req, res) => {
     max_players_each_user_can_add,
   } = req.body;
 
-  //in order to get the weekDay to the push 6notification
-  const newGameStartTime = new Date(game_start_time);
-  const newRegistrationOpenTime = new Date(registration_open_time);
-  const newRegistrationCloseTime = new Date(registration_close_time);
-
-  // Insert query for adding a new game
   const sql = `
     INSERT INTO games(
-            court_id, game_start_time, registration_open_time, registration_close_time,
-            max_players, num_of_teams, created_by, location, description, max_players_each_user_can_add
-          )
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`;
+      court_id, game_start_time, registration_open_time, registration_close_time,
+      max_players, num_of_teams, created_by, location, description, max_players_each_user_can_add
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const params = [
     court_id,
@@ -2924,52 +2930,43 @@ app.post("/api/create_game", authenticateToken, async (req, res) => {
       [court_id]
     );
 
-    // Query the courts table to get the court name
     const { results: courtResult } = await promiseQuery(
-      "SELECT courtName FROM courts WHERE id = ?",
+      "SELECT courtName, timezone FROM courts WHERE id = ?",
       [court_id]
     );
     const courtName = courtResult[0].courtName;
+    const courtTimezone = courtResult[0].timezone || "UTC";
+    const formattedStart = moment
+      .utc(game_start_time)
+      .tz(courtTimezone)
+      .format("ddd, MMM D YYYY - HH:mm");
 
+    const formattedRegOpen = moment
+      .utc(registration_open_time)
+      .tz(courtTimezone)
+      .format("ddd, MMM D YYYY - HH:mm");
+
+    const formattedRegClose = moment
+      .utc(registration_close_time)
+      .tz(courtTimezone)
+      .format("ddd, MMM D YYYY - HH:mm");
     for (const row of usersInCourtResults) {
       await sendPushNotification(
         row.userId,
-        `Game Created in ${courtName} `,
-        `
-        Start time: ${newGameStartTime.toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-        Registration:
-        Open: ${newRegistrationOpenTime.toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-        Close: ${newRegistrationCloseTime.toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-        Location: ${location}
-        `,
+        `Game Created in ${courtName}`,
+        `Start time: ${formattedStart}
+Registration:
+Open: ${formattedRegOpen}
+Close: ${formattedRegClose}
+Location: ${location}`,
         {
           type: "OPEN_GAME",
           courtId: court_id,
-          gameId: gameId,
+          gameId,
         }
       );
     }
+
     res.status(201).json({ message: "Game created successfully" });
   } catch (error) {
     console.error(error);
@@ -2993,7 +2990,6 @@ app.put("/api/update_game/:gameId", authenticateToken, async (req, res) => {
   } = req.body;
 
   try {
-    // First, fetch the current game details
     const { results: currentGameResults } = await promiseQuery(
       "SELECT * FROM games WHERE game_id = ?",
       [gameId]
@@ -3005,12 +3001,17 @@ app.put("/api/update_game/:gameId", authenticateToken, async (req, res) => {
 
     const currentGame = currentGameResults[0];
 
-    // Convert request payload times to Date objects
+    const gameStartUtc = moment.utc(currentGame.game_start_time);
+    const nowUtc = moment.utc();
+
+    if (nowUtc.diff(gameStartUtc, "hours", true) >= 24) {
+      return res.status(403).json({ error: "GAME_EDIT_TIME_EXPIRED" });
+    }
+
     const newGameStartTime = new Date(game_start_time);
     const newRegistrationOpenTime = new Date(registration_open_time);
     const newRegistrationCloseTime = new Date(registration_close_time);
 
-    // Check if any of the game details have changed
     const hasGameDetailsChanged =
       currentGame.court_id !== game_court_id ||
       currentGame.game_start_time.getTime() !== newGameStartTime.getTime() ||
@@ -3020,19 +3021,18 @@ app.put("/api/update_game/:gameId", authenticateToken, async (req, res) => {
         newRegistrationCloseTime.getTime() ||
       currentGame.location !== location;
 
-    // Update the game details
     const sql = `
       UPDATE games SET
         court_id = ?,
-          game_start_time = ?,
-          registration_open_time = ?,
-          registration_close_time = ?,
-          max_players = ?,
-          num_of_teams = ?,
-          location = ?,
-          description = ?,
-          max_players_each_user_can_add = ?
-            WHERE game_id = ? `;
+        game_start_time = ?,
+        registration_open_time = ?,
+        registration_close_time = ?,
+        max_players = ?,
+        num_of_teams = ?,
+        location = ?,
+        description = ?,
+        max_players_each_user_can_add = ?
+      WHERE game_id = ?`;
 
     const params = [
       game_court_id,
@@ -3049,71 +3049,48 @@ app.put("/api/update_game/:gameId", authenticateToken, async (req, res) => {
 
     await promiseQuery(sql, params);
 
-    // If game details have changed, send push notifications to all registered users
     if (hasGameDetailsChanged) {
       const { results: registeredUserResults } = await promiseQuery(
-        `
-        SELECT
-        gr.registration_id,
-          gr.game_id,
-          gr.player_id,
-          gr.registered_by,
-          gr.registration_time,
-          gr.approved,
-          p.user_fk
-        FROM
-        ballershuffledb.registrations_to_game gr
-        JOIN
-        ballershuffledb.players p ON gr.player_id = p.id
-        WHERE
-        gr.game_id = ?
-          `,
+        `SELECT gr.registration_id, gr.game_id, gr.player_id, gr.registered_by, gr.registration_time, gr.approved, p.user_fk
+         FROM ballershuffledb.registrations_to_game gr
+         JOIN ballershuffledb.players p ON gr.player_id = p.id
+         WHERE gr.game_id = ?`,
         [gameId]
       );
 
-      // Query the courts table to get the court name
       const { results: courtResult } = await promiseQuery(
-        "SELECT courtName FROM courts WHERE id = ?",
+        "SELECT courtName, timezone FROM courts WHERE id = ?",
         [game_court_id]
       );
       const courtName = courtResult[0].courtName;
+      const courtTimezone = courtResult[0].timezone || "UTC";
+
+      const formattedStart = moment
+        .utc(game_start_time)
+        .tz(courtTimezone)
+        .format("ddd, MMM D YYYY - HH:mm");
+      const formattedRegOpen = moment
+        .utc(registration_open_time)
+        .tz(courtTimezone)
+        .format("ddd, MMM D YYYY - HH:mm");
+      const formattedRegClose = moment
+        .utc(registration_close_time)
+        .tz(courtTimezone)
+        .format("ddd, MMM D YYYY - HH:mm");
 
       for (const row of registeredUserResults) {
         await sendPushNotification(
           row.user_fk,
           `Game Details Updated for ${courtName}`,
-          `
-          Start time: ${newGameStartTime.toLocaleString("en-GB", {
-            weekday: "short",
-            day: "numeric",
-            month: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
-        Registration:
-        Open: ${newRegistrationOpenTime.toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-        Close: ${newRegistrationCloseTime.toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-        Location: ${location}
-        `,
+          `Start time: ${formattedStart}
+Registration:
+Open: ${formattedRegOpen}
+Close: ${formattedRegClose}
+Location: ${location}`,
           {
             type: "OPEN_GAME",
             courtId: game_court_id,
-            gameId: gameId,
+            gameId,
           }
         );
       }
@@ -3190,14 +3167,33 @@ app.get("/api/game/:game_id", authenticateToken, async (req, res) => {
   }
 });
 
-//REGISTER PLAYERS API ---------------------------------------------
 app.post("/api/register-players", authenticateToken, async (req, res) => {
   const { playersIds, gameId, userId } = req.body;
+
   try {
-    // Get game and court details for the notification
+    const { results: timeResults } = await promiseQuery(
+      `SELECT registration_open_time, registration_close_time FROM games WHERE game_id = ?`,
+      [gameId]
+    );
+
+    if (!timeResults.length) {
+      return res.status(404).json({ message: "Game not found" });
+    }
+
+    const nowUtc = moment.utc();
+    const registrationOpen = moment.utc(timeResults[0].registration_open_time);
+    const registrationClose = moment.utc(timeResults[0].registration_close_time);
+
+    if (nowUtc.isBefore(registrationOpen)) {
+      return res.status(403).json({ error: "REGISTRATION_NOT_OPEN_YET" });
+    }
+    if (nowUtc.isAfter(registrationClose)) {
+      return res.status(403).json({ error: "REGISTRATION_ALREADY_CLOSED" });
+    }
+
     const { results: gameDetails } = await promiseQuery(
       `
-      SELECT g.game_start_time, g.court_id, c.courtName, u.full_name as registerer_name, g.max_players
+      SELECT g.game_start_time, g.court_id, c.courtName, c.timezone, u.full_name as registerer_name, g.max_players
       FROM games g 
       JOIN courts c ON g.court_id = c.id
       JOIN users u ON u.id = ?
@@ -3215,9 +3211,12 @@ app.post("/api/register-players", authenticateToken, async (req, res) => {
       courtName,
       registerer_name,
       max_players,
+      timezone,
     } = gameDetails[0];
 
-    // Get user details for each player
+    const courtTimezone = timezone || "UTC";
+    const formattedStart = moment.utc(game_start_time).tz(courtTimezone).format("ddd, MMM D YYYY - HH:mm");
+
     const { results: playerDetails } = await promiseQuery(
       `
       SELECT p.id as player_id, p.user_fk, p.name as player_name 
@@ -3226,7 +3225,6 @@ app.post("/api/register-players", authenticateToken, async (req, res) => {
       [playersIds]
     );
 
-    // Register players
     const registrationPromises = playersIds.map((playerId) => {
       return promiseQuery(
         "INSERT IGNORE INTO registrations_to_game (game_id, player_id, registered_by) VALUES (?, ?, ?)",
@@ -3236,16 +3234,13 @@ app.post("/api/register-players", authenticateToken, async (req, res) => {
 
     await Promise.all(registrationPromises);
 
-    // Send notifications to registered players (except the registerer)
     const notificationPromises = playerDetails
       .filter((player) => player.user_fk && player.user_fk !== userId)
       .map(async (player) => {
         await sendPushNotification(
           player.user_fk,
           `Game Registration - ${courtName}`,
-          `${registerer_name} has registered you for a game on ${new Date(
-            game_start_time
-          ).toLocaleString()}.\n Don't forget to confirm in the app`,
+          `${registerer_name} has registered you for a game on ${formattedStart}.\nDon't forget to confirm in the app.`,
           {
             type: "OPEN_GAME",
             courtId: court_id,
@@ -3256,55 +3251,51 @@ app.post("/api/register-players", authenticateToken, async (req, res) => {
 
     await Promise.all(notificationPromises);
 
-    // Check for players who got bumped out due to priority using the new query
     const { results: bumpedPlayers } = await promiseQuery(
       `
-                WITH NewPlayersPriority AS (
-                  SELECT MIN(p.priority) as min_new_priority
-                  FROM players p
-                  WHERE p.id IN (?)  
-                ),
-                PreviousPlayers AS (
-                  SELECT 
-                    rtg.player_id,
-                    p.user_fk,
-                    p.name,
-                    p.priority,
-                    ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_before
-                  FROM registrations_to_game rtg
-                  JOIN players p ON rtg.player_id = p.id
-                  WHERE rtg.game_id = ?
-                  AND rtg.player_id NOT IN (?)  
-                ),
-                -- Now get the current rankings after new registrations
-                CurrentPlayers AS (
-                  SELECT 
-                    rtg.player_id,
-                    p.user_fk,
-                    p.name,
-                    p.priority,
-                    ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_after
-                  FROM registrations_to_game rtg
-                  JOIN players p ON rtg.player_id = p.id
-                  WHERE rtg.game_id = ?
-                )
-                -- Finally, identify players who were bumped due to priority
-                SELECT 
-                  pp.user_fk,
-                  pp.name,
-                  pp.priority as bumped_priority,
-                  npp.min_new_priority as new_player_priority
-                FROM PreviousPlayers pp
-                JOIN CurrentPlayers cp ON pp.player_id = cp.player_id
-                CROSS JOIN NewPlayersPriority npp
-                WHERE pp.rank_before <= ? 
-                AND cp.rank_after > ?    
-                AND pp.priority > npp.min_new_priority;  
-          `,
+      WITH NewPlayersPriority AS (
+        SELECT MIN(p.priority) as min_new_priority
+        FROM players p
+        WHERE p.id IN (?)  
+      ),
+      PreviousPlayers AS (
+        SELECT 
+          rtg.player_id,
+          p.user_fk,
+          p.name,
+          p.priority,
+          ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_before
+        FROM registrations_to_game rtg
+        JOIN players p ON rtg.player_id = p.id
+        WHERE rtg.game_id = ?
+        AND rtg.player_id NOT IN (?)  
+      ),
+      CurrentPlayers AS (
+        SELECT 
+          rtg.player_id,
+          p.user_fk,
+          p.name,
+          p.priority,
+          ROW_NUMBER() OVER (ORDER BY p.priority, rtg.registration_time) as rank_after
+        FROM registrations_to_game rtg
+        JOIN players p ON rtg.player_id = p.id
+        WHERE rtg.game_id = ?
+      )
+      SELECT 
+        pp.user_fk,
+        pp.name,
+        pp.priority as bumped_priority,
+        npp.min_new_priority as new_player_priority
+      FROM PreviousPlayers pp
+      JOIN CurrentPlayers cp ON pp.player_id = cp.player_id
+      CROSS JOIN NewPlayersPriority npp
+      WHERE pp.rank_before <= ? 
+      AND cp.rank_after > ?    
+      AND pp.priority > npp.min_new_priority;  
+      `,
       [playersIds, gameId, playersIds, gameId, max_players, max_players]
     );
 
-    // Only notify players who were actually bumped due to priority
     for (const bumpedPlayer of bumpedPlayers) {
       if (bumpedPlayer.user_fk) {
         await sendPushNotification(
@@ -3317,10 +3308,7 @@ app.post("/api/register-players", authenticateToken, async (req, res) => {
             gameId: gameId,
           }
         );
-        console.log(
-          "notification sent that he is number 22 to: ",
-          bumpedPlayer.name
-        );
+        console.log("🔔 Bumped notification sent to:", bumpedPlayer.name);
       }
     }
 
@@ -3411,7 +3399,6 @@ app.get(
 );
 
 /* DELETE player registration from a game ----------------------------------------------*/
-/* DELETE player registration from a game ----------------------------------------------*/
 app.delete(
   "/api/game_registrations_deletion/:game_id/:player_id",
   authenticateToken,
@@ -3419,62 +3406,76 @@ app.delete(
     const { game_id, player_id } = req.params;
 
     try {
-      // Start a transaction
-      await promiseQuery("START TRANSACTION");
-
-      try {
-        // First get the court name and game details
-        const { results: gameDetails } = await promiseQuery(
-          `SELECT g.max_players, g.court_id ,c.courtName, g.game_start_time
+      const { results: gameDetails } = await promiseQuery(
+        `SELECT registration_open_time, registration_close_time, max_players, court_id ,c.courtName, g.game_start_time, c.timezone
          FROM games g
          JOIN courts c ON g.court_id = c.id
          WHERE g.game_id = ?`,
-          [game_id]
-        );
+        [game_id]
+      );
 
-        if (!gameDetails.length) {
-          throw new Error("Game not found");
-        }
+      if (!gameDetails.length) {
+        return res.status(404).json({ message: "Game not found" });
+      }
 
-        const { max_players, court_id, courtName, game_start_time } =
-          gameDetails[0];
+      const {
+        registration_open_time,
+        registration_close_time,
+        max_players,
+        court_id,
+        courtName,
+        game_start_time,
+        timezone,
+      } = gameDetails[0];
 
-        // Get the current ordered list of players before deletion
+      const courtTimezone = timezone || "UTC";
+
+      const now = moment.utc();
+      const openTime = moment.utc(registration_open_time);
+      const closeTime = moment.utc(registration_close_time);
+
+      if (now.isBefore(openTime)) {
+        return res.status(403).json({ error: "REGISTRATION_NOT_OPEN_YET" });
+      }
+
+      if (now.isAfter(closeTime)) {
+        return res.status(403).json({ error: "REGISTRATION_ALREADY_CLOSED" });
+      }
+
+      await promiseQuery("START TRANSACTION");
+
+      try {
         const { results: oldOrderedPlayers } = await promiseQuery(
           `SELECT rtg.player_id, p.user_fk, p.priority, p.name
-         FROM registrations_to_game rtg
-         JOIN players p ON rtg.player_id = p.id
-         WHERE rtg.game_id = ?
-         ORDER BY p.priority, rtg.registration_time
-         LIMIT ?`,
-          [game_id, max_players + 1] // Get one extra to know who might move up
+           FROM registrations_to_game rtg
+           JOIN players p ON rtg.player_id = p.id
+           WHERE rtg.game_id = ?
+           ORDER BY p.priority, rtg.registration_time
+           LIMIT ?`,
+          [game_id, max_players + 1]
         );
 
-        // Delete the registration
         await promiseQuery(
           `DELETE FROM registrations_to_game WHERE game_id = ? AND player_id = ?`,
           [game_id, player_id]
         );
 
-        // Get the new ordered list after deletion
         const { results: newOrderedPlayers } = await promiseQuery(
           `SELECT rtg.player_id, p.user_fk, p.priority, p.name
-         FROM registrations_to_game rtg
-         JOIN players p ON rtg.player_id = p.id
-         WHERE rtg.game_id = ?
-         ORDER BY p.priority, rtg.registration_time
-         LIMIT ?`,
+           FROM registrations_to_game rtg
+           JOIN players p ON rtg.player_id = p.id
+           WHERE rtg.game_id = ?
+           ORDER BY p.priority, rtg.registration_time
+           LIMIT ?`,
           [game_id, max_players + 1]
         );
 
-        // Find players who need notifications
         if (oldOrderedPlayers.length > 0) {
           const deletedPlayerIndex = oldOrderedPlayers.findIndex(
             (p) => p.player_id === parseInt(player_id)
           );
 
           if (deletedPlayerIndex < max_players) {
-            // Someone might have moved up
             const movedUpPlayer = newOrderedPlayers[max_players - 1];
             if (
               movedUpPlayer &&
@@ -3482,13 +3483,15 @@ app.delete(
                 .slice(0, max_players)
                 .find((p) => p.player_id === movedUpPlayer.player_id)
             ) {
-              // This player moved up into the playing list
+              const formattedStart = moment
+                .utc(game_start_time)
+                .tz(courtTimezone)
+                .format("ddd, MMM D YYYY - HH:mm");
+
               await sendPushNotification(
                 movedUpPlayer.user_fk,
                 `You're In! - ${courtName}`,
-                `You are now number ${max_players} in the list for the game at ${new Date(
-                  game_start_time
-                ).toLocaleString()}!`,
+                `You are now number ${max_players} in the list for the game at ${formattedStart}!`,
                 {
                   type: "OPEN_GAME",
                   courtId: court_id,
@@ -3538,40 +3541,47 @@ app.post("/api/approve_registration", authenticateToken, async (req, res) => {
 });
 
 //-----------------------------------------------------------------------------------------------
-
 // Add or update teams for a game
 app.post("/api/game_teams", authenticateToken, async (req, res) => {
   try {
-    const { game_id, teams } = req.body; // `teams` is an array of arrays, where each inner array is a team of player_ids
+    const { game_id, teams } = req.body;
 
-    // Validate input
     if (!game_id || !Array.isArray(teams) || teams.length === 0) {
       return res.status(400).json({ message: "Invalid input data" });
     }
 
-    // Start a transaction to ensure all or nothing in the database changes
-    await promiseQuery("START TRANSACTION");
+    const { results: gameData } = await promiseQuery(
+      "SELECT game_start_time FROM games WHERE game_id = ?",
+      [game_id]
+    );
 
-    // First, delete any existing teams for the given game_id
+    if (!gameData.length) {
+      return res.status(404).json({ message: "Game not found" });
+    }
+
+    const now = moment.utc();
+    const gameStart = moment.utc(gameData[0].game_start_time);
+    const gameStartPlus2h = gameStart.clone().add(2, "hours");
+
+    if (now.isAfter(gameStartPlus2h)) {
+      return res.status(403).json({ error: "TOO_LATE_TO_SET_TEAMS" });
+    }
+
+    await promiseQuery("START TRANSACTION");
     await promiseQuery("DELETE FROM game_teams WHERE game_fk = ?", [game_id]);
 
-    // Insert each team as a new entry in the database
     for (const team of teams) {
-      const teamJson = JSON.stringify(team); // Convert team array to JSON
+      const teamJson = JSON.stringify(team);
       await promiseQuery(
         "INSERT INTO game_teams (game_fk, team) VALUES (?, ?)",
         [game_id, teamJson]
       );
     }
 
-    // Commit the transaction
     await promiseQuery("COMMIT");
-
     res.status(201).json({ message: "Teams updated successfully" });
   } catch (error) {
     console.error(error);
-
-    // Roll back transaction in case of error
     await promiseQuery("ROLLBACK");
     res.status(500).send("Error updating teams");
   }
@@ -3669,20 +3679,39 @@ app.post("/api/mvp-vote", authenticateToken, async (req, res) => {
   }
 
   try {
-    // Check if a vote already exists for the user in this game
+    // Check game start time
+    const { results: gameResults } = await promiseQuery(
+      "SELECT game_start_time FROM games WHERE game_id = ?",
+      [game_id]
+    );
+
+    if (!gameResults.length) {
+      return res.status(404).json({ message: "Game not found" });
+    }
+
+    const gameStartTime = moment.utc(gameResults[0].game_start_time);
+    const now = moment.utc();
+    const diffInHours = now.diff(gameStartTime, "hours", true);
+
+    if (diffInHours < 2) {
+      return res.status(403).json({ error: "MVP_VOTING_NOT_OPEN_YET" });
+    }
+    if (diffInHours > 24) {
+      return res.status(403).json({ error: "MVP_VOTING_CLOSED" });
+    }
+
+    // Check if a vote already exists
     const { results: existingVote } = await promiseQuery(
       "SELECT vote_id FROM mvp_votes WHERE game_id = ? AND voter_user_id = ?",
       [game_id, voter_user_id]
     );
 
     if (existingVote.length > 0) {
-      // Update existing vote
       await promiseQuery(
         "UPDATE mvp_votes SET mvp_player_id = ? WHERE game_id = ? AND voter_user_id = ?",
         [mvp_player_id, game_id, voter_user_id]
       );
     } else {
-      // Insert new vote
       await promiseQuery(
         "INSERT INTO mvp_votes (game_id, voter_user_id, mvp_player_id) VALUES (?, ?, ?)",
         [game_id, voter_user_id, mvp_player_id]
@@ -3695,7 +3724,6 @@ app.post("/api/mvp-vote", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 });
-
 //-----------------------------------------------------------------------------------------------
 
 // MVP Votes endpoint to decide who is the MVP
@@ -4796,7 +4824,6 @@ app.get(
   }
 );
 
-
 app.post("/api/notify-teams-ready", authenticateToken, async (req, res) => {
   const { gameId } = req.body;
 
@@ -4852,3 +4879,11 @@ app.post("/api/notify-teams-ready", authenticateToken, async (req, res) => {
   }
 });
 
+
+// Link to app
+app.get("/api/app-link", (req, res) => {
+  res.json({
+    ios: "https://apps.apple.com/us/app/ballershuffle/id123456789",
+    android: "https://play.google.com/store/apps/details?id=com.ballershuffle",
+  });
+});
